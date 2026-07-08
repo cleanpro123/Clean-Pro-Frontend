@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Nutro-app",
-    "slug": "Nutro-app",
+    "name": "Clean Pro",
+    "slug": "nutro-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,20 +10,31 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F3F8FF"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.cleanpro.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1B6FC4"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0dc895a6-0083-47c6-9dd1-b52417bd0920"
+      }
+    },
+    "plugins": [
+      "expo-font",
+      "@sentry/react-native/expo"
+    ]
   }
 }
