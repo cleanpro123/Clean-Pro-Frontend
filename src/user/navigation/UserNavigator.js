@@ -15,10 +15,16 @@ import AddAddressScreen from '../screens/AddAddressScreen';
 import RateOrderScreen from '../screens/RateOrderScreen';
 import MyReviewsScreen from '../screens/MyReviewsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import PrivacyCenterScreen from '../screens/PrivacyCenterScreen';
+import SecurityScreen from '../screens/SecurityScreen';
+import HelpCenterScreen from '../screens/HelpCenterScreen';
+import ContactSupportScreen from '../screens/ContactSupportScreen';
+import FaqsScreen from '../screens/FaqsScreen';
 import ForgotPasswordScreen from '../../shared/screens/ForgotPasswordScreen';
 import CustomTabBar from '../components/CustomTabBar';
 
-import { colors } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -38,6 +44,7 @@ function Tabs() {
 }
 
 export default function UserNavigator() {
+  const { colors } = useTheme();
   return (
     <Stack.Navigator
       screenOptions={{
@@ -101,6 +108,36 @@ export default function UserNavigator() {
         name="Notifications"
         component={NotificationsScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="PrivacyCenter"
+        component={PrivacyCenterScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Security"
+        component={SecurityScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="HelpCenter"
+        component={HelpCenterScreen}
+        options={{ title: 'Help center' }}
+      />
+      <Stack.Screen
+        name="ContactSupport"
+        component={ContactSupportScreen}
+        options={{ title: 'Contact support' }}
+      />
+      <Stack.Screen
+        name="Faqs"
+        component={FaqsScreen}
+        options={{ title: 'FAQs' }}
       />
     </Stack.Navigator>
   );

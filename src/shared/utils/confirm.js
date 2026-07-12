@@ -19,6 +19,9 @@ export function confirmAction({
   hideCancel = false,
   // Visual tone: 'info' shows an information icon instead of the question/alert.
   tone = null,
+  // Seconds to keep the confirm button disabled with a live countdown before it
+  // becomes tappable. Used to add friction to irreversible actions (deletes).
+  countdown = 0,
   onConfirm,
 }) {
   if (_show) {
@@ -30,6 +33,7 @@ export function confirmAction({
       destructive,
       hideCancel,
       tone,
+      countdown,
       onConfirm,
     });
     return;

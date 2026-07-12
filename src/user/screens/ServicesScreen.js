@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function ServicesScreen({ navigation }) {
+  const { t, td } = useI18n();
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,8 +39,8 @@ export default function ServicesScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Our services</Text>
-        <Text style={styles.sub}>Tap a service to start booking</Text>
+        <Text style={styles.title}>{t('services.title')}</Text>
+        <Text style={styles.sub}>{t('services.subtitle')}</Text>
       </View>
 
       <ScrollView
@@ -48,7 +53,7 @@ export default function ServicesScreen({ navigation }) {
         ) : services.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="layers-outline" size={48} color={colors.muted} />
-            <Text style={styles.emptyText}>No services available right now.</Text>
+            <Text style={styles.emptyText}>{t('services.empty')}</Text>
           </View>
         ) : (
           services.map((s) => (
@@ -69,8 +74,8 @@ export default function ServicesScreen({ navigation }) {
                 <Ionicons name={s.icon} size={26} color="#fff" />
               </LinearGradient>
               <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{s.name}</Text>
-                <Text style={styles.desc}>{s.description}</Text>
+                <Text style={styles.name}>{td('service', s.key)}</Text>
+                <Text style={styles.desc}>{td('serviceDesc', s.key)}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.muted} />
             </TouchableOpacity>
@@ -81,7 +86,7 @@ export default function ServicesScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
   title: { fontSize: 24, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },

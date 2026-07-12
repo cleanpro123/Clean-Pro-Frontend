@@ -15,8 +15,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { useAuth } from '../../shared/state/AuthContext';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function AdminLoginScreen({ navigation }) {
+  const { t } = useI18n();
   const { loginAdmin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,11 +29,13 @@ export default function AdminLoginScreen({ navigation }) {
 
   const submit = async () => {
     setError('');
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError(t('adminLogin.invalidEmail'));
+    if (!password) return setError(t('adminLogin.passwordRequired'));
     setBusy(true);
     try {
        await loginAdmin(email.trim(), password);
     } catch (e) {
-      setError(e.message || 'Login failed');
+      setError(e.message || t('adminLogin.loginFailed'));
     } finally {
       setBusy(false);
     }
@@ -51,7 +55,7 @@ export default function AdminLoginScreen({ navigation }) {
             style={styles.welcomeBox}
           >
             <View style={styles.welcomeBorder} pointerEvents="none" />
-            <Text style={styles.welcomeText}>Welcome home</Text>
+            <Text style={styles.welcomeText}>{t('adminLogin.welcomeHome')}</Text>
           </LinearGradient>
 
           <View style={styles.imageShadow}>
@@ -68,7 +72,7 @@ export default function AdminLoginScreen({ navigation }) {
           <Field
             icon="mail"
             iconPosition="left"
-            placeholder="email"
+            placeholder={t('adminLogin.email')}
             value={email}
             onChange={setEmail}
             keyboardType="email-address"
@@ -82,7 +86,7 @@ export default function AdminLoginScreen({ navigation }) {
             icon={showPw ? 'eye' : 'eye-off'}
             iconPosition="right"
             onIconPress={() => setShowPw((s) => !s)}
-            placeholder="password"
+            placeholder={t('adminLogin.password')}
             value={password}
             onChange={setPassword}
             secureTextEntry={!showPw}
@@ -109,7 +113,7 @@ export default function AdminLoginScreen({ navigation }) {
               {busy ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.ctaText}>Sign in</Text>
+                <Text style={styles.ctaText}>{t('adminLogin.signIn')}</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -118,7 +122,7 @@ export default function AdminLoginScreen({ navigation }) {
             onPress={() => navigation.goBack()}
             style={styles.back}
           >
-            <Text style={styles.backText}>Back to customer login</Text>
+            <Text style={styles.backText}>{t('adminLogin.backToCustomerLogin')}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

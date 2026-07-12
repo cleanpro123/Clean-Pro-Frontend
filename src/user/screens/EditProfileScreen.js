@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,15 +14,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { useAuth } from '../../shared/state/AuthContext';
 import { api } from '../../shared/api/client';
 import AvatarPicker from '../../shared/components/AvatarPicker';
 import useResendTimer from '../../shared/hooks/useResendTimer';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 export default function EditProfileScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useI18n();
   const { profile, refreshProfile, requestOtp, verifyOtp, changeEmail } = useAuth();
   const [name, setName] = useState(profile?.name || '');
   const [avatar, setAvatar] = useState(profile?.avatar || '');
@@ -42,7 +47,7 @@ export default function EditProfileScreen({ navigation }) {
 
   const handleSave = async () => {
     if (name.trim().length < 2) {
-      Alert.alert('Name too short', 'Please enter your full name.');
+      Alert.alert(t('editProfile.nameTooShortTitle'), t('editProfile.nameTooShortMessage'));
       return;
     }
     if (!dirty) {
@@ -55,7 +60,7 @@ export default function EditProfileScreen({ navigation }) {
       await refreshProfile();
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Could not save', e.message || 'Something went wrong. Please try again.');
+      Alert.alert(t('editProfile.couldNotSaveTitle'), e.message || t('editProfile.genericError'));
     } finally {
       setBusy(false);
     }
@@ -84,17 +89,17 @@ export default function EditProfileScreen({ navigation }) {
     setEmailError('');
     setEmailNotice('');
     const next = newEmail.trim().toLowerCase();
-    if (!EMAIL_RE.test(next)) return setEmailError('Please enter a valid email');
+    if (!EMAIL_RE.test(next)) return setEmailError(t('editProfile.invalidEmail'));
     if (next === (profile?.email || '').toLowerCase())
-      return setEmailError('That is already your email');
+      return setEmailError(t('editProfile.sameEmail'));
     setEmailBusy(true);
     try {
       await requestOtp(next, 'change-email');
       setEmailStep('code');
-      setEmailNotice(`We sent a 6-digit code to ${next}`);
+      setEmailNotice(t('editProfile.codeSentNotice', { email: next }));
       resendTimer.start();
     } catch (e) {
-      setEmailError(e.message || 'Could not send the code');
+      setEmailError(e.message || t('editProfile.couldNotSendCode'));
     } finally {
       setEmailBusy(false);
     }
@@ -104,7 +109,7 @@ export default function EditProfileScreen({ navigation }) {
   const verifyAndUpdateEmail = async () => {
     setEmailError('');
     setEmailNotice('');
-    if (emailCode.trim().length < 4) return setEmailError('Enter the code from your email');
+    if (!/^\d{4,8}$/.test(emailCode.trim())) return setEmailError(t('editProfile.enterCode'));
     const next = newEmail.trim().toLowerCase();
     setEmailBusy(true);
     try {
@@ -114,9 +119,9 @@ export default function EditProfileScreen({ navigation }) {
       setEmailStep('idle');
       setEmailCode('');
       resendTimer.reset();
-      Alert.alert('Email updated', `Your email is now ${next}.`);
+      Alert.alert(t('editProfile.emailUpdatedTitle'), t('editProfile.emailUpdatedMessage', { email: next }));
     } catch (e) {
-      setEmailError(e.message || 'That code is not correct');
+      setEmailError(e.message || t('editProfile.wrongCode'));
     } finally {
       setEmailBusy(false);
     }
@@ -125,7 +130,7 @@ export default function EditProfileScreen({ navigation }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: 120 }}>
-        <Text style={styles.section}>Profile photo</Text>
+        <Text style={styles.section}>{t('editProfile.profilePhoto')}</Text>
         {/* Temporarily disabled — dim + non-interactive with a frosted scrim and
             a "Coming soon" badge until avatar upload is ready. */}
         <View>
@@ -135,21 +140,21 @@ export default function EditProfileScreen({ navigation }) {
           <View style={styles.comingSoonScrim} pointerEvents="none">
             <View style={styles.comingSoonBadge}>
               <Ionicons name="time-outline" size={14} color={colors.card} />
-              <Text style={styles.comingSoonText}>Coming soon</Text>
+              <Text style={styles.comingSoonText}>{t('editProfile.comingSoon')}</Text>
             </View>
           </View>
         </View>
 
         <View style={{ height: spacing.lg }} />
 
-        <Text style={styles.section}>Your details</Text>
+        <Text style={styles.section}>{t('editProfile.yourDetails')}</Text>
         <View style={{ marginBottom: spacing.md }}>
-          <Text style={styles.fieldLabel}>Full name</Text>
+          <Text style={styles.fieldLabel}>{t('editProfile.fullName')}</Text>
           <TextInput
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="e.g. Muhammed Nihal"
+            placeholder={t('editProfile.fullNamePlaceholder')}
             placeholderTextColor={colors.muted}
             autoCapitalize="words"
           />
@@ -158,7 +163,7 @@ export default function EditProfileScreen({ navigation }) {
         {/* Email — the login identity. Changing it requires OTP verification of
             the new address, so it has its own inline flow. */}
         <View style={{ marginBottom: spacing.md }}>
-          <Text style={styles.fieldLabel}>Email</Text>
+          <Text style={styles.fieldLabel}>{t('editProfile.email')}</Text>
 
           {emailStep === 'idle' ? (
             <View style={[styles.input, styles.inputDisabled]}>
@@ -166,7 +171,7 @@ export default function EditProfileScreen({ navigation }) {
                 {profile?.email || '—'}
               </Text>
               <TouchableOpacity onPress={startEmailEdit} hitSlop={8}>
-                <Text style={styles.linkAction}>Change</Text>
+                <Text style={styles.linkAction}>{t('editProfile.change')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -175,7 +180,7 @@ export default function EditProfileScreen({ navigation }) {
                 style={styles.input}
                 value={newEmail}
                 onChangeText={setNewEmail}
-                placeholder="new@email.com"
+                placeholder={t('editProfile.newEmailPlaceholder')}
                 placeholderTextColor={colors.muted}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -184,7 +189,7 @@ export default function EditProfileScreen({ navigation }) {
               />
               <View style={styles.actionRow}>
                 <TouchableOpacity onPress={cancelEmailEdit} disabled={emailBusy} hitSlop={8}>
-                  <Text style={styles.linkMuted}>Cancel</Text>
+                  <Text style={styles.linkMuted}>{t('editProfile.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.smallBtn}
@@ -195,7 +200,7 @@ export default function EditProfileScreen({ navigation }) {
                   {emailBusy ? (
                     <ActivityIndicator size="small" color={colors.card} />
                   ) : (
-                    <Text style={styles.smallBtnText}>Send code</Text>
+                    <Text style={styles.smallBtnText}>{t('editProfile.sendCode')}</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -207,7 +212,7 @@ export default function EditProfileScreen({ navigation }) {
             <Text style={styles.errorText}>{emailError}</Text>
           ) : null}
           {emailStep === 'idle' && !emailError ? (
-            <Text style={styles.helper}>Changing your email needs a verification code.</Text>
+            <Text style={styles.helper}>{t('editProfile.emailChangeHelper')}</Text>
           ) : null}
         </View>
 
@@ -227,9 +232,9 @@ export default function EditProfileScreen({ navigation }) {
               <View style={styles.modalIcon}>
                 <Ionicons name="mail-unread-outline" size={22} color={colors.primary} />
               </View>
-              <Text style={styles.modalTitle}>Verify your email</Text>
+              <Text style={styles.modalTitle}>{t('editProfile.verifyEmailTitle')}</Text>
               <Text style={styles.modalSubtitle}>
-                {emailNotice || `Enter the 6-digit code sent to ${newEmail.trim()}`}
+                {emailNotice || t('editProfile.enterCodeSentTo', { email: newEmail.trim() })}
               </Text>
 
               <TextInput
@@ -255,7 +260,7 @@ export default function EditProfileScreen({ navigation }) {
                 {emailBusy ? (
                   <ActivityIndicator size="small" color={colors.card} />
                 ) : (
-                  <Text style={styles.smallBtnText}>Verify & update</Text>
+                  <Text style={styles.smallBtnText}>{t('editProfile.verifyAndUpdate')}</Text>
                 )}
               </TouchableOpacity>
 
@@ -266,11 +271,13 @@ export default function EditProfileScreen({ navigation }) {
                   hitSlop={8}
                 >
                   <Text style={resendTimer.active ? styles.linkMuted : styles.linkAction}>
-                    {resendTimer.active ? `Resend in ${resendTimer.secondsLeft}s` : 'Resend code'}
+                    {resendTimer.active
+                      ? t('editProfile.resendIn', { seconds: resendTimer.secondsLeft })
+                      : t('editProfile.resendCode')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={cancelEmailEdit} disabled={emailBusy} hitSlop={8}>
-                  <Text style={styles.linkMuted}>Cancel</Text>
+                  <Text style={styles.linkMuted}>{t('editProfile.cancel')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -280,7 +287,7 @@ export default function EditProfileScreen({ navigation }) {
         <View style={{ height: spacing.sm }} />
 
         {/* Security */}
-        <Text style={styles.section}>Security</Text>
+        <Text style={styles.section}>{t('editProfile.security')}</Text>
         <TouchableOpacity
           style={styles.menuRow}
           activeOpacity={0.7}
@@ -295,8 +302,8 @@ export default function EditProfileScreen({ navigation }) {
             <Ionicons name="lock-closed-outline" size={18} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.menuLabel}>Change password</Text>
-            <Text style={styles.menuHint}>Verify by email, then set a new password</Text>
+            <Text style={styles.menuLabel}>{t('editProfile.changePassword')}</Text>
+            <Text style={styles.menuHint}>{t('editProfile.changePasswordHint')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.muted} />
         </TouchableOpacity>
@@ -319,7 +326,7 @@ export default function EditProfileScreen({ navigation }) {
           ) : (
             <>
               <Ionicons name="checkmark" size={18} color={colors.card} />
-              <Text style={styles.saveText}>Save changes</Text>
+              <Text style={styles.saveText}>{t('editProfile.saveChanges')}</Text>
             </>
           )}
         </LinearGradient>
@@ -328,7 +335,7 @@ export default function EditProfileScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   section: {
     color: colors.text,
     fontWeight: '700',

@@ -7,7 +7,6 @@ import AdminRequestsScreen from '../screens/AdminRequestsScreen';
 import AdminRequestViewScreen from '../screens/AdminRequestViewScreen';
 import AdminUsersScreen from '../screens/AdminUsersScreen';
 import AdminUserDetailScreen from '../screens/AdminUserDetailScreen';
-import AdminApprovalsScreen from '../screens/AdminApprovalsScreen';
 import AdminAgentsScreen from '../screens/AdminAgentsScreen';
 import AdminAgentDetailScreen from '../screens/AdminAgentDetailScreen';
 import AdminServicesScreen from '../screens/AdminServicesScreen';
@@ -16,6 +15,7 @@ import AdminMapDetailScreen from '../screens/AdminMapDetailScreen';
 import AdminItemsScreen from '../screens/AdminItemsScreen';
 import AdminOffersScreen from '../screens/AdminOffersScreen';
 import AdminReviewsScreen from '../screens/AdminReviewsScreen';
+import AdminAdminsScreen from '../screens/AdminAdminsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -31,7 +31,6 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminRequestView" component={AdminRequestViewScreen} />
       <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
       <Stack.Screen name="AdminUserDetail" component={AdminUserDetailScreen} />
-      <Stack.Screen name="AdminApprovals" component={AdminApprovalsScreen} />
       <Stack.Screen name="AdminAgents" component={AdminAgentsScreen} />
       <Stack.Screen name="AdminAgentDetail" component={AdminAgentDetailScreen} />
       <Stack.Screen name="AdminServices" component={AdminServicesScreen} />
@@ -40,6 +39,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminItems" component={AdminItemsScreen} />
       <Stack.Screen name="AdminOffers" component={AdminOffersScreen} />
       <Stack.Screen name="AdminReviews" component={AdminReviewsScreen} />
+      <Stack.Screen name="AdminAdmins" component={AdminAdminsScreen} />
     </Stack.Navigator>
   );
 }

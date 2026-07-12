@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,24 +13,34 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, gradients, radii, spacing } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const hints = [
-  { v: 1, label: 'Disappointing', emoji: '😞' },
-  { v: 2, label: 'Could be better', emoji: '😕' },
-  { v: 3, label: 'Okay', emoji: '😐' },
-  { v: 4, label: 'Good', emoji: '🙂' },
-  { v: 5, label: 'Amazing!', emoji: '🤩' },
+  { v: 1, key: 'hintDisappointing', emoji: '😞' },
+  { v: 2, key: 'hintCouldBeBetter', emoji: '😕' },
+  { v: 3, key: 'hintOkay', emoji: '😐' },
+  { v: 4, key: 'hintGood', emoji: '🙂' },
+  { v: 5, key: 'hintAmazing', emoji: '🤩' },
 ];
 
 const tagOptions = [
-  'On time pickup', 'Spotless clean', 'Neatly folded',
-  'Friendly agent', 'Fragrance', 'Fast delivery', 'Good price',
+  { id: 'On time pickup', key: 'tagOnTimePickup' },
+  { id: 'Spotless clean', key: 'tagSpotlessClean' },
+  { id: 'Neatly folded', key: 'tagNeatlyFolded' },
+  { id: 'Friendly agent', key: 'tagFriendlyAgent' },
+  { id: 'Fragrance', key: 'tagFragrance' },
+  { id: 'Fast delivery', key: 'tagFastDelivery' },
+  { id: 'Good price', key: 'tagGoodPrice' },
 ];
 
 export default function RateOrderScreen({ route, navigation }) {
+  const { t } = useI18n();
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const orderId = route.params?.orderId;
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,9 +67,9 @@ export default function RateOrderScreen({ route, navigation }) {
   const submit = async () => {
     if (rating === 0) {
       confirmAction({
-        title: 'Pick a rating',
-        message: 'Tap a star to rate your experience.',
-        confirmLabel: 'OK',
+        title: t('rateOrder.pickRatingTitle'),
+        message: t('rateOrder.pickRatingMessage'),
+        confirmLabel: t('rateOrder.ok'),
         onConfirm: () => {},
       });
       return;
@@ -68,23 +78,23 @@ export default function RateOrderScreen({ route, navigation }) {
     try {
       const full = [selected.join(' · '), comment.trim()]
         .filter(Boolean)
-        .join('\n') || hints[rating - 1].label;
+        .join('\n') || t(`rateOrder.${hints[rating - 1].key}`);
       await api.post('/reviews', {
         requestId: order?.id || orderId,
         rating,
         comment: full,
       });
       confirmAction({
-        title: 'Thank you!',
-        message: 'Your review has been submitted for approval.',
-        confirmLabel: 'OK',
+        title: t('rateOrder.thankYouTitle'),
+        message: t('rateOrder.reviewSubmitted'),
+        confirmLabel: t('rateOrder.ok'),
         onConfirm: () => navigation.goBack(),
       });
     } catch (e) {
       confirmAction({
-        title: 'Could not submit',
+        title: t('rateOrder.couldNotSubmit'),
         message: e.message,
-        confirmLabel: 'OK',
+        confirmLabel: t('rateOrder.ok'),
         onConfirm: () => {},
       });
     } finally {
@@ -109,12 +119,12 @@ export default function RateOrderScreen({ route, navigation }) {
                 <View>
                   <Text style={styles.orderId}>{order?.code || '—'}</Text>
                   <Text style={styles.orderSub}>
-                    {order?.items?.length || 0} items · ₹{order?.total || 0}
+                    {t('rateOrder.itemsTotal', { count: order?.items?.length || 0, total: order?.total || 0 })}
                   </Text>
                 </View>
               </View>
 
-              <Text style={styles.q}>How was your experience?</Text>
+              <Text style={styles.q}>{t('rateOrder.howWasExperience')}</Text>
 
               <View style={styles.starsRow}>
                 {[1, 2, 3, 4, 5].map((n) => (
@@ -131,30 +141,30 @@ export default function RateOrderScreen({ route, navigation }) {
               {hint && (
                 <View style={styles.hint}>
                   <Text style={styles.hintEmoji}>{hint.emoji}</Text>
-                  <Text style={styles.hintLabel}>{hint.label}</Text>
+                  <Text style={styles.hintLabel}>{t(`rateOrder.${hint.key}`)}</Text>
                 </View>
               )}
 
-              <Text style={styles.section}>What stood out?</Text>
+              <Text style={styles.section}>{t('rateOrder.whatStoodOut')}</Text>
               <View style={styles.tags}>
-                {tagOptions.map((t) => {
-                  const active = selected.includes(t);
+                {tagOptions.map((opt) => {
+                  const active = selected.includes(opt.id);
                   return (
                     <TouchableOpacity
-                      key={t}
-                      onPress={() => toggle(t)}
+                      key={opt.id}
+                      onPress={() => toggle(opt.id)}
                       style={[styles.tag, active && styles.tagActive]}
                     >
-                      <Text style={[styles.tagText, active && styles.tagTextActive]}>{t}</Text>
+                      <Text style={[styles.tagText, active && styles.tagTextActive]}>{t(`rateOrder.${opt.key}`)}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
-              <Text style={styles.section}>Anything else? (optional)</Text>
+              <Text style={styles.section}>{t('rateOrder.anythingElse')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Share details..."
+                placeholder={t('rateOrder.shareDetails')}
                 placeholderTextColor={colors.muted}
                 multiline
                 value={comment}
@@ -174,7 +184,7 @@ export default function RateOrderScreen({ route, navigation }) {
                   ) : (
                     <>
                       <Ionicons name="send" size={18} color="#fff" />
-                      <Text style={styles.ctaText}>Submit review</Text>
+                      <Text style={styles.ctaText}>{t('rateOrder.submitReview')}</Text>
                     </>
                   )}
                 </LinearGradient>
@@ -187,7 +197,7 @@ export default function RateOrderScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
   orderCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.card, borderRadius: radii.lg, padding: spacing.md },

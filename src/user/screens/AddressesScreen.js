@@ -1,18 +1,23 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { useApp } from '../../shared/state/AppContext';
+import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function AddressesScreen({ route, navigation }) {
+  const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const selectMode = route.params?.selectMode === true;
   const {
     addresses,
@@ -30,11 +35,16 @@ export default function AddressesScreen({ route, navigation }) {
   };
 
   const handleDelete = (id) => {
-    Alert.alert('Delete address?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => removeAddress(id) },
-    ]);
+    confirmAction({
+      title: t('addresses.deleteTitle'),
+      message: t('addresses.deleteMessage'),
+      confirmLabel: t('addresses.delete'),
+      destructive: true,
+      onConfirm: () => removeAddress(id),
+    });
   };
+
+  const handleEdit = (address) => navigation.navigate('AddAddress', { address });
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -47,53 +57,12 @@ export default function AddressesScreen({ route, navigation }) {
           <View style={styles.banner}>
             <Ionicons name="hand-left-outline" size={16} color={colors.primary} />
             <Text style={styles.bannerText}>
-              Tap an address to use it for this order
+              {t('addresses.selectHint')}
             </Text>
           </View>
         )}
 
-        {/* EMPTY STATE */}
-        {addresses.length === 0 && (
-          <View style={styles.empty}>
-            <View style={styles.emptyIconBig}>
-              <Ionicons name="location-outline" size={42} color={colors.primary} />
-            </View>
-            <Text style={styles.emptyTitle}>No addresses yet</Text>
-            <Text style={styles.emptySub}>
-              Add your home or office for faster pickups.
-            </Text>
-          </View>
-        )}
-
-        {/* DEFAULT / SELECTED ADDRESS */}
-        {defaultAddr && (
-          <>
-            <SectionLabel text="DEFAULT" />
-            <DefaultAddressCard
-              address={defaultAddr}
-              onDelete={() => handleDelete(defaultAddr.id)}
-              onPress={() => handleSelect(defaultAddr.id)}
-            />
-          </>
-        )}
-
-        {/* OTHER ADDRESSES */}
-        {others.length > 0 && (
-          <>
-            <SectionLabel text={`OTHER ADDRESSES · ${others.length}`} />
-            {others.map((a) => (
-              <OtherAddressCard
-                key={a.id}
-                address={a}
-                onSelect={() => handleSelect(a.id)}
-                onSetDefault={() => setSelectedAddressId(a.id)}
-                onDelete={() => handleDelete(a.id)}
-              />
-            ))}
-          </>
-        )}
-
-        {/* ADD NEW */}
+        {/* ADD NEW — kept at the top for quick access */}
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => navigation.navigate('AddAddress')}
@@ -103,18 +72,53 @@ export default function AddressesScreen({ route, navigation }) {
             <Ionicons name="add" size={22} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.addTitle}>Add new address</Text>
-            <Text style={styles.addSub}>Home, office, or wherever you'd like pickup</Text>
+            <Text style={styles.addTitle}>{t('addresses.addNewTitle')}</Text>
+            <Text style={styles.addSub}>{t('addresses.addNewSub')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.primary} />
         </TouchableOpacity>
 
-        {/* QUICK LOCATIONS HINT */}
-        {addresses.length > 0 && (
-          <View style={styles.quickRow}>
-            <QuickChip icon="navigate-outline" label="Use current location" />
-            <QuickChip icon="search-outline" label="Search a pincode" />
+        {/* EMPTY STATE */}
+        {addresses.length === 0 && (
+          <View style={styles.empty}>
+            <View style={styles.emptyIconBig}>
+              <Ionicons name="location-outline" size={42} color={colors.primary} />
+            </View>
+            <Text style={styles.emptyTitle}>{t('addresses.emptyTitle')}</Text>
+            <Text style={styles.emptySub}>
+              {t('addresses.emptySub')}
+            </Text>
           </View>
+        )}
+
+        {/* DEFAULT / SELECTED ADDRESS */}
+        {defaultAddr && (
+          <>
+            <SectionLabel text={t('addresses.defaultSection')} />
+            <DefaultAddressCard
+              address={defaultAddr}
+              onEdit={() => handleEdit(defaultAddr)}
+              onDelete={() => handleDelete(defaultAddr.id)}
+              onPress={() => handleSelect(defaultAddr.id)}
+            />
+          </>
+        )}
+
+        {/* OTHER ADDRESSES */}
+        {others.length > 0 && (
+          <>
+            <SectionLabel text={t('addresses.otherSection', { count: others.length })} />
+            {others.map((a) => (
+              <OtherAddressCard
+                key={a.id}
+                address={a}
+                onSelect={() => handleSelect(a.id)}
+                onSetDefault={() => setSelectedAddressId(a.id)}
+                onEdit={() => handleEdit(a)}
+                onDelete={() => handleDelete(a.id)}
+              />
+            ))}
+          </>
         )}
       </ScrollView>
     </View>
@@ -122,10 +126,15 @@ export default function AddressesScreen({ route, navigation }) {
 }
 
 function SectionLabel({ text }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return <Text style={styles.section}>{text}</Text>;
 }
 
-function DefaultAddressCard({ address, onDelete, onPress }) {
+function DefaultAddressCard({ address, onEdit, onDelete, onPress }) {
+  const { t } = useI18n();
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={styles.defaultCardWrap}>
       <LinearGradient
@@ -151,7 +160,7 @@ function DefaultAddressCard({ address, onDelete, onPress }) {
               <Text style={styles.label}>{address.label}</Text>
               <View style={styles.defaultBadge}>
                 <Ionicons name="checkmark-circle" size={11} color={colors.primary} />
-                <Text style={styles.defaultBadgeText}>Default</Text>
+                <Text style={styles.defaultBadgeText}>{t('addresses.defaultBadge')}</Text>
               </View>
             </View>
             <Text style={styles.addrLine}>
@@ -178,19 +187,13 @@ function DefaultAddressCard({ address, onDelete, onPress }) {
         <View style={styles.actionsRow}>
           <ActionChip
             icon="create-outline"
-            label="Edit"
+            label={t('addresses.edit')}
             tint={colors.primary}
-            onPress={() => Alert.alert('Edit', 'Editing coming soon.')}
-          />
-          <ActionChip
-            icon="share-outline"
-            label="Share"
-            tint={colors.primary}
-            onPress={() => Alert.alert('Share', 'Address shared!')}
+            onPress={onEdit}
           />
           <ActionChip
             icon="trash-outline"
-            label="Delete"
+            label={t('addresses.delete')}
             tint={colors.danger}
             onPress={onDelete}
           />
@@ -200,7 +203,10 @@ function DefaultAddressCard({ address, onDelete, onPress }) {
   );
 }
 
-function OtherAddressCard({ address, onSelect, onSetDefault, onDelete }) {
+function OtherAddressCard({ address, onSelect, onSetDefault, onEdit, onDelete }) {
+  const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <TouchableOpacity
       activeOpacity={0.85}
@@ -234,13 +240,19 @@ function OtherAddressCard({ address, onSelect, onSetDefault, onDelete }) {
       <View style={styles.actionsRow}>
         <ActionChip
           icon="star-outline"
-          label="Set as default"
+          label={t('addresses.setAsDefault')}
           tint={colors.primary}
           onPress={onSetDefault}
         />
         <ActionChip
+          icon="create-outline"
+          label={t('addresses.edit')}
+          tint={colors.primary}
+          onPress={onEdit}
+        />
+        <ActionChip
           icon="trash-outline"
-          label="Delete"
+          label={t('addresses.delete')}
           tint={colors.danger}
           onPress={onDelete}
         />
@@ -250,6 +262,8 @@ function OtherAddressCard({ address, onSelect, onSetDefault, onDelete }) {
 }
 
 function ActionChip({ icon, label, tint, onPress }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={styles.actionChip}>
       <Ionicons name={icon} size={14} color={tint} />
@@ -258,16 +272,7 @@ function ActionChip({ icon, label, tint, onPress }) {
   );
 }
 
-function QuickChip({ icon, label }) {
-  return (
-    <TouchableOpacity activeOpacity={0.7} style={styles.quickChip}>
-      <Ionicons name={icon} size={14} color={colors.primary} />
-      <Text style={styles.quickChipText}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   // BANNER
   banner: {
     flexDirection: 'row',
@@ -412,22 +417,6 @@ const styles = StyleSheet.create({
   },
   addTitle: { color: colors.primary, fontWeight: '800', fontSize: 15 },
   addSub: { color: colors.text, fontSize: 11, marginTop: 2 },
-
-  // QUICK
-  quickRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  quickChip: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    backgroundColor: colors.card,
-    paddingVertical: 12,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  quickChipText: { color: colors.text, fontWeight: '700', fontSize: 12 },
 
   // EMPTY
   empty: { alignItems: 'center', paddingTop: 40, gap: 6 },

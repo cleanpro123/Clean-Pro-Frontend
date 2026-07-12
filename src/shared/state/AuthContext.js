@@ -109,11 +109,6 @@ export function AuthProvider({ children }) {
     changeEmail: async (email) => api.patch('/users/me/email', { email }),
     register: async (payload) => {
       const data = await api.post('/auth/register', payload, { auth: false });
-      // Business accounts come back pending (no tokens) — caller shows the
-      // "awaiting approval" screen instead of entering the app.
-      if (data.pending || !data.tokens) {
-        return { pending: true, profile: data.profile };
-      }
       return finishLogin({ ...data, role: 'user' });
     },
     // Create the account but do NOT sign in — used by the signup flow so the

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Clean Pro",
-    "slug": "nutro-app",
+    "slug": "clean-pro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -34,7 +34,19 @@
     },
     "plugins": [
       "expo-font",
-      "@sentry/react-native/expo"
+      "@sentry/react-native/expo",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Clean Pro uses your location to set your pickup address on the map."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Clean Pro uses your photos so you can set a profile picture."
+        }
+      ]
     ]
   }
 }

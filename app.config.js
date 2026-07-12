@@ -18,6 +18,7 @@ const VARIANT = IS_PARTNER
       name: 'Clean Pro Partner',
       slug: 'clean-pro-partner',
       androidPackage: 'com.cleanpro.partner',
+      iosBundleId: 'com.cleanpro.partner',
       androidBg: '#0A3D7A',
       // Partner EAS project (created via `eas init` for the partner variant).
       // Override with EAS_PROJECT_ID_PARTNER if it ever changes.
@@ -25,8 +26,9 @@ const VARIANT = IS_PARTNER
     }
   : {
       name: 'Clean Pro',
-      slug: 'nutro-app',
+      slug: 'clean-pro',
       androidPackage: 'com.cleanpro.app',
+      iosBundleId: 'com.cleanpro.app',
       androidBg: '#1B6FC4',
       projectId: '0dc895a6-0083-47c6-9dd1-b52417bd0920',
     };
@@ -35,6 +37,10 @@ module.exports = ({ config }) => ({
   ...config,
   name: VARIANT.name,
   slug: VARIANT.slug,
+  ios: {
+    ...config.ios,
+    bundleIdentifier: VARIANT.iosBundleId,
+  },
   android: {
     ...config.android,
     package: VARIANT.androidPackage,

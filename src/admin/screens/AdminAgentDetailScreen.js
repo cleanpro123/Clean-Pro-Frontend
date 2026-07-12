@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -16,10 +16,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import MapPreview from '../components/MapPreview';
+import MapPreview from '../../shared/components/MapPreview';
+import DayPickerModal from '../../shared/components/DayPickerModal';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
+import {
+  PERIODS,
+  dayLabels,
+  startOfDay,
+  rangeFor,
+  buildLast7Days,
+} from '../../shared/utils/period';
 
 function PillRow({ icon, label, value, right, onPress, mono }) {
   const Wrap = onPress ? TouchableOpacity : View;
@@ -46,21 +55,31 @@ function PillRow({ icon, label, value, right, onPress, mono }) {
 }
 
 export default function AdminAgentDetailScreen({ route, navigation }) {
+  const { t } = useI18n();
   const id = route.params?.id;
   const [agent, setAgent] = useState(null);
   const [maps, setMaps] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editLoc, setEditLoc] = useState(false);
   const [draftMapId, setDraftMapId] = useState(null);
 
+  const [period, setPeriod] = useState('today');
+  const [customDate, setCustomDate] = useState(startOfDay(new Date()));
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   const load = useCallback(async () => {
     try {
-      const [a, m] = await Promise.all([
+      const [a, m, o] = await Promise.all([
         api.get(`/agents/${id}`),
         api.get('/maps').catch(() => []),
+        // Full order history so per-agent date filters (custom day / last year)
+        // aren't limited to the newest page.
+        api.getAll('/requests').catch(() => []),
       ]);
       setAgent(a);
       setMaps(m);
+      setOrders(o);
     } finally {
       setLoading(false);
     }
@@ -70,10 +89,50 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
     load();
   }, [load]);
 
+  // Only this agent's orders. agentId is serialized as a string id on the order.
+  const agentOrders = useMemo(
+    () => orders.filter((o) => o.agentId && String(o.agentId) === String(id)),
+    [orders, id]
+  );
+  const range = useMemo(() => rangeFor(period, customDate), [period, customDate]);
+
+  // Per-agent period metrics come from the server-side stats endpoint (scoped by
+  // agentId), so custom day / last year are accurate in the DB rather than
+  // depending on client-side filtering.
+  const [stats, setStats] = useState({ orders: 0, delivered: 0, revenue: 0 });
+  useEffect(() => {
+    if (!id) return undefined;
+    let cancelled = false;
+    const qs =
+      `from=${range.start.toISOString()}&to=${range.end.toISOString()}&agentId=${id}`;
+    api
+      .get(`/requests/stats?${qs}`)
+      .then((s) => !cancelled && setStats(s))
+      .catch(() => !cancelled && setStats({ orders: 0, delivered: 0, revenue: 0 }));
+    return () => {
+      cancelled = true;
+    };
+  }, [range, id]);
+
+  const periodOrders = stats.orders;
+  const periodDelivered = stats.delivered;
+  const periodRevenue = stats.revenue;
+  const orderBuckets = useMemo(() => buildLast7Days(agentOrders, 'count'), [agentOrders]);
+  const maxOrders = Math.max(1, ...orderBuckets.map((b) => b.value));
+
+  const handlePeriod = (key) => {
+    if (key === 'custom') {
+      setPeriod('custom');
+      setPickerOpen(true);
+    } else {
+      setPeriod(key);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <AdminHeader title="Agent details" onBack={() => navigation.goBack()} />
+        <AdminHeader title={t('adminAgentDetail.title')} onBack={() => navigation.goBack()} />
         <ActivityIndicator color={colors.muted} style={{ marginTop: 32 }} />
       </SafeAreaView>
     );
@@ -97,11 +156,15 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
 
   const toggleBlock = () =>
     confirmAction({
-      title: isBlocked ? 'Unblock agent?' : 'Block agent?',
+      title: isBlocked
+        ? t('adminAgentDetail.unblockTitle')
+        : t('adminAgentDetail.blockTitle'),
       message: isBlocked
-        ? `${agent.name} will be able to take new pickups again.`
-        : `${agent.name} will not be able to take new pickups.`,
-      confirmLabel: isBlocked ? 'Unblock' : 'Block',
+        ? t('adminAgentDetail.unblockMessage', { name: agent.name })
+        : t('adminAgentDetail.blockMessage', { name: agent.name }),
+      confirmLabel: isBlocked
+        ? t('adminAgentDetail.unblockConfirm')
+        : t('adminAgentDetail.blockConfirm'),
       destructive: !isBlocked,
       onConfirm: async () => {
         const updated = await api.patch(`/agents/${agent.id}`, {
@@ -113,9 +176,9 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
 
   const remove = () =>
     confirmAction({
-      title: 'Delete agent?',
-      message: `${agent.name} will be permanently removed. This cannot be undone.`,
-      confirmLabel: 'Delete',
+      title: t('adminAgentDetail.deleteTitle'),
+      message: t('adminAgentDetail.deleteMessage', { name: agent.name }),
+      confirmLabel: t('adminAgentDetail.deleteConfirm'),
       destructive: true,
       onConfirm: async () => {
         await api.delete(`/agents/${agent.id}`);
@@ -164,42 +227,110 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
                   },
                 ]}
               >
-                {isBlocked ? 'Blocked' : isActive ? 'On shift' : 'Offline'}
+                {isBlocked
+                  ? t('adminAgentDetail.statusBlocked')
+                  : isActive
+                  ? t('adminAgentDetail.statusOnShift')
+                  : t('adminAgentDetail.statusOffline')}
               </Text>
             </View>
-            <Text style={styles.subId}>Agent ID · {agent.id}</Text>
+            <Text style={styles.subId}>{t('adminAgentDetail.agentId', { id: agent.id })}</Text>
           </LinearGradient>
         </View>
 
         <View style={styles.sectionRow}>
-          <Text style={styles.section}>Location</Text>
+          <Text style={styles.section}>{t('adminAgentDetail.location')}</Text>
           <TouchableOpacity onPress={openEdit} style={styles.editBtn} activeOpacity={0.85}>
             <Ionicons name="create-outline" size={14} color="#34D399" />
-            <Text style={styles.editBtnText}>Update</Text>
+            <Text style={styles.editBtnText}>{t('adminAgentDetail.update')}</Text>
           </TouchableOpacity>
         </View>
         <MapPreview place={agent.place || agent.zone} />
 
-        <Text style={styles.section}>Credentials</Text>
+        <Text style={styles.section}>{t('adminAgentDetail.credentials')}</Text>
         <PillRow
           icon="mail"
-          label="Email"
+          label={t('adminAgentDetail.email')}
           value={agent.email || '—'}
           onPress={agent.email ? () => Linking.openURL(`mailto:${agent.email}`) : undefined}
         />
 
-        <Text style={styles.section}>Contact</Text>
+        <Text style={styles.section}>{t('adminAgentDetail.contact')}</Text>
         <PillRow
           icon="call"
-          label="Phone"
+          label={t('adminAgentDetail.phone')}
           value={agent.phone}
           onPress={() => Linking.openURL(`tel:${(agent.phone || '').replace(/\s/g, '')}`)}
         />
-        <PillRow icon="location-sharp" label="Place" value={agent.place || agent.zone || '—'} />
-        {agent.vehicle ? <PillRow icon="car-sport" label="Vehicle" value={agent.vehicle} /> : null}
+        <PillRow icon="location-sharp" label={t('adminAgentDetail.place')} value={agent.place || agent.zone || '—'} />
+        {agent.vehicle ? <PillRow icon="car-sport" label={t('adminAgentDetail.vehicle')} value={agent.vehicle} /> : null}
 
-        <Text style={styles.section}>Activity</Text>
-        <PillRow icon="cube" label="Pickups today" value={String(agent.pickupsToday ?? 0)} />
+        <Text style={styles.section}>{t('adminAgentDetail.ordersActivity')}</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.periodRow}
+        >
+          {PERIODS.map((p) => {
+            const active = period === p.key;
+            const label =
+              p.key === 'custom' && period === 'custom'
+                ? customDate.toLocaleDateString()
+                : p.label;
+            return (
+              <TouchableOpacity
+                key={p.key}
+                onPress={() => handlePeriod(p.key)}
+                style={[styles.chip, active && styles.chipActive]}
+                activeOpacity={0.85}
+              >
+                {p.key === 'custom' && (
+                  <Ionicons
+                    name="calendar-outline"
+                    size={13}
+                    color={active ? '#052e2b' : colors.muted}
+                    style={{ marginRight: 4 }}
+                  />
+                )}
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <View style={styles.metricRow}>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>{periodOrders}</Text>
+            <Text style={styles.metricLabel}>{t('adminAgentDetail.ordersMetric', { label: range.label })}</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>{periodDelivered}</Text>
+            <Text style={styles.metricLabel}>{t('adminAgentDetail.delivered')}</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>QAR {periodRevenue.toLocaleString()}</Text>
+            <Text style={styles.metricLabel}>{t('adminAgentDetail.revenue')}</Text>
+          </View>
+        </View>
+
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>{t('adminAgentDetail.last7DaysOrders')}</Text>
+          <View style={styles.chart}>
+            {orderBuckets.map((b, i) => (
+              <View key={i} style={styles.bar}>
+                <Text style={styles.barValue}>{b.value || ''}</Text>
+                <View
+                  style={[
+                    styles.barFill,
+                    { height: `${(b.value / maxOrders) * 100}%` },
+                    i === orderBuckets.length - 1 && { backgroundColor: '#34D399', opacity: 1 },
+                  ]}
+                />
+                <Text style={styles.barLabel}>{dayLabels[b.dow]}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
 
         <View style={styles.bottomActions}>
           <TouchableOpacity activeOpacity={0.85} onPress={toggleBlock} style={styles.actionShadow}>
@@ -221,7 +352,9 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
                   { color: isBlocked ? '#34D399' : '#FBBF24' },
                 ]}
               >
-                {isBlocked ? 'Unblock agent' : 'Block agent'}
+                {isBlocked
+                  ? t('adminAgentDetail.unblockAgent')
+                  : t('adminAgentDetail.blockAgent')}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -235,7 +368,7 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
             >
               <View style={styles.pillBorder} pointerEvents="none" />
               <Ionicons name="trash-outline" size={18} color="#F87171" />
-              <Text style={[styles.actionText, { color: '#F87171' }]}>Delete agent</Text>
+              <Text style={[styles.actionText, { color: '#F87171' }]}>{t('adminAgentDetail.deleteAgent')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -255,7 +388,7 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
               style={styles.modal}
             >
               <View style={styles.modalBorder} pointerEvents="none" />
-              <Text style={styles.modalTitle}>Assign map location</Text>
+              <Text style={styles.modalTitle}>{t('adminAgentDetail.assignMapLocation')}</Text>
               <MapPreview
                 place={maps.find((m) => m.id === draftMapId)?.place || null}
                 height={120}
@@ -263,7 +396,7 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
               <ScrollView style={styles.mapMenu} contentContainerStyle={{ paddingVertical: 4 }}>
                 {maps.length === 0 ? (
                   <Text style={styles.mapMenuEmpty}>
-                    No locations yet. Add one in the Maps section.
+                    {t('adminAgentDetail.noLocations')}
                   </Text>
                 ) : (
                   maps.map((m) => {
@@ -296,20 +429,31 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
                   onPress={() => setEditLoc(false)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>{t('adminAgentDetail.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalBtn, styles.saveBtn]}
                   onPress={saveLocation}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.saveText}>Save location</Text>
+                  <Text style={styles.saveText}>{t('adminAgentDetail.saveLocation')}</Text>
                 </TouchableOpacity>
               </View>
             </LinearGradient>
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <DayPickerModal
+        visible={pickerOpen}
+        value={customDate}
+        onSelect={(d) => {
+          setCustomDate(startOfDay(d));
+          setPeriod('custom');
+          setPickerOpen(false);
+        }}
+        onClose={() => setPickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -336,6 +480,45 @@ const styles = StyleSheet.create({
   pillLabel: { color: colors.muted, fontSize: 11, fontWeight: '300', letterSpacing: 0.5, textTransform: 'uppercase' },
   pillValue: { color: colors.text, fontSize: 14, fontWeight: '300', letterSpacing: 0.3, marginTop: 2 },
   mono: { fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
+  periodRow: { gap: spacing.sm, paddingVertical: 2, paddingRight: spacing.md },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(43, 63, 110, 0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+  },
+  chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primaryLight },
+  chipText: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  chipTextActive: { color: '#052e2b', fontWeight: '800' },
+  metricRow: { flexDirection: 'row', gap: spacing.sm },
+  metricCard: {
+    flex: 1,
+    backgroundColor: 'rgba(43, 63, 110, 0.55)',
+    borderRadius: radii.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    alignItems: 'center',
+  },
+  metricValue: { color: colors.text, fontSize: 20, fontWeight: '700' },
+  metricLabel: { color: colors.muted, fontSize: 10, fontWeight: '400', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
+  chartCard: {
+    backgroundColor: 'rgba(43, 63, 110, 0.55)',
+    borderRadius: radii.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  chartTitle: { color: colors.text, fontSize: 13, fontWeight: '500', letterSpacing: 0.5, marginBottom: spacing.md },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 130, gap: 8 },
+  bar: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'flex-end' },
+  barValue: { color: colors.muted, fontSize: 10, fontWeight: '600', marginBottom: 2 },
+  barFill: { width: '65%', backgroundColor: '#22D3EE', borderRadius: 6, minHeight: 4, opacity: 0.75 },
+  barLabel: { marginTop: 6, fontSize: 11, color: colors.muted, fontWeight: '600' },
   bottomActions: { marginTop: spacing.lg, gap: spacing.sm + 4 },
   actionShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: radii.md, gap: spacing.sm, overflow: 'hidden' },

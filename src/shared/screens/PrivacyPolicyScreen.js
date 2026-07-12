@@ -1,153 +1,157 @@
 // In-app Privacy Policy — rendered natively (no browser / external URL).
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing } from '../theme/colors';
+import { radii, spacing } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/LanguageContext';
 
 const SUPPORT_EMAIL = 'cleanproofficial1@gmail.com';
 const LAST_UPDATED = '5 July 2026';
 
 const COLLECT = [
-  ['Name', 'To identify you and personalise your account'],
-  ['Email address', 'Login, one-time passcodes (OTP) and service notifications'],
-  ['Password', 'Account security — stored only as a salted hash, never in plain text'],
-  ['Phone number', 'So our agents can contact you about a pickup or delivery'],
-  ['Pickup / delivery addresses', 'To collect and return your laundry'],
-  ['Profile photo', 'To personalise your profile (only if you add one)'],
-  ['Orders, requests & reviews', 'To fulfil your orders and improve the service'],
+  ['collectNameLabel', 'collectNameWhy'],
+  ['collectEmailLabel', 'collectEmailWhy'],
+  ['collectPasswordLabel', 'collectPasswordWhy'],
+  ['collectPhoneLabel', 'collectPhoneWhy'],
+  ['collectAddressLabel', 'collectAddressWhy'],
+  ['collectPhotoLabel', 'collectPhotoWhy'],
+  ['collectOrdersLabel', 'collectOrdersWhy'],
 ];
 
 const SECTIONS = [
   {
-    title: 'How we use your information',
+    title: 'useInfoTitle',
     bullets: [
-      'To create and secure your account and sign you in.',
-      'To send one-time passcodes and essential service emails.',
-      'To schedule, fulfil and deliver your laundry orders.',
-      'To let delivery agents complete assigned requests.',
-      'To operate, maintain, debug and improve the app.',
-      'To respond to your support requests.',
+      'useInfoBullet1',
+      'useInfoBullet2',
+      'useInfoBullet3',
+      'useInfoBullet4',
+      'useInfoBullet5',
+      'useInfoBullet6',
     ],
-    footer: 'We do not sell your personal data, and we do not use it for third-party advertising.',
+    footer: 'useInfoFooter',
   },
   {
-    title: 'How your data is shared',
-    intro: 'We share data only with service providers that help us run Clean Pro, and only as needed:',
+    title: 'sharingTitle',
+    intro: 'sharingIntro',
     bullets: [
-      'MongoDB Atlas — secure database hosting for your account and order data.',
-      'Render — hosting for our backend service.',
-      'Google (Gmail) — to deliver one-time passcode and notification emails.',
-      'Sentry — crash diagnostics, configured to exclude your personal data.',
+      'sharingBullet1',
+      'sharingBullet2',
+      'sharingBullet3',
+      'sharingBullet4',
     ],
   },
   {
-    title: 'Crash and error reporting',
+    title: 'crashTitle',
     paragraphs: [
-      'To keep the app stable we record diagnostic information when an error occurs (error message, screen, device model, OS and app version). This is configured to not attach personal identifying information such as your email.',
+      'crashPara1',
     ],
   },
   {
-    title: 'Data retention',
+    title: 'retentionTitle',
     paragraphs: [
-      'We keep your personal data while your account is active. When you ask us to delete your account, we remove your personal data within 30 days, except where we must keep limited records to meet legal obligations.',
+      'retentionPara1',
     ],
   },
   {
-    title: 'Your rights and choices',
+    title: 'rightsTitle',
     bullets: [
-      'Access or update your profile information from within the app.',
-      'Delete your account and personal data by contacting us.',
-      'Withdraw consent for optional data (e.g. remove your profile photo) at any time.',
+      'rightsBullet1',
+      'rightsBullet2',
+      'rightsBullet3',
     ],
   },
   {
-    title: 'Data security',
+    title: 'securityTitle',
     bullets: [
-      'Passwords are stored only as salted bcrypt hashes.',
-      'Sessions use short-lived access tokens and rotating refresh tokens.',
-      'Traffic between the app and our servers is encrypted over HTTPS.',
-      'Access to production data is restricted.',
+      'securityBullet1',
+      'securityBullet2',
+      'securityBullet3',
+      'securityBullet4',
     ],
   },
   {
-    title: "Children's privacy",
+    title: 'childrenTitle',
     paragraphs: [
-      'Clean Pro is not directed to children under 13. We do not knowingly collect data from children. If you believe a child has provided us data, contact us and we will delete it.',
+      'childrenPara1',
     ],
   },
   {
-    title: 'Changes to this policy',
+    title: 'changesTitle',
     paragraphs: [
-      'We may update this policy from time to time. We will revise the "Last updated" date above and, where appropriate, notify you in the app.',
+      'changesPara1',
     ],
   },
 ];
 
 export default function PrivacyPolicyScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useI18n();
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10} style={styles.back}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Privacy Policy</Text>
+        <Text style={styles.headerTitle}>{t('privacyPolicy.title')}</Text>
         <View style={styles.back} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.updated}>Last updated: {LAST_UPDATED}</Text>
+        <Text style={styles.updated}>{t('privacyPolicy.lastUpdated', { date: LAST_UPDATED })}</Text>
         <Text style={styles.intro}>
-          Clean Pro provides an on-demand laundry service. This policy explains what personal data
-          we collect, why, and the choices you have. Questions? Email us at{' '}
+          {t('privacyPolicy.introText')}{' '}
           <Text style={styles.link} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}>
             {SUPPORT_EMAIL}
           </Text>
           .
         </Text>
 
-        <Text style={styles.sectionTitle}>Information we collect</Text>
+        <Text style={styles.sectionTitle}>{t('privacyPolicy.collectTitle')}</Text>
         <View style={styles.card}>
-          {COLLECT.map(([label, why], i) => (
-            <View key={label} style={[styles.row, i === COLLECT.length - 1 && styles.rowLast]}>
-              <Text style={styles.rowLabel}>{label}</Text>
-              <Text style={styles.rowWhy}>{why}</Text>
+          {COLLECT.map(([labelKey, whyKey], i) => (
+            <View key={labelKey} style={[styles.row, i === COLLECT.length - 1 && styles.rowLast]}>
+              <Text style={styles.rowLabel}>{t(`privacyPolicy.${labelKey}`)}</Text>
+              <Text style={styles.rowWhy}>{t(`privacyPolicy.${whyKey}`)}</Text>
             </View>
           ))}
         </View>
 
         {SECTIONS.map((s) => (
           <View key={s.title}>
-            <Text style={styles.sectionTitle}>{s.title}</Text>
-            {s.intro ? <Text style={styles.paragraph}>{s.intro}</Text> : null}
+            <Text style={styles.sectionTitle}>{t(`privacyPolicy.${s.title}`)}</Text>
+            {s.intro ? <Text style={styles.paragraph}>{t(`privacyPolicy.${s.intro}`)}</Text> : null}
             {(s.paragraphs || []).map((p, i) => (
-              <Text key={i} style={styles.paragraph}>{p}</Text>
+              <Text key={i} style={styles.paragraph}>{t(`privacyPolicy.${p}`)}</Text>
             ))}
             {(s.bullets || []).map((b, i) => (
               <View key={i} style={styles.bulletRow}>
                 <View style={styles.dot} />
-                <Text style={styles.bulletText}>{b}</Text>
+                <Text style={styles.bulletText}>{t(`privacyPolicy.${b}`)}</Text>
               </View>
             ))}
-            {s.footer ? <Text style={[styles.paragraph, styles.footerNote]}>{s.footer}</Text> : null}
+            {s.footer ? <Text style={[styles.paragraph, styles.footerNote]}>{t(`privacyPolicy.${s.footer}`)}</Text> : null}
           </View>
         ))}
 
-        <Text style={styles.sectionTitle}>Contact us</Text>
+        <Text style={styles.sectionTitle}>{t('privacyPolicy.contactTitle')}</Text>
         <Text style={styles.paragraph}>
-          Clean Pro{'\n'}Email:{' '}
+          Clean Pro{'\n'}{t('privacyPolicy.contactEmailLabel')}{' '}
           <Text style={styles.link} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}>
             {SUPPORT_EMAIL}
           </Text>
         </Text>
 
-        <Text style={styles.copyright}>© 2026 Clean Pro. All rights reserved.</Text>
+        <Text style={styles.copyright}>{t('privacyPolicy.copyright')}</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Linking,
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,10 +16,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts, GreatVibes_400Regular } from '@expo-google-fonts/great-vibes';
-import { colors, radii, spacing } from '../theme/colors';
+import { radii, spacing } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../state/AuthContext';
-import { confirmAction } from '../utils/confirm';
-import { PRIVACY_POLICY_URL } from '../constants/legal';
+import { useI18n } from '../i18n/LanguageContext';
 
 // Layered "ripple" transition from the gradient hero into the body. The arcs
 // bulge UP at the centre (∩) and the last layer is the body colour, so the
@@ -40,6 +39,8 @@ const WAVE_LAYERS = [
 const WAVE_DIP_RATIO = 0.263; // fraction of the wave height each arc bulges up
 
 function WaveDivider({ width, height }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const cx = width * 0.5;
   const dip = height * WAVE_DIP_RATIO;
   return (
@@ -64,19 +65,10 @@ function WaveDivider({ width, height }) {
   );
 }
 
-// Multi-colour Google "G".
-function GoogleG({ size = 24 }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 48 48">
-      <Path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z" />
-      <Path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z" />
-      <Path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z" />
-      <Path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z" />
-    </Svg>
-  );
-}
-
 export default function LoginScreen({ navigation, route }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const { width: SCREEN_W, height: SCREEN_H } = useWindowDimensions();
 
@@ -101,6 +93,8 @@ export default function LoginScreen({ navigation, route }) {
   const submit = async () => {
     setError('');
     setNotice('');
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError(t('login.invalidEmail'));
+    if (!password) return setError(t('login.passwordRequired'));
     setBusy(true);
     try {
       await loginUser(email.trim(), password);
@@ -109,20 +103,11 @@ export default function LoginScreen({ navigation, route }) {
         navigation.navigate('AccountBlocked', { preset: 'blocked', message: e.message });
         return;
       }
-      setError(e.message || 'Something went wrong');
+      setError(e.message || t('login.somethingWrong'));
     } finally {
       setBusy(false);
     }
   };
-
-  const soon = (name) =>
-    confirmAction({
-      title: `${name} sign-in`,
-      message: `${name} sign-in is coming soon. For now, please log in with your email.`,
-      hideCancel: true,
-      tone: 'info',
-      confirmLabel: 'Got it',
-    });
 
   return (
     <View style={styles.root}>
@@ -166,12 +151,12 @@ export default function LoginScreen({ navigation, route }) {
 
           {/* Body */}
           <View style={styles.body}>
-            <Text style={styles.welcome}>Welcome back</Text>
+            <Text style={styles.welcome}>{t('login.welcome')}</Text>
 
             <View style={[styles.inputWrap, focused === 'email' && styles.inputWrapFocused]}>
               <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder={t('login.email')}
                 placeholderTextColor={colors.muted}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -185,7 +170,7 @@ export default function LoginScreen({ navigation, route }) {
             <View style={[styles.inputWrap, focused === 'password' && styles.inputWrapFocused]}>
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder={t('login.password')}
                 placeholderTextColor={colors.muted}
                 secureTextEntry={!showPw}
                 value={password}
@@ -203,7 +188,7 @@ export default function LoginScreen({ navigation, route }) {
               onPress={() => navigation.navigate('ForgotPassword')}
               hitSlop={8}
             >
-              <Text style={styles.forgot}>Forgot password?</Text>
+              <Text style={styles.forgot}>{t('login.forgotPassword')}</Text>
             </TouchableOpacity>
 
             {notice ? <Text style={styles.notice}>{notice}</Text> : null}
@@ -213,34 +198,14 @@ export default function LoginScreen({ navigation, route }) {
               {busy ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.ctaText}>Log in</Text>
+                <Text style={styles.ctaText}>{t('login.logIn')}</Text>
               )}
             </TouchableOpacity>
 
-            {/* OR divider */}
-            <View style={styles.orRow}>
-              <View style={styles.orLine} />
-              <Text style={styles.orText}>OR</Text>
-              <View style={styles.orLine} />
-            </View>
-
-            {/* Social sign-in */}
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.social} onPress={() => soon('Google')} activeOpacity={0.7}>
-                <GoogleG size={22} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.social} onPress={() => soon('Facebook')} activeOpacity={0.7}>
-                <Ionicons name="logo-facebook" size={26} color="#1877F2" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.social} onPress={() => soon('Apple')} activeOpacity={0.7}>
-                <Ionicons name="logo-apple" size={25} color="#000" />
-              </TouchableOpacity>
-            </View>
-
             <View style={styles.createRow}>
-              <Text style={styles.createText}>Don't have an account? </Text>
+              <Text style={styles.createText}>{t('login.noAccount')} </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Signup')} hitSlop={8}>
-                <Text style={styles.createLink}>Create Account</Text>
+                <Text style={styles.createLink}>{t('login.createAccount')}</Text>
               </TouchableOpacity> 
             </View>
           </View>
@@ -249,9 +214,9 @@ export default function LoginScreen({ navigation, route }) {
 
           <Text style={styles.legal}>
             <Ionicons name="lock-closed" size={11} color={colors.muted} />{'  '}
-            By logging in, you agree to our{' '}
-            <Text style={styles.legalLink} onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
-              Privacy Policy
+            {t('login.legalIntro')}{' '}
+            <Text style={styles.legalLink} onPress={() => navigation.navigate('PrivacyPolicy')}>
+              {t('login.privacyPolicy')}
             </Text>
             .
           </Text>
@@ -264,7 +229,7 @@ export default function LoginScreen({ navigation, route }) {
 
 const NAVY = '#122F4A';
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
   scroll: { flexGrow: 1 },
@@ -357,31 +322,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   ctaText: { color: '#fff', fontSize: 15.5, fontWeight: '700', letterSpacing: 0.3 },
-
-  orRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    marginBottom: 10,
-  },
-  orLine: { height: 1, width: 64, backgroundColor: colors.border },
-  orText: { color: colors.muted, fontSize: 11.5, fontWeight: '700', letterSpacing: 1 },
-
-  socialRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.xl,
-    marginBottom: spacing.md,
-  },
-  social: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 
   createRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   createText: { color: colors.muted, fontSize: 13 },

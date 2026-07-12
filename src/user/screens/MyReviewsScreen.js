@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, gradients, radii, spacing } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 function Stars({ value, size = 16 }) {
   return (
@@ -30,6 +32,9 @@ function Stars({ value, size = 16 }) {
 }
 
 export default function MyReviewsScreen({ navigation }) {
+  const { t } = useI18n();
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [reviews, setReviews] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,10 +82,10 @@ export default function MyReviewsScreen({ navigation }) {
                 <Ionicons name="star-outline" size={22} color="#B45309" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.bannerTitle}>
-                    {unrated.length} order{unrated.length > 1 ? 's' : ''} waiting for your review
+                    {t('myReviews.ordersWaiting', { count: unrated.length })}
                   </Text>
                   <Text style={styles.bannerSub}>
-                    Help us improve — rate your recent laundry experience.
+                    {t('myReviews.bannerSub')}
                   </Text>
                 </View>
               </View>
@@ -91,7 +96,9 @@ export default function MyReviewsScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.unratedId}>{o.code}</Text>
                   <Text style={styles.unratedMeta}>
-                    Delivered {new Date(o.updatedAt || o.createdAt).toLocaleDateString()}
+                    {t('myReviews.deliveredOn', {
+                      date: new Date(o.updatedAt || o.createdAt).toLocaleDateString(),
+                    })}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -104,25 +111,25 @@ export default function MyReviewsScreen({ navigation }) {
                     end={{ x: 1, y: 1 }}
                     style={styles.rateBtn}
                   >
-                    <Text style={styles.rateText}>Rate</Text>
+                    <Text style={styles.rateText}>{t('myReviews.rate')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
             ))}
 
-            <Text style={styles.section}>Your reviews</Text>
+            <Text style={styles.section}>{t('myReviews.yourReviews')}</Text>
 
             {reviews.length === 0 ? (
               <View style={styles.empty}>
                 <Ionicons name="star-outline" size={48} color={colors.muted} />
-                <Text style={styles.emptyText}>You haven't reviewed any orders yet.</Text>
+                <Text style={styles.emptyText}>{t('myReviews.emptyText')}</Text>
               </View>
             ) : (
               reviews.map((r) => (
                 <View key={r.id} style={styles.reviewCard}>
                   <View style={styles.reviewHead}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.reviewOrder}>Order {r.requestId}</Text>
+                      <Text style={styles.reviewOrder}>{t('myReviews.orderNumber', { id: r.requestId })}</Text>
                       <Text style={styles.reviewDate}>
                         {new Date(r.createdAt).toLocaleDateString()}
                       </Text>
@@ -175,10 +182,10 @@ export default function MyReviewsScreen({ navigation }) {
                         ]}
                       >
                         {r.status === 'approved'
-                          ? 'Published'
+                          ? t('myReviews.statusPublished')
                           : r.status === 'hidden'
-                          ? 'Hidden by admin'
-                          : 'Awaiting approval'}
+                          ? t('myReviews.statusHidden')
+                          : t('myReviews.statusSubmitted')}
                       </Text>
                     </View>
                   </View>
@@ -192,7 +199,7 @@ export default function MyReviewsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
   banner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', borderRadius: radii.md, padding: spacing.md, gap: spacing.sm },

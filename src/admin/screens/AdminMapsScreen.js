@@ -16,11 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import MapPreview from '../components/MapPreview';
+import MapPreview from '../../shared/components/MapPreview';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function AdminMapsScreen({ navigation }) {
+  const { t } = useI18n();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -48,8 +50,12 @@ export default function AdminMapsScreen({ navigation }) {
 
   const save = async () => {
     setError('');
-    if (!form.name.trim() || !form.place.trim()) {
-      setError('Name and place are required.');
+    if (form.name.trim().length < 2) {
+      setError(t('adminMaps.nameRequired'));
+      return;
+    }
+    if (form.place.trim().length < 2) {
+      setError(t('adminMaps.placeRequired'));
       return;
     }
     setBusy(true);
@@ -68,7 +74,7 @@ export default function AdminMapsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AdminHeader
-        title="Maps"
+        title={t('adminMaps.title')}
         onBack={() => navigation.goBack()}
         rightAction={{ icon: 'add-circle-outline', onPress: () => setAdding(true) }}
       />
@@ -85,7 +91,7 @@ export default function AdminMapsScreen({ navigation }) {
         ) : items.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="location-outline" size={48} color={colors.muted} />
-            <Text style={styles.emptyText}>No locations yet.</Text>
+            <Text style={styles.emptyText}>{t('adminMaps.noLocationsYet')}</Text>
           </View>
         ) : (
           items.map((m) => (
@@ -108,7 +114,7 @@ export default function AdminMapsScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{m.name}</Text>
                   <Text style={styles.place} numberOfLines={2}>{m.place}</Text>
-                  <Text style={styles.radius}>Radius · {m.pickupRadius || '—'}</Text>
+                  <Text style={styles.radius}>{t('adminMaps.radius', { value: m.pickupRadius || '—' })}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.muted} />
               </LinearGradient>
@@ -131,14 +137,14 @@ export default function AdminMapsScreen({ navigation }) {
               style={styles.modal}
             >
               <View style={styles.modalBorder} pointerEvents="none" />
-              <Text style={styles.modalTitle}>New location</Text>
+              <Text style={styles.modalTitle}>{t('adminMaps.newLocation')}</Text>
 
               <MapPreview place={form.place || null} height={120} />
 
               <View style={styles.inputWrap}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Location name"
+                  placeholder={t('adminMaps.locationNamePlaceholder')}
                   placeholderTextColor={colors.muted}
                   value={form.name}
                   onChangeText={(v) => setForm((p) => ({ ...p, name: v }))}
@@ -147,7 +153,7 @@ export default function AdminMapsScreen({ navigation }) {
               <View style={styles.inputWrap}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Place / address"
+                  placeholder={t('adminMaps.placeAddressPlaceholder')}
                   placeholderTextColor={colors.muted}
                   value={form.place}
                   onChangeText={(v) => setForm((p) => ({ ...p, place: v }))}
@@ -156,7 +162,7 @@ export default function AdminMapsScreen({ navigation }) {
               <View style={styles.inputWrap}>
                 <TextInput
                   style={[styles.input, { minHeight: 60, paddingTop: 12 }]}
-                  placeholder="Description (optional)"
+                  placeholder={t('adminMaps.descriptionPlaceholder')}
                   placeholderTextColor={colors.muted}
                   multiline
                   textAlignVertical="top"
@@ -167,7 +173,7 @@ export default function AdminMapsScreen({ navigation }) {
               <View style={styles.inputWrap}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Pickup radius (e.g. 5 km)"
+                  placeholder={t('adminMaps.pickupRadiusPlaceholder')}
                   placeholderTextColor={colors.muted}
                   value={form.pickupRadius}
                   onChangeText={(v) => setForm((p) => ({ ...p, pickupRadius: v }))}
@@ -182,7 +188,7 @@ export default function AdminMapsScreen({ navigation }) {
                   onPress={() => setAdding(false)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>{t('adminMaps.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalBtn, styles.saveBtn]}
@@ -190,7 +196,7 @@ export default function AdminMapsScreen({ navigation }) {
                   disabled={busy}
                   activeOpacity={0.85}
                 >
-                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>Add location</Text>}
+                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>{t('adminMaps.addLocation')}</Text>}
                 </TouchableOpacity>
               </View>
             </LinearGradient>

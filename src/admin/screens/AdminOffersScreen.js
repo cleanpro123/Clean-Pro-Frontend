@@ -20,8 +20,10 @@ import AdminHeader from '../components/AdminHeader';
 import { colors, gradients, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function AdminOffersScreen({ navigation }) {
+  const { t } = useI18n();
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -52,11 +54,11 @@ export default function AdminOffersScreen({ navigation }) {
   const toggle = (o) => {
     const next = !o.active;
     confirmAction({
-      title: next ? 'Activate offer?' : 'Deactivate offer?',
+      title: next ? t('adminOffers.activateOfferTitle') : t('adminOffers.deactivateOfferTitle'),
       message: next
-        ? `${o.code} will be available to customers.`
-        : `${o.code} will be hidden from customers.`,
-      confirmLabel: next ? 'Activate' : 'Deactivate',
+        ? t('adminOffers.activateOfferMessage', { code: o.code })
+        : t('adminOffers.deactivateOfferMessage', { code: o.code }),
+      confirmLabel: next ? t('adminOffers.activate') : t('adminOffers.deactivate'),
       destructive: !next,
       onConfirm: async () => {
         const updated = await api.patch(`/offers/${o.id}`, { active: next });
@@ -67,27 +69,47 @@ export default function AdminOffersScreen({ navigation }) {
 
   const remove = (o) =>
     confirmAction({
-      title: 'Delete offer?',
-      message: 'This cannot be undone.',
-      confirmLabel: 'Delete',
+      title: t('adminOffers.deleteOfferTitle'),
+      message: t('adminOffers.deleteOfferMessage'),
+      confirmLabel: t('adminOffers.delete'),
       destructive: true,
       onConfirm: async () => {
-        await api.delete(`/offers/${o.id}`);
+        // Remove instantly; restore via reload if the server call fails.
         setOffers((prev) => prev.filter((x) => x.id !== o.id));
+        try {
+          await api.delete(`/offers/${o.id}`);
+        } catch (e) {
+          load();
+          confirmAction({
+            title: t('adminOffers.couldNotDelete'),
+            message: e.message,
+            confirmLabel: t('adminOffers.ok'),
+            onConfirm: () => {},
+          });
+        }
       },
     });
 
   const save = async () => {
     setError('');
-    if (!form.code.trim() || !form.discount.trim()) {
-      setError('Code and discount are required.');
+    if (form.code.trim().length < 3) {
+      setError(t('adminOffers.codeRequired'));
+      return;
+    }
+    // Discount is either a percentage ("20%") or a flat amount ("50").
+    if (!/^\d+%?$/.test(form.discount.trim())) {
+      setError(t('adminOffers.discountInvalid'));
+      return;
+    }
+    if (form.minOrder.trim() && !(Number(form.minOrder) >= 0)) {
+      setError(t('adminOffers.minOrderInvalid'));
       return;
     }
     setBusy(true);
     try {
       const body = {
         code: form.code.toUpperCase(),
-        label: form.label || `${form.discount} off`,
+        label: form.label || t('adminOffers.discountOff', { discount: form.discount }),
         discount: form.discount,
         minOrder: Number(form.minOrder) || 0,
       };
@@ -106,7 +128,7 @@ export default function AdminOffersScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AdminHeader
-        title="Offers"
+        title={t('adminOffers.title')}
         onBack={() => navigation.goBack()}
         rightAction={{ icon: 'add-circle-outline', onPress: () => setAdding(true) }}
       />
@@ -122,7 +144,7 @@ export default function AdminOffersScreen({ navigation }) {
         ) : offers.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="gift-outline" size={48} color={colors.muted} />
-            <Text style={styles.emptyText}>No offers yet. Tap + to create one.</Text>
+            <Text style={styles.emptyText}>{t('adminOffers.emptyState')}</Text>
           </View>
         ) : (
           offers.map((o) => (
@@ -148,23 +170,23 @@ export default function AdminOffersScreen({ navigation }) {
               <View style={styles.metaRow}>
                 <View style={styles.metaItem}>
                   <Ionicons name="cash-outline" size={14} color="#fff" />
-                  <Text style={styles.metaText}>Min ₹{o.minOrder}</Text>
+                  <Text style={styles.metaText}>{t('adminOffers.minOrder', { amount: o.minOrder })}</Text>
                 </View>
                 <View style={styles.metaItem}>
                   <Ionicons name="calendar-outline" size={14} color="#fff" />
                   <Text style={styles.metaText}>
-                    Until {o.validTill ? new Date(o.validTill).toLocaleDateString() : '—'}
+                    {t('adminOffers.until', { date: o.validTill ? new Date(o.validTill).toLocaleDateString() : '—' })}
                   </Text>
                 </View>
                 <View style={styles.metaItem}>
                   <Ionicons name="people-outline" size={14} color="#fff" />
-                  <Text style={styles.metaText}>{o.usage || 0} used</Text>
+                  <Text style={styles.metaText}>{t('adminOffers.usedCount', { count: o.usage || 0 })}</Text>
                 </View>
               </View>
 
               <View style={styles.actionRow}>
                 <View style={styles.toggleRow}>
-                  <Text style={styles.toggleLabel}>{o.active ? 'Active' : 'Inactive'}</Text>
+                  <Text style={styles.toggleLabel}>{o.active ? t('adminOffers.active') : t('adminOffers.inactive')}</Text>
                   <Switch
                     value={o.active}
                     onValueChange={() => toggle(o)}
@@ -198,12 +220,12 @@ export default function AdminOffersScreen({ navigation }) {
               style={styles.modal}
             >
               <View style={styles.modalBorder} pointerEvents="none" />
-              <Text style={styles.modalTitle}>New offer</Text>
+              <Text style={styles.modalTitle}>{t('adminOffers.newOffer')}</Text>
 
               <View style={styles.inputWrap}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Code (e.g. SUMMER20)"
+                  placeholder={t('adminOffers.codePlaceholder')}
                   placeholderTextColor={colors.muted}
                   autoCapitalize="characters"
                   value={form.code}
@@ -213,7 +235,7 @@ export default function AdminOffersScreen({ navigation }) {
               <View style={styles.inputWrap}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Label"
+                  placeholder={t('adminOffers.labelPlaceholder')}
                   placeholderTextColor={colors.muted}
                   value={form.label}
                   onChangeText={(v) => setForm((p) => ({ ...p, label: v }))}
@@ -223,7 +245,7 @@ export default function AdminOffersScreen({ navigation }) {
                 <View style={[styles.inputWrap, { flex: 1 }]}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Discount (20% or ₹50)"
+                    placeholder={t('adminOffers.discountPlaceholder')}
                     placeholderTextColor={colors.muted}
                     value={form.discount}
                     onChangeText={(v) => setForm((p) => ({ ...p, discount: v }))}
@@ -232,7 +254,7 @@ export default function AdminOffersScreen({ navigation }) {
                 <View style={[styles.inputWrap, { flex: 1 }]}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Min order"
+                    placeholder={t('adminOffers.minOrderPlaceholder')}
                     placeholderTextColor={colors.muted}
                     keyboardType="number-pad"
                     value={form.minOrder}
@@ -243,7 +265,7 @@ export default function AdminOffersScreen({ navigation }) {
               <View style={styles.inputWrap}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Valid till (YYYY-MM-DD)"
+                  placeholder={t('adminOffers.validTillPlaceholder')}
                   placeholderTextColor={colors.muted}
                   value={form.validTill}
                   onChangeText={(v) => setForm((p) => ({ ...p, validTill: v }))}
@@ -258,7 +280,7 @@ export default function AdminOffersScreen({ navigation }) {
                   onPress={() => setAdding(false)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>{t('adminOffers.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalBtn, styles.saveBtn]}
@@ -266,7 +288,7 @@ export default function AdminOffersScreen({ navigation }) {
                   disabled={busy}
                   activeOpacity={0.85}
                 >
-                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>Add offer</Text>}
+                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>{t('adminOffers.addOffer')}</Text>}
                 </TouchableOpacity>
               </View>
             </LinearGradient>

@@ -20,6 +20,7 @@ import AdminHeader from '../components/AdminHeader';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const iconChoices = [
   'water-outline',
@@ -31,6 +32,7 @@ const iconChoices = [
 ];
 
 export default function AdminServicesScreen({ navigation }) {
+  const { t } = useI18n();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -64,11 +66,11 @@ export default function AdminServicesScreen({ navigation }) {
   const toggleActive = (svc) => {
     const next = svc.active === false ? true : false;
     confirmAction({
-      title: next ? 'Activate service?' : 'Deactivate service?',
+      title: next ? t('adminServices.activateTitle') : t('adminServices.deactivateTitle'),
       message: next
-        ? `${svc.name} will be available for new orders.`
-        : `${svc.name} will be hidden from customers.`,
-      confirmLabel: next ? 'Activate' : 'Deactivate',
+        ? t('adminServices.activateMessage', { name: svc.name })
+        : t('adminServices.deactivateMessage', { name: svc.name }),
+      confirmLabel: next ? t('adminServices.activate') : t('adminServices.deactivate'),
       destructive: !next,
       onConfirm: async () => {
         const updated = await api.patch(`/services/${svc.id}`, { active: next });
@@ -79,8 +81,16 @@ export default function AdminServicesScreen({ navigation }) {
 
   const save = async () => {
     setError('');
-    if (!form.key.trim() || !form.name.trim()) {
-      setError('Key and name are required.');
+    if (form.key.trim().length < 2) {
+      setError(t('adminServices.keyRequired'));
+      return;
+    }
+    if (!/^[a-z0-9_-]+$/i.test(form.key.trim())) {
+      setError(t('adminServices.keyInvalid'));
+      return;
+    }
+    if (form.name.trim().length < 2) {
+      setError(t('adminServices.nameRequired'));
       return;
     }
     setBusy(true);
@@ -104,7 +114,7 @@ export default function AdminServicesScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AdminHeader
-        title="Services"
+        title={t('adminServices.title')}
         onBack={() => navigation.goBack()}
         rightAction={{ icon: 'add-circle-outline', onPress: () => setAdding(true) }}
       />
@@ -121,7 +131,7 @@ export default function AdminServicesScreen({ navigation }) {
         ) : services.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="layers-outline" size={48} color={colors.muted} />
-            <Text style={styles.emptyText}>No services yet.</Text>
+            <Text style={styles.emptyText}>{t('adminServices.noServices')}</Text>
           </View>
         ) : (
           services.map((s) => (
@@ -158,7 +168,7 @@ export default function AdminServicesScreen({ navigation }) {
                         { color: s.active === false ? colors.muted : '#34D399' },
                       ]}
                     >
-                      {s.active === false ? 'Inactive' : 'Active'}
+                      {s.active === false ? t('adminServices.inactive') : t('adminServices.active')}
                     </Text>
                   </View>
                 </View>
@@ -191,12 +201,12 @@ export default function AdminServicesScreen({ navigation }) {
               style={styles.modal}
             >
               <View style={styles.modalBorder} pointerEvents="none" />
-              <Text style={styles.modalTitle}>New service</Text>
+              <Text style={styles.modalTitle}>{t('adminServices.newService')}</Text>
 
               <View style={styles.inputWrap}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Key (e.g. steam)"
+                  placeholder={t('adminServices.keyPlaceholder')}
                   placeholderTextColor={colors.muted}
                   autoCapitalize="none"
                   value={form.key}
@@ -206,7 +216,7 @@ export default function AdminServicesScreen({ navigation }) {
               <View style={styles.inputWrap}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Name (e.g. Steam Press)"
+                  placeholder={t('adminServices.namePlaceholder')}
                   placeholderTextColor={colors.muted}
                   value={form.name}
                   onChangeText={(v) => setForm((p) => ({ ...p, name: v }))}
@@ -215,7 +225,7 @@ export default function AdminServicesScreen({ navigation }) {
               <View style={styles.inputWrap}>
                 <TextInput
                   style={[styles.input, { minHeight: 70, paddingTop: 12 }]}
-                  placeholder="Description"
+                  placeholder={t('adminServices.descriptionPlaceholder')}
                   placeholderTextColor={colors.muted}
                   multiline
                   textAlignVertical="top"
@@ -224,7 +234,7 @@ export default function AdminServicesScreen({ navigation }) {
                 />
               </View>
 
-              <Text style={styles.iconLabel}>Icon</Text>
+              <Text style={styles.iconLabel}>{t('adminServices.icon')}</Text>
               <View style={styles.iconGrid}>
                 {iconChoices.map((ic) => {
                   const active = form.icon === ic;
@@ -248,7 +258,7 @@ export default function AdminServicesScreen({ navigation }) {
                   onPress={() => setAdding(false)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>{t('adminServices.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalBtn, styles.saveBtn]}
@@ -256,7 +266,7 @@ export default function AdminServicesScreen({ navigation }) {
                   disabled={busy}
                   activeOpacity={0.85}
                 >
-                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>Add service</Text>}
+                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>{t('adminServices.addService')}</Text>}
                 </TouchableOpacity>
               </View>
             </LinearGradient>

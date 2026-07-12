@@ -15,14 +15,16 @@ import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const filters = [
-  { id: 'all', label: 'Total users' },
-  { id: 'active', label: 'Active' },
-  { id: 'blocked', label: 'Blocked' },
+  { id: 'all', labelKey: 'filterAll' },
+  { id: 'active', labelKey: 'statusActive' },
+  { id: 'blocked', labelKey: 'statusBlocked' },
 ];
 
 export default function AdminUsersScreen({ navigation }) {
+  const { t } = useI18n();
   const [users, setUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [counts, setCounts] = useState({ all: 0, active: 0, blocked: 0 });
@@ -74,13 +76,13 @@ export default function AdminUsersScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <AdminHeader title="Users" onBack={() => navigation.goBack()} />
+      <AdminHeader title={t('adminUsers.title')} onBack={() => navigation.goBack()} />
 
       <View style={styles.searchWrap}>
         <Ionicons name="search-outline" size={18} color={colors.muted} />
         <TextInput
           style={styles.search}
-          placeholder="Search name, email or phone"
+          placeholder={t('adminUsers.searchPlaceholder')}
           placeholderTextColor={colors.muted}
           value={query}
           onChangeText={setQuery}
@@ -105,7 +107,7 @@ export default function AdminUsersScreen({ navigation }) {
               >
                 <View style={styles.statBorder} pointerEvents="none" />
                 <Text style={styles.statValue}>{counts[f.id]}</Text>
-                <Text style={styles.statLabel}>{f.label}</Text>
+                <Text style={styles.statLabel}>{t(`adminUsers.${f.labelKey}`)}</Text>
               </LinearGradient>
             </TouchableOpacity>
           );
@@ -126,7 +128,7 @@ export default function AdminUsersScreen({ navigation }) {
         ) : users.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="people-outline" size={48} color={colors.muted} />
-            <Text style={styles.emptyText}>No users match.</Text>
+            <Text style={styles.emptyText}>{t('adminUsers.noUsers')}</Text>
           </View>
         ) : (
           users.map((u) => (
@@ -152,7 +154,10 @@ export default function AdminUsersScreen({ navigation }) {
                   <Text style={styles.name}>{u.name}</Text>
                   <Text style={styles.email}>{u.email}</Text>
                   <Text style={styles.meta}>
-                    {u.orders || 0} orders · ₹{(u.totalSpent || 0).toLocaleString()} spent
+                    {t('adminUsers.meta', {
+                      orders: u.orders || 0,
+                      spent: (u.totalSpent || 0).toLocaleString(),
+                    })}
                   </Text>
                 </View>
                 <View
@@ -172,7 +177,7 @@ export default function AdminUsersScreen({ navigation }) {
                       { color: u.status === 'active' ? '#34D399' : colors.danger },
                     ]}
                   >
-                    {u.status === 'active' ? 'Active' : 'Blocked'}
+                    {u.status === 'active' ? t('adminUsers.statusActive') : t('adminUsers.statusBlocked')}
                   </Text>
                 </View>
               </LinearGradient>

@@ -12,9 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from '../components/Gradient';
-import { colors, gradients } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../state/AuthContext';
 import useResendTimer from '../hooks/useResendTimer';
+import { useI18n } from '../i18n/LanguageContext';
 
 // After a code is sent, hold the user on this screen for a short window so they
 // can't bounce back to the form and re-request a code that would invalidate the
@@ -22,6 +23,8 @@ import useResendTimer from '../hooks/useResendTimer';
 const BACK_LOCK_SECONDS = 30;
 
 export default function SignupOtpScreen({ navigation, route }) {
+  const { colors, gradients } = useTheme();
+  const { t } = useI18n();
   const { verifyOtp, requestOtp, registerOnly } = useAuth();
   const { name, phone, email, password } = route.params || {};
 
@@ -80,7 +83,7 @@ export default function SignupOtpScreen({ navigation, route }) {
   const onBack = () => {
     if (locked) {
       setNotice('');
-      return setError(`Please wait ${lockLeft}s before going back`);
+      return setError(t('signupOtp.waitBeforeBack', { count: lockLeft }));
     }
     navigation.goBack();
   };
@@ -92,10 +95,10 @@ export default function SignupOtpScreen({ navigation, route }) {
     setBusy(true);
     try {
       await requestOtp(email);
-      setNotice('A new code has been sent');
+      setNotice(t('signupOtp.newCodeSent'));
       resendTimer.start();
     } catch (e) {
-      setError(e.message || 'Could not resend the code');
+      setError(e.message || t('signupOtp.resendFailed'));
     } finally {
       setBusy(false);
     }
@@ -104,7 +107,7 @@ export default function SignupOtpScreen({ navigation, route }) {
   const verifyAndCreate = async () => {
     setError('');
     setNotice('');
-    if (code.trim().length < 4) return setError('Enter the code from your email');
+    if (!/^\d{4,8}$/.test(code.trim())) return setError(t('signupOtp.enterCodeFromEmail'));
 
     setBusy(true);
     try {
@@ -116,10 +119,10 @@ export default function SignupOtpScreen({ navigation, route }) {
       allowLeaveRef.current = true;
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Login', params: { notice: 'Account created — please log in' } }],
+        routes: [{ name: 'Login', params: { notice: t('signupOtp.accountCreated') } }],
       });
     } catch (e) {
-      setError(e.message || 'Verification failed');
+      setError(e.message || t('signupOtp.verificationFailed'));
     } finally {
       setBusy(false);
     }
@@ -156,9 +159,9 @@ export default function SignupOtpScreen({ navigation, route }) {
                 <Text className="text-white text-xs font-bold">{lockLeft}s</Text>
               </View>
             ) : null}
-            <Text className="text-white text-2xl font-extrabold mt-lg">Verify your email</Text>
+            <Text className="text-white text-2xl font-extrabold mt-lg">{t('signupOtp.title')}</Text>
             <Text className="text-[#EAF4FF] text-sm mt-1.5">
-              Enter the 6-digit code we sent to {email}
+              {t('signupOtp.subtitle', { email })}
             </Text>
           </LinearGradient>
 
@@ -167,7 +170,7 @@ export default function SignupOtpScreen({ navigation, route }) {
               <Ionicons name="keypad-outline" size={18} color={colors.muted} />
               <TextInput
                 className="flex-1 py-3.5 text-text text-[18px] tracking-[6px]"
-                placeholder="------"
+                placeholder={t('signupOtp.codePlaceholder')}
                 placeholderTextColor={colors.muted}
                 keyboardType="number-pad"
                 maxLength={6}
@@ -192,7 +195,9 @@ export default function SignupOtpScreen({ navigation, route }) {
                   resendTimer.active ? 'text-muted' : 'text-primary'
                 }`}
               >
-                {resendTimer.active ? `Resend code in ${resendTimer.secondsLeft}s` : 'Resend code'}
+                {resendTimer.active
+                  ? t('signupOtp.resendIn', { count: resendTimer.secondsLeft })
+                  : t('signupOtp.resendCode')}
               </Text>
             </TouchableOpacity>
 
@@ -213,7 +218,7 @@ export default function SignupOtpScreen({ navigation, route }) {
                 {busy ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text className="text-white text-[15px] font-bold">Verify &amp; create account</Text>
+                  <Text className="text-white text-[15px] font-bold">{t('signupOtp.verifyAndCreate')}</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>

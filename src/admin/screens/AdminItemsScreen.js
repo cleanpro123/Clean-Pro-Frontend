@@ -20,11 +20,14 @@ import AdminHeader from '../components/AdminHeader';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const categories = ['All', 'Men', 'Women', 'Home'];
 const formCategories = ['Men', 'Women', 'Home'];
 
 export default function AdminItemsScreen({ navigation }) {
+  const { t } = useI18n();
+  const catLabel = (c) => t(`adminItems.category${c}`);
   const [items, setItems] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,11 +65,11 @@ export default function AdminItemsScreen({ navigation }) {
   const toggle = (it) => {
     const next = !it.active;
     confirmAction({
-      title: next ? 'Enable item?' : 'Disable item?',
+      title: next ? t('adminItems.enableTitle') : t('adminItems.disableTitle'),
       message: next
-        ? `${it.name} will be available for customer orders.`
-        : `${it.name} will be hidden from new orders.`,
-      confirmLabel: next ? 'Enable' : 'Disable',
+        ? t('adminItems.enableMessage', { name: it.name })
+        : t('adminItems.disableMessage', { name: it.name }),
+      confirmLabel: next ? t('adminItems.enable') : t('adminItems.disable'),
       destructive: !next,
       onConfirm: async () => {
         const updated = await api.patch(`/items/${it.id}`, { active: next });
@@ -77,17 +80,22 @@ export default function AdminItemsScreen({ navigation }) {
 
   const save = async () => {
     setError('');
-    if (!form.name.trim()) {
-      setError('Item name is required.');
+    if (form.name.trim().length < 2) {
+      setError(t('adminItems.nameRequired'));
+      return;
+    }
+    // Keep only valid positive prices; require at least one.
+    const prices = {};
+    Object.entries(form.prices).forEach(([k, v]) => {
+      const n = Number(v);
+      if (Number.isFinite(n) && n > 0) prices[k] = n;
+    });
+    if (Object.keys(prices).length === 0) {
+      setError(t('adminItems.priceRequired'));
       return;
     }
     setBusy(true);
     try {
-      const prices = {};
-      Object.entries(form.prices).forEach(([k, v]) => {
-        const n = Number(v);
-        if (Number.isFinite(n) && n > 0) prices[k] = n;
-      });
       await api.post('/items', {
         name: form.name,
         category: form.category,
@@ -106,7 +114,7 @@ export default function AdminItemsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AdminHeader
-        title="Items & pricing"
+        title={t('adminItems.title')}
         onBack={() => navigation.goBack()}
         rightAction={{ icon: 'add-circle-outline', onPress: () => setAdding(true) }}
       />
@@ -126,7 +134,7 @@ export default function AdminItemsScreen({ navigation }) {
                 activeOpacity={0.85}
                 style={[styles.tab, active && styles.tabActive]}
               >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{c}</Text>
+                <Text style={[styles.tabText, active && styles.tabTextActive]}>{catLabel(c)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -145,7 +153,7 @@ export default function AdminItemsScreen({ navigation }) {
         ) : visible.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="pricetags-outline" size={48} color={colors.muted} />
-            <Text style={styles.emptyText}>No items in this category.</Text>
+            <Text style={styles.emptyText}>{t('adminItems.empty')}</Text>
           </View>
         ) : (
           visible.map((it) => (
@@ -168,10 +176,10 @@ export default function AdminItemsScreen({ navigation }) {
                     </Text>
                     <View style={styles.metaRow}>
                       <View style={styles.catChipMini}>
-                        <Text style={styles.catChipMiniText}>{it.category}</Text>
+                        <Text style={styles.catChipMiniText}>{catLabel(it.category)}</Text>
                       </View>
                       <Text style={styles.statusLabel}>
-                        {it.active ? 'Available' : 'Disabled'}
+                        {it.active ? t('adminItems.available') : t('adminItems.disabled')}
                       </Text>
                     </View>
                   </View>
@@ -200,7 +208,7 @@ export default function AdminItemsScreen({ navigation }) {
                             !val && styles.servicePriceMuted,
                           ]}
                         >
-                          {val ? `₹${val}` : '—'}
+                          {val ? `QAR ${val}` : '—'}
                         </Text>
                       </View>
                     );
@@ -226,19 +234,19 @@ export default function AdminItemsScreen({ navigation }) {
               style={styles.modal}
             >
               <View style={styles.modalBorder} pointerEvents="none" />
-              <Text style={styles.modalTitle}>New item</Text>
+              <Text style={styles.modalTitle}>{t('adminItems.newItem')}</Text>
 
               <View style={styles.inputWrap}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Item name"
+                  placeholder={t('adminItems.itemNamePlaceholder')}
                   placeholderTextColor={colors.muted}
                   value={form.name}
                   onChangeText={(v) => setForm((p) => ({ ...p, name: v }))}
                 />
               </View>
 
-              <Text style={styles.fieldLabel}>Category</Text>
+              <Text style={styles.fieldLabel}>{t('adminItems.categoryLabel')}</Text>
               <View style={styles.catRow}>
                 {formCategories.map((c) => {
                   const active = form.category === c;
@@ -249,14 +257,14 @@ export default function AdminItemsScreen({ navigation }) {
                       style={[styles.catChip, active && styles.catChipActive]}
                     >
                       <Text style={[styles.catChipText, active && styles.catChipTextActive]}>
-                        {c}
+                        {catLabel(c)}
                       </Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
-              <Text style={styles.fieldLabel}>Price per service</Text>
+              <Text style={styles.fieldLabel}>{t('adminItems.pricePerService')}</Text>
               {services.map((svc) => (
                 <View key={svc.key} style={styles.servicePriceFormRow}>
                   <View style={styles.serviceIconBubble}>
@@ -264,7 +272,7 @@ export default function AdminItemsScreen({ navigation }) {
                   </View>
                   <Text style={styles.servicePriceFormLabel}>{svc.name}</Text>
                   <View style={[styles.inputWrap, styles.servicePriceInput]}>
-                    <Text style={styles.currency}>₹</Text>
+                    <Text style={styles.currency}>QAR </Text>
                     <TextInput
                       style={[styles.input, { flex: 1, paddingLeft: 4 }]}
                       placeholder="0"
@@ -290,7 +298,7 @@ export default function AdminItemsScreen({ navigation }) {
                   onPress={() => setAdding(false)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>{t('adminItems.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalBtn, styles.saveBtn]}
@@ -298,7 +306,7 @@ export default function AdminItemsScreen({ navigation }) {
                   disabled={busy}
                   activeOpacity={0.85}
                 >
-                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>Add item</Text>}
+                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>{t('adminItems.addItem')}</Text>}
                 </TouchableOpacity>
               </View>
             </LinearGradient>

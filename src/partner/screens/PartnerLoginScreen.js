@@ -6,8 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients, radii, spacing } from '../../shared/theme/dark';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function PartnerLoginScreen({ navigation }) {
+  const { t } = useI18n();
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <LinearGradient
@@ -19,23 +21,23 @@ export default function PartnerLoginScreen({ navigation }) {
         <View style={styles.logoBubble}>
           <Ionicons name="briefcase-outline" size={34} color={colors.primary} />
         </View>
-        <Text style={styles.heroTitle}>Clean Pro Partner</Text>
-        <Text style={styles.heroSub}>Admin &amp; agent workspace</Text>
+        <Text style={styles.heroTitle}>{t('partnerLogin.heroTitle')}</Text>
+        <Text style={styles.heroSub}>{t('partnerLogin.heroSub')}</Text>
       </LinearGradient>
 
       <View style={styles.body}>
-        <Text style={styles.prompt}>Sign in as</Text>
+        <Text style={styles.prompt}>{t('partnerLogin.prompt')}</Text>
 
         <RoleButton
           icon="shield-checkmark-outline"
-          title="Admin"
-          sub="Manage services, agents, orders & approvals"
+          title={t('partnerLogin.adminTitle')}
+          sub={t('partnerLogin.adminSub')}
           onPress={() => navigation.navigate('AdminLogin')}
         />
         <RoleButton
           icon="bicycle-outline"
-          title="Agent"
-          sub="View and complete assigned pickups & deliveries"
+          title={t('partnerLogin.agentTitle')}
+          sub={t('partnerLogin.agentSub')}
           onPress={() => navigation.navigate('AgentLogin')}
         />
       </View>

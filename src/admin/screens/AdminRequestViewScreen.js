@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   Linking,
   Modal,
   KeyboardAvoidingView,
@@ -16,8 +17,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
 import { colors, radii, spacing } from '../../shared/theme/dark';
+import MapPreview from '../../shared/components/MapPreview';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const statusMeta = {
   pending: { label: 'Pending', color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.15)' },
@@ -62,12 +65,16 @@ function ActionBtn({ label, icon, onPress }) {
 }
 
 export default function AdminRequestViewScreen({ route, navigation }) {
+  const { t } = useI18n();
   const id = route.params?.id;
   const [req, setReq] = useState(null);
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [agentModalVisible, setAgentModalVisible] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [priceModalVisible, setPriceModalVisible] = useState(false);
+  const [priceInput, setPriceInput] = useState('');
+  const [savingPrice, setSavingPrice] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -89,18 +96,46 @@ export default function AdminRequestViewScreen({ route, navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <AdminHeader title="Request details" onBack={() => navigation.goBack()} />
+        <AdminHeader title={t('adminRequestView.requestDetails')} onBack={() => navigation.goBack()} />
         <ActivityIndicator color={colors.muted} style={{ marginTop: 32 }} />
       </SafeAreaView>
     );
   }
   if (!req) return null;
   const meta = statusMeta[req.status] || statusMeta.pending;
+  const statusKey = statusMeta[req.status] ? req.status : 'pending';
+  // Price is editable until the order is delivered or cancelled.
+  const canEditPrice = req.status !== 'delivered' && req.status !== 'cancelled';
+
+  const openPriceModal = () => {
+    setPriceInput(String(req.total ?? ''));
+    setPriceModalVisible(true);
+  };
+
+  const savePrice = async () => {
+    const value = Number(priceInput);
+    if (!Number.isFinite(value) || value < 0) return;
+    setSavingPrice(true);
+    try {
+      const updated = await api.patch(`/requests/${req.id}/total`, { total: value });
+      setReq(updated);
+      setPriceModalVisible(false);
+    } catch (e) {
+      confirmAction({
+        title: t('adminRequestView.priceUpdateFailed'),
+        message: e.message || '',
+        hideCancel: true,
+        confirmLabel: t('common.gotIt'),
+      });
+    } finally {
+      setSavingPrice(false);
+    }
+  };
 
   const setStatus = (status) => {
     confirmAction({
-      title: `Set status to ${status}?`,
-      confirmLabel: 'Update',
+      title: t('adminRequestView.setStatusConfirm', { status }),
+      confirmLabel: t('adminRequestView.update'),
       onConfirm: async () => {
         const updated = await api.patch(`/requests/${req.id}/status`, { status });
         setReq(updated);
@@ -121,9 +156,9 @@ export default function AdminRequestViewScreen({ route, navigation }) {
     const isChange = !!req.agentId;
     confirmAction({
       title: isChange
-        ? `Change agent to ${agent?.name || 'this agent'}?`
-        : `Assign to ${agent?.name || 'this agent'}?`,
-      confirmLabel: isChange ? 'Change' : 'Assign',
+        ? t('adminRequestView.changeAgentConfirm', { name: agent?.name || t('adminRequestView.thisAgent') })
+        : t('adminRequestView.assignConfirm', { name: agent?.name || t('adminRequestView.thisAgent') }),
+      confirmLabel: isChange ? t('adminRequestView.change') : t('adminRequestView.assign'),
       onConfirm: async () => {
         setAssigning(true);
         try {
@@ -143,7 +178,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
   const addressDetail = addr
     ? [addr.line1, addr.line2, addr.area, addr.pincode].filter(Boolean).join(', ')
     : '';
-  const addressTitle = addr?.label || 'Address unavailable';
+  const addressTitle = addr?.label || t('adminRequestView.addressUnavailable');
   const mapsQuery = [addressTitle, addressDetail].filter(Boolean).join(', ');
 
   // Group items by service
@@ -162,29 +197,33 @@ export default function AdminRequestViewScreen({ route, navigation }) {
         </TouchableOpacity>
         <Text style={styles.title}>{req.code}</Text>
         <View style={[styles.statusPill, { backgroundColor: meta.bg }]}>
-          <Text style={[styles.statusText, { color: meta.color }]}>{meta.label}</Text>
+          <Text style={[styles.statusText, { color: meta.color }]}>{t('adminRequestView.status_' + statusKey)}</Text>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <PillRow icon="person">
-          <Text style={styles.pillValue}>{req.customerName}</Text>
+          <Text style={styles.pillValue}>{req.userId?.name || t('adminRequestView.customer')}</Text>
         </PillRow>
         <PillRow
           icon="call"
-          onPress={() => Linking.openURL(`tel:${(req.phone || '').replace(/\s/g, '')}`)}
+          onPress={() => Linking.openURL(`tel:${(req.userId?.phone || '').replace(/\s/g, '')}`)}
         >
-          <Text style={styles.pillValue}>{req.phone}</Text>
+          <Text style={styles.pillValue}>{req.userId?.phone || '—'}</Text>
         </PillRow>
-        <PillRow
-          icon="location-sharp"
-          onPress={() =>
-            Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(mapsQuery)}`)
-          }
-        >
-          <Text style={styles.pillValue}>{addressTitle}</Text>
-          {!!addressDetail && <Text style={styles.itemSub}>{addressDetail}</Text>}
-        </PillRow>
+        {!!req.note && (
+          <PillRow icon="document-text">
+            <Text style={styles.pillLabel}>{t('adminRequestView.noteForAgent')}</Text>
+            <Text style={styles.pillValue}>{req.note}</Text>
+          </PillRow>
+        )}
+        {addr ? (
+          <MapPreview place={mapsQuery} lat={addr?.lat} lng={addr?.lng} />
+        ) : (
+          <PillRow icon="location-sharp">
+            <Text style={styles.pillValue}>{addressTitle}</Text>
+          </PillRow>
+        )}
 
         {req.agentId ? (() => {
           const ag = agents.find((a) => a.id === req.agentId);
@@ -210,7 +249,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
           >
             <View style={styles.itemsBorder} pointerEvents="none" />
             {groupEntries.length === 0 ? (
-              <Text style={styles.emptyText}>No items in this request.</Text>
+              <Text style={styles.emptyText}>{t('adminRequestView.noItems')}</Text>
             ) : (
               groupEntries.map(([service, items], si) => (
                 <View
@@ -232,15 +271,24 @@ export default function AdminRequestViewScreen({ route, navigation }) {
                       <Text style={styles.itemQty}>
                         {String(it.qty).padStart(2, '0')}
                       </Text>
-                      <Text style={styles.itemPrice}>₹ {it.price * it.qty}</Text>
+                      <Text style={styles.itemPrice}>QAR {it.price * it.qty}</Text>
                     </View>
                   ))}
                 </View>
               ))
             )}
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>₹ {req.total}</Text>
+              <Text style={styles.totalLabel}>{t('adminRequestView.total')}</Text>
+              <Text style={styles.totalValue}>QAR {req.total}</Text>
+              {canEditPrice && (
+                <TouchableOpacity
+                  onPress={openPriceModal}
+                  hitSlop={10}
+                  style={styles.editPriceBtn}
+                >
+                  <Ionicons name="create-outline" size={16} color={colors.text} />
+                </TouchableOpacity>
+              )}
             </View>
           </LinearGradient>
         </View>
@@ -248,18 +296,18 @@ export default function AdminRequestViewScreen({ route, navigation }) {
         <View style={styles.actions}>
           {req.status === 'pending' && (
             <>
-              <ActionBtn label="Accept" icon="checkmark" onPress={() => setStatus('accepted')} />
-              <ActionBtn label="Cancel" icon="ban" onPress={() => setStatus('cancelled')} />
+              <ActionBtn label={t('adminRequestView.accept')} icon="checkmark" onPress={() => setStatus('accepted')} />
+              <ActionBtn label={t('adminRequestView.cancel')} icon="ban" onPress={() => setStatus('cancelled')} />
             </>
           )}
           {req.status === 'assigned' && (
-            <ActionBtn label="Mark in progress" icon="hammer" onPress={() => setStatus('in_progress')} />
+            <ActionBtn label={t('adminRequestView.markInProgress')} icon="hammer" onPress={() => setStatus('in_progress')} />
           )}
           {req.status === 'in_progress' && (
-            <ActionBtn label="Out for delivery" icon="car" onPress={() => setStatus('out_for_delivery')} />
+            <ActionBtn label={t('adminRequestView.outForDelivery')} icon="car" onPress={() => setStatus('out_for_delivery')} />
           )}
           {req.status === 'out_for_delivery' && (
-            <ActionBtn label="Delivered" icon="checkmark-done" onPress={() => setStatus('delivered')} />
+            <ActionBtn label={t('adminRequestView.delivered')} icon="checkmark-done" onPress={() => setStatus('delivered')} />
           )}
         </View>
 
@@ -268,7 +316,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
         {req.status !== 'delivered' && req.status !== 'cancelled' && (
           <View style={styles.actions}>
             <ActionBtn
-              label={req.agentId ? 'Change agent' : 'Assign agent'}
+              label={req.agentId ? t('adminRequestView.changeAgent') : t('adminRequestView.assignAgent')}
               icon="people"
               onPress={() => setAgentModalVisible(true)}
             />
@@ -300,10 +348,10 @@ export default function AdminRequestViewScreen({ route, navigation }) {
               style={styles.modal}
             >
               <View style={styles.modalBorder} pointerEvents="none" />
-              <Text style={styles.modalTitle}>Select agent</Text>
+              <Text style={styles.modalTitle}>{t('adminRequestView.selectAgent')}</Text>
               <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
                 {agents.length === 0 ? (
-                  <Text style={styles.emptyText}>No agents available.</Text>
+                  <Text style={styles.emptyText}>{t('adminRequestView.noAgents')}</Text>
                 ) : (
                   agents.map((a) => {
                     const current = a.id === req.agentId;
@@ -340,8 +388,65 @@ export default function AdminRequestViewScreen({ route, navigation }) {
                 disabled={assigning}
               >
                 <Text style={styles.cancelText}>
-                  {assigning ? 'Assigning…' : 'Cancel'}
+                  {assigning ? t('adminRequestView.assigning') : t('adminRequestView.cancel')}
                 </Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={priceModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPriceModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalRoot}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setPriceModalVisible(false)}
+          />
+          <View style={styles.modalShadow}>
+            <LinearGradient
+              colors={['#2B3F6E', '#1B2B52']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.modal}
+            >
+              <View style={styles.modalBorder} pointerEvents="none" />
+              <Text style={styles.modalTitle}>{t('adminRequestView.editTotal')}</Text>
+              <View style={styles.priceInputRow}>
+                <Text style={styles.priceCurrency}>QAR</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  value={priceInput}
+                  onChangeText={(v) => setPriceInput(v.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                  placeholder="0"
+                  placeholderTextColor={colors.muted}
+                  autoFocus
+                />
+              </View>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.savePriceBtn]}
+                onPress={savePrice}
+                disabled={savingPrice}
+              >
+                <Text style={styles.savePriceText}>
+                  {savingPrice ? t('adminRequestView.saving') : t('common.save')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.cancelBtn]}
+                onPress={() => setPriceModalVisible(false)}
+                disabled={savingPrice}
+              >
+                <Text style={styles.cancelText}>{t('adminRequestView.cancel')}</Text>
               </TouchableOpacity>
             </LinearGradient>
           </View>
@@ -375,6 +480,20 @@ const styles = StyleSheet.create({
   itemIdx: { color: colors.muted, fontSize: 12, width: 28, fontWeight: '300' },
   itemName: { color: colors.text, flex: 1, fontSize: 13, fontWeight: '300' },
   itemSub: { color: colors.muted, fontSize: 11, fontWeight: '300', marginTop: 2 },
+  mapsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  mapsBtnText: { color: colors.text, fontSize: 12, fontWeight: '400', letterSpacing: 0.3 },
   itemQty: { color: colors.muted, fontSize: 12, width: 30, textAlign: 'center', fontWeight: '300' },
   itemPrice: { color: colors.text, width: 70, textAlign: 'right', fontSize: 13, fontWeight: '300' },
   totalRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.10)', gap: spacing.md },
@@ -396,4 +515,10 @@ const styles = StyleSheet.create({
   modalBtn: { paddingVertical: 12, borderRadius: radii.md, alignItems: 'center', borderWidth: 1 },
   cancelBtn: { borderColor: 'rgba(255, 255, 255, 0.20)', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
   cancelText: { color: colors.muted, fontWeight: '400', letterSpacing: 0.5 },
+  editPriceBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)' },
+  priceInputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: spacing.md, marginBottom: spacing.md },
+  priceCurrency: { color: colors.muted, fontSize: 15, fontWeight: '600' },
+  priceInput: { flex: 1, color: colors.text, fontSize: 20, fontWeight: '600', paddingVertical: 12 },
+  savePriceBtn: { borderColor: 'rgba(52, 211, 153, 0.45)', backgroundColor: 'rgba(15, 118, 110, 0.35)', marginBottom: spacing.sm },
+  savePriceText: { color: '#34D399', fontWeight: '700', letterSpacing: 0.5 },
 });

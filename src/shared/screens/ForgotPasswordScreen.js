@@ -12,9 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from '../components/Gradient';
-import { colors, gradients } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../state/AuthContext';
 import useResendTimer from '../hooks/useResendTimer';
+import { useI18n } from '../i18n/LanguageContext';
 
 // After the code is sent, hold the user on the verify step for a short window so
 // they can't go back and re-request a code that would invalidate the one they
@@ -22,8 +23,10 @@ import useResendTimer from '../hooks/useResendTimer';
 const BACK_LOCK_SECONDS = 30;
 
 export default function ForgotPasswordScreen({ navigation, route }) {
+  const { colors, gradients } = useTheme();
   const { requestOtp, verifyOtp, resetPassword, logout } = useAuth();
   const resendTimer = useResendTimer(60);
+  const { t } = useI18n();
 
   // When reached from the signed-in "Change password" flow we already know the
   // account email, so it's passed in and locked. `mode === 'change'` also tells
@@ -83,7 +86,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   const onBack = () => {
     if (locked) {
       setNotice('');
-      return setError(`Please wait ${lockLeft}s before going back`);
+      return setError(t('forgot.waitBeforeBack', { seconds: lockLeft }));
     }
     if (step > 1) return setStep(step - 1);
     navigation.goBack();
@@ -92,17 +95,17 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   const sendCode = async () => {
     setError('');
     setNotice('');
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Please enter a valid email');
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError(t('forgot.invalidEmail'));
     if (resendTimer.active) return; // still cooling down
     setBusy(true);
     try {
       await requestOtp(email.trim(), 'reset');
       setStep(2);
-      setNotice(`We sent a 6-digit code to ${email.trim()}`);
+      setNotice(t('forgot.codeSent', { email: email.trim() }));
       resendTimer.start();
       armBackLock();
     } catch (e) {
-      setError(e.message || 'Could not send the code');
+      setError(e.message || t('forgot.sendCodeError'));
     } finally {
       setBusy(false);
     }
@@ -113,14 +116,14 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   const verifyCode = async () => {
     setError('');
     setNotice('');
-    if (code.trim().length < 4) return setError('Enter the code from your email');
+    if (!/^\d{4,8}$/.test(code.trim())) return setError(t('forgot.enterCode'));
     setBusy(true);
     try {
       await verifyOtp(email.trim(), code.trim());
       setStep(3);
-      setNotice('Code verified — choose a new password');
+      setNotice(t('forgot.codeVerified'));
     } catch (e) {
-      setError(e.message || 'That code is not correct');
+      setError(e.message || t('forgot.codeIncorrect'));
     } finally {
       setBusy(false);
     }
@@ -131,43 +134,44 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   const submit = async () => {
     setError('');
     setNotice('');
-    if (password.length < 6) return setError('Password must be at least 6 characters');
-    if (!/[A-Za-z]/.test(password)) return setError('Password must include a letter');
-    if (!/\d/.test(password)) return setError('Password must include a number');
+    if (password.length < 6) return setError(t('forgot.pwMinLength'));
+    if (!/[A-Za-z]/.test(password)) return setError(t('forgot.pwLetter'));
+    if (!/\d/.test(password)) return setError(t('forgot.pwNumber'));
     if (!/[^A-Za-z0-9]/.test(password))
-      return setError('Password must include a symbol (e.g. !@#$)');
-    if (password !== confirm) return setError('Passwords do not match');
+      return setError(t('forgot.pwSymbol'));
+    if (password !== confirm) return setError(t('forgot.pwMismatch'));
     setBusy(true);
     try {
       await resetPassword(email.trim(), password);
       if (isChange) {
         // Signed-in change: signing out flips RootNavigator back to the Login
         // stack, so we don't (and can't) navigate to 'Login' from here.
-        setNotice('Password changed — please log in again');
+        setNotice(t('forgot.pwChanged'));
         await logout();
         return;
       }
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Login', params: { notice: 'Password updated — please log in' } }],
+        routes: [{ name: 'Login', params: { notice: t('forgot.pwUpdated') } }],
       });
     } catch (e) {
-      setError(e.message || 'Could not reset your password');
+      setError(e.message || t('forgot.resetError'));
     } finally {
       setBusy(false);
     }
   };
 
   const primaryAction = step === 1 ? sendCode : step === 2 ? verifyCode : submit;
-  const primaryLabel = step === 1 ? 'Send code' : step === 2 ? 'Verify code' : 'Reset password';
+  const primaryLabel =
+    step === 1 ? t('forgot.sendCode') : step === 2 ? t('forgot.verifyCode') : t('forgot.resetPassword');
   const subtitle =
     step === 1
       ? isChange
-        ? 'Send a verification code to your email to continue'
-        : 'Enter your email to get a verification code'
+        ? t('forgot.subtitleChangeEmail')
+        : t('forgot.subtitleEmail')
       : step === 2
-      ? 'Enter the 6-digit code we sent you'
-      : 'Choose a new password for your account';
+      ? t('forgot.subtitleCode')
+      : t('forgot.subtitlePassword');
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
@@ -201,7 +205,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
               </View>
             ) : null}
             <Text className="text-white text-2xl font-extrabold mt-lg">
-              {isChange ? 'Change password' : 'Reset password'}
+              {isChange ? t('forgot.changePassword') : t('forgot.resetPassword')}
             </Text>
             <Text className="text-[#EAF4FF] text-sm mt-1.5">{subtitle}</Text>
           </LinearGradient>
@@ -212,7 +216,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
                 <Ionicons name="mail-outline" size={18} color={colors.muted} />
                 <TextInput
                   className="flex-1 py-3.5 text-text text-[15px]"
-                  placeholder="Email"
+                  placeholder={t('forgot.emailPlaceholder')}
                   placeholderTextColor={colors.muted}
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -230,7 +234,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
                   <Ionicons name="keypad-outline" size={18} color={colors.muted} />
                   <TextInput
                     className="flex-1 py-3.5 text-text text-[16px] tracking-[4px]"
-                    placeholder="6-digit code"
+                    placeholder={t('forgot.codePlaceholder')}
                     placeholderTextColor={colors.muted}
                     keyboardType="number-pad"
                     maxLength={6}
@@ -249,7 +253,9 @@ export default function ForgotPasswordScreen({ navigation, route }) {
                       resendTimer.active ? 'text-muted' : 'text-primary'
                     }`}
                   >
-                    {resendTimer.active ? `Resend in ${resendTimer.secondsLeft}s` : 'Resend'}
+                    {resendTimer.active
+                      ? t('forgot.resendIn', { seconds: resendTimer.secondsLeft })
+                      : t('forgot.resend')}
                   </Text>
                 </TouchableOpacity>
               </>
@@ -259,7 +265,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
                   <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
                   <TextInput
                     className="flex-1 py-3.5 text-text text-[15px]"
-                    placeholder="New password"
+                    placeholder={t('forgot.newPasswordPlaceholder')}
                     placeholderTextColor={colors.muted}
                     secureTextEntry={!showPw}
                     value={password}
@@ -278,7 +284,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
                   <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
                   <TextInput
                     className="flex-1 py-3.5 text-text text-[15px]"
-                    placeholder="Confirm new password"
+                    placeholder={t('forgot.confirmPasswordPlaceholder')}
                     placeholderTextColor={colors.muted}
                     secureTextEntry={!showPw}
                     value={confirm}

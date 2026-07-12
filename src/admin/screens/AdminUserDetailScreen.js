@@ -15,6 +15,7 @@ import AdminHeader from '../components/AdminHeader';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 function PillRow({ icon, label, value, onPress }) {
   const Wrap = onPress ? TouchableOpacity : View;
@@ -41,6 +42,7 @@ function PillRow({ icon, label, value, onPress }) {
 }
 
 export default function AdminUserDetailScreen({ route, navigation }) {
+  const { t } = useI18n();
   const id = route.params?.id;
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -67,7 +69,7 @@ export default function AdminUserDetailScreen({ route, navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <AdminHeader title="User details" onBack={() => navigation.goBack()} />
+        <AdminHeader title={t('adminUserDetail.title')} onBack={() => navigation.goBack()} />
         <ActivityIndicator color={colors.muted} style={{ marginTop: 32 }} />
       </SafeAreaView>
     );
@@ -77,17 +79,34 @@ export default function AdminUserDetailScreen({ route, navigation }) {
 
   const toggleStatus = () =>
     confirmAction({
-      title: isActive ? 'Block user?' : 'Unblock user?',
+      title: isActive
+        ? t('adminUserDetail.blockUserTitle')
+        : t('adminUserDetail.unblockUserTitle'),
       message: isActive
-        ? `${user.name} will no longer be able to place orders.`
-        : `${user.name} will be able to place orders again.`,
-      confirmLabel: isActive ? 'Block' : 'Unblock',
+        ? t('adminUserDetail.blockUserMessage', { name: user.name })
+        : t('adminUserDetail.unblockUserMessage', { name: user.name }),
+      confirmLabel: isActive
+        ? t('adminUserDetail.block')
+        : t('adminUserDetail.unblock'),
       destructive: isActive,
       onConfirm: async () => {
         const updated = await api.patch(`/users/${user.id}/status`, {
           status: isActive ? 'blocked' : 'active',
         });
         setUser(updated);
+      },
+    });
+
+  const deleteUser = () =>
+    confirmAction({
+      title: t('adminUserDetail.deleteUserTitle'),
+      message: t('adminUserDetail.deleteUserMessage', { name: user.name }),
+      confirmLabel: t('adminUserDetail.delete'),
+      destructive: true,
+      countdown: 30,
+      onConfirm: async () => {
+        await api.delete(`/users/${user.id}`);
+        navigation.goBack();
       },
     });
 
@@ -131,51 +150,53 @@ export default function AdminUserDetailScreen({ route, navigation }) {
                   { color: isActive ? '#34D399' : colors.danger },
                 ]}
               >
-                {isActive ? 'Active' : 'Blocked'}
+                {isActive ? t('adminUserDetail.active') : t('adminUserDetail.blocked')}
               </Text>
             </View>
 
             <View style={styles.statsRow}>
               <View style={styles.stat}>
                 <Text style={styles.statValue}>{user.orders || 0}</Text>
-                <Text style={styles.statLabel}>Total orders</Text>
+                <Text style={styles.statLabel}>{t('adminUserDetail.totalOrders')}</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.stat}>
                 <Text style={styles.statValue}>
-                  ₹{(user.totalSpent || 0).toLocaleString()}
+                  QAR {(user.totalSpent || 0).toLocaleString()}
                 </Text>
-                <Text style={styles.statLabel}>Total spent</Text>
+                <Text style={styles.statLabel}>{t('adminUserDetail.totalSpent')}</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.stat}>
                 <Text style={styles.statValue}>
                   {user.createdAt ? new Date(user.createdAt).getFullYear() : '—'}
                 </Text>
-                <Text style={styles.statLabel}>Joined</Text>
+                <Text style={styles.statLabel}>{t('adminUserDetail.joined')}</Text>
               </View>
             </View>
           </LinearGradient>
         </View>
 
-        <Text style={styles.section}>Contact</Text>
+        <Text style={styles.section}>{t('adminUserDetail.contact')}</Text>
         <PillRow
           icon="call"
-          label="Phone"
+          label={t('adminUserDetail.phone')}
           value={user.phone}
           onPress={() => Linking.openURL(`tel:${(user.phone || '').replace(/\s/g, '')}`)}
         />
         <PillRow
           icon="mail"
-          label="Email"
+          label={t('adminUserDetail.email')}
           value={user.email}
           onPress={() => Linking.openURL(`mailto:${user.email}`)}
         />
 
-        <Text style={styles.section}>Recent orders ({orders.length})</Text>
+        <Text style={styles.section}>
+          {t('adminUserDetail.recentOrders', { count: orders.length })}
+        </Text>
         {orders.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>No orders from this user yet.</Text>
+            <Text style={styles.emptyText}>{t('adminUserDetail.noOrders')}</Text>
           </View>
         ) : (
           orders.slice(0, 5).map((o) => (
@@ -198,7 +219,7 @@ export default function AdminUserDetailScreen({ route, navigation }) {
                     {o.status} · {new Date(o.placedAt || o.createdAt).toLocaleDateString()}
                   </Text>
                 </View>
-                <Text style={styles.orderTotal}>₹{o.total}</Text>
+                <Text style={styles.orderTotal}>QAR {o.total}</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.muted} />
               </LinearGradient>
             </TouchableOpacity>
@@ -225,7 +246,28 @@ export default function AdminUserDetailScreen({ route, navigation }) {
             <Text
               style={[styles.actionText, { color: isActive ? '#F87171' : '#34D399' }]}
             >
-              {isActive ? 'Block this user' : 'Unblock this user'}
+              {isActive
+                ? t('adminUserDetail.blockThisUser')
+                : t('adminUserDetail.unblockThisUser')}
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={deleteUser}
+          style={[styles.pillShadow, { marginTop: spacing.md }]}
+        >
+          <LinearGradient
+            colors={['#5C1F1F', '#2D0F0F']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.actionBtn}
+          >
+            <View style={styles.pillBorder} pointerEvents="none" />
+            <Ionicons name="trash-outline" size={18} color="#F87171" />
+            <Text style={[styles.actionText, { color: '#F87171' }]}>
+              {t('adminUserDetail.deleteThisUser')}
             </Text>
           </LinearGradient>
         </TouchableOpacity>

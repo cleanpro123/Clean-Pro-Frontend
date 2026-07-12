@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,17 +12,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 // The user-facing journey of an order. Each backend status maps onto one of
 // these stages; everything up to and including the current stage is "done".
+// label/desc hold i18n keys resolved at render time.
 const STAGES = [
-  { id: 'placed', label: 'Order placed', desc: 'We received your order', icon: 'receipt-outline' },
-  { id: 'accepted', label: 'Order accepted', desc: 'A partner is handling your laundry', icon: 'thumbs-up-outline' },
-  { id: 'in_progress', label: 'In wash', desc: 'Your clothes are being cleaned', icon: 'water-outline' },
-  { id: 'out_for_delivery', label: 'Out for delivery', desc: 'On the way back to you', icon: 'bicycle-outline' },
-  { id: 'delivered', label: 'Delivered', desc: 'Order completed', icon: 'checkmark-circle-outline' },
+  { id: 'placed', label: 'orderDetail.stagePlacedLabel', desc: 'orderDetail.stagePlacedDesc', icon: 'receipt-outline' },
+  { id: 'accepted', label: 'orderDetail.stageAcceptedLabel', desc: 'orderDetail.stageAcceptedDesc', icon: 'thumbs-up-outline' },
+  { id: 'in_progress', label: 'orderDetail.stageInProgressLabel', desc: 'orderDetail.stageInProgressDesc', icon: 'water-outline' },
+  { id: 'out_for_delivery', label: 'orderDetail.stageOutForDeliveryLabel', desc: 'orderDetail.stageOutForDeliveryDesc', icon: 'bicycle-outline' },
+  { id: 'delivered', label: 'orderDetail.stageDeliveredLabel', desc: 'orderDetail.stageDeliveredDesc', icon: 'checkmark-circle-outline' },
 ];
 
 // Collapse the richer backend statuses onto the five customer-visible stages.
@@ -48,14 +51,15 @@ function stageIndex(status) {
   return Math.max(0, STAGES.findIndex((s) => s.id === statusToStage(status)));
 }
 
+// Maps backend status onto an i18n key resolved at render time.
 const STATUS_LABEL = {
-  pending: 'Pending',
-  accepted: 'Accepted',
-  assigned: 'Assigned',
-  in_progress: 'In wash',
-  out_for_delivery: 'Out for delivery',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
+  pending: 'orderDetail.statusPending',
+  accepted: 'orderDetail.statusAccepted',
+  assigned: 'orderDetail.statusAssigned',
+  in_progress: 'orderDetail.statusInProgress',
+  out_for_delivery: 'orderDetail.statusOutForDelivery',
+  delivered: 'orderDetail.statusDelivered',
+  cancelled: 'orderDetail.statusCancelled',
 };
 
 function fmtDate(d) {
@@ -70,6 +74,9 @@ function fmtDate(d) {
 }
 
 export default function OrderDetailScreen({ route, navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t, td } = useI18n();
   const orderId = route.params?.orderId;
   const [order, setOrder] = useState(route.params?.order || null);
   const [loading, setLoading] = useState(!route.params?.order);
@@ -99,7 +106,7 @@ export default function OrderDetailScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <DetailHeader navigation={navigation} />
-        <Text style={styles.emptyMsg}>Order not found.</Text>
+        <Text style={styles.emptyMsg}>{t('orderDetail.orderNotFound')}</Text>
       </SafeAreaView>
     );
   }
@@ -125,11 +132,11 @@ export default function OrderDetailScreen({ route, navigation }) {
 
   const payLabel =
     order.paymentMethod === 'cod'
-      ? 'Cash on delivery'
+      ? t('orderDetail.paymentCod')
       : order.paymentMethod === 'upi'
       ? 'UPI'
       : order.paymentMethod === 'card'
-      ? 'Card'
+      ? t('orderDetail.paymentCard')
       : order.paymentMethod || '—';
 
   return (
@@ -157,30 +164,30 @@ export default function OrderDetailScreen({ route, navigation }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.summaryCode}>{order.code}</Text>
               <Text style={styles.summarySub}>
-                {itemCount} item{itemCount === 1 ? '' : 's'} · ₹{order.total}
+                {t('orderDetail.summarySub', { count: itemCount, total: order.total })}
               </Text>
             </View>
             <View style={[styles.statusPill, cancelled && styles.statusPillCancel]}>
               <Text style={styles.statusPillText}>
-                {STATUS_LABEL[order.status] || order.status}
+                {STATUS_LABEL[order.status] ? t(STATUS_LABEL[order.status]) : order.status}
               </Text>
             </View>
           </View>
           <Text style={styles.summaryDate}>
-            Placed on {fmtDate(order.placedAt || order.createdAt)}
+            {t('orderDetail.placedOn', { date: fmtDate(order.placedAt || order.createdAt) })}
           </Text>
         </LinearGradient>
 
         {/* TRACKING TIMELINE */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Order status</Text>
+          <Text style={styles.cardTitle}>{t('orderDetail.orderStatus')}</Text>
           {cancelled ? (
             <View style={styles.cancelBox}>
               <Ionicons name="close-circle" size={20} color={colors.danger} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.cancelTitle}>Order cancelled</Text>
+                <Text style={styles.cancelTitle}>{t('orderDetail.orderCancelled')}</Text>
                 <Text style={styles.cancelSub}>
-                  This order was cancelled on {fmtDate(order.updatedAt)}.
+                  {t('orderDetail.cancelledOn', { date: fmtDate(order.updatedAt) })}
                 </Text>
               </View>
             </View>
@@ -213,10 +220,10 @@ export default function OrderDetailScreen({ route, navigation }) {
                     </View>
                     <View style={[styles.tlBody, !isLast && { paddingBottom: spacing.lg }]}>
                       <Text style={[styles.tlLabel, reached && styles.tlLabelActive]}>
-                        {stage.label}
+                        {t(stage.label)}
                       </Text>
                       <Text style={styles.tlDesc}>
-                        {current ? stage.desc : done ? 'Completed' : stage.desc}
+                        {current ? t(stage.desc) : done ? t('orderDetail.completed') : t(stage.desc)}
                       </Text>
                     </View>
                   </View>
@@ -228,40 +235,40 @@ export default function OrderDetailScreen({ route, navigation }) {
 
         {/* ITEMS */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Items</Text>
+          <Text style={styles.cardTitle}>{t('orderDetail.items')}</Text>
           {groupEntries.map(([service, items], si) => (
             <View
               key={service}
               style={si < groupEntries.length - 1 ? styles.serviceGroup : null}
             >
-              <Text style={styles.serviceLabel}>{service}</Text>
+              <Text style={styles.serviceLabel}>{td('service', service)}</Text>
               {items.map((it, idx) => (
                 <View key={idx} style={styles.itemRow}>
                   <Text style={styles.itemName} numberOfLines={1}>
-                    {it.name}
+                    {td('item', it.name)}
                   </Text>
                   <Text style={styles.itemQty}>×{it.qty}</Text>
-                  <Text style={styles.itemPrice}>₹{it.price * it.qty}</Text>
+                  <Text style={styles.itemPrice}>QAR {it.price * it.qty}</Text>
                 </View>
               ))}
             </View>
           ))}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>₹{order.total}</Text>
+            <Text style={styles.totalLabel}>{t('orderDetail.total')}</Text>
+            <Text style={styles.totalValue}>QAR {order.total}</Text>
           </View>
         </View>
 
         {/* PICKUP ADDRESS */}
         {addr && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Pickup address</Text>
+            <Text style={styles.cardTitle}>{t('orderDetail.pickupAddress')}</Text>
             <View style={styles.infoRow}>
               <View style={styles.infoIcon}>
                 <Ionicons name="location-outline" size={18} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.infoTitle}>{addr.label || 'Address'}</Text>
+                <Text style={styles.infoTitle}>{addr.label || t('orderDetail.address')}</Text>
                 {!!addressDetail && <Text style={styles.infoSub}>{addressDetail}</Text>}
               </View>
             </View>
@@ -270,20 +277,23 @@ export default function OrderDetailScreen({ route, navigation }) {
 
         {/* ORDER INFO */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Order info</Text>
-          <InfoLine icon="person-outline" label="Customer" value={order.customerName} />
+          <Text style={styles.cardTitle}>{t('orderDetail.orderInfo')}</Text>
+          <InfoLine icon="person-outline" label={t('orderDetail.customer')} value={order.userId?.name || t('orderDetail.you')} />
           <InfoLine
             icon="call-outline"
-            label="Phone"
-            value={order.phone}
+            label={t('orderDetail.phone')}
+            value={order.userId?.phone || '—'}
             onPress={() =>
-              order.phone &&
-              Linking.openURL(`tel:${String(order.phone).replace(/\s/g, '')}`)
+              order.userId?.phone &&
+              Linking.openURL(`tel:${String(order.userId.phone).replace(/\s/g, '')}`)
             }
           />
-          <InfoLine icon="wallet-outline" label="Payment" value={payLabel} />
+          <InfoLine icon="wallet-outline" label={t('orderDetail.payment')} value={payLabel} />
           {!!order.pickupSlot && (
-            <InfoLine icon="time-outline" label="Pickup slot" value={order.pickupSlot} />
+            <InfoLine icon="time-outline" label={t('orderDetail.pickupSlot')} value={order.pickupSlot} />
+          )}
+          {!!order.note && (
+            <InfoLine icon="document-text-outline" label={t('orderDetail.noteForAgent')} value={order.note} />
           )}
         </View>
 
@@ -300,7 +310,7 @@ export default function OrderDetailScreen({ route, navigation }) {
               style={styles.rateBtn}
             >
               <Ionicons name="star-outline" size={18} color={colors.card} />
-              <Text style={styles.rateBtnText}>Rate this order</Text>
+              <Text style={styles.rateBtnText}>{t('orderDetail.rateThisOrder')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -310,13 +320,16 @@ export default function OrderDetailScreen({ route, navigation }) {
 }
 
 function DetailHeader({ navigation, code }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useI18n();
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back} activeOpacity={0.8}>
         <Ionicons name="arrow-back" size={22} color={colors.text} />
       </TouchableOpacity>
       <View style={{ flex: 1 }}>
-        <Text style={styles.headerTitle}>Order details</Text>
+        <Text style={styles.headerTitle}>{t('orderDetail.orderDetails')}</Text>
         {!!code && <Text style={styles.headerSub}>{code}</Text>}
       </View>
     </View>
@@ -324,6 +337,8 @@ function DetailHeader({ navigation, code }) {
 }
 
 function InfoLine({ icon, label, value, onPress }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const Wrap = onPress ? TouchableOpacity : View;
   return (
     <Wrap style={styles.infoRow} onPress={onPress} activeOpacity={0.7}>
@@ -338,7 +353,7 @@ function InfoLine({ icon, label, value, onPress }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },

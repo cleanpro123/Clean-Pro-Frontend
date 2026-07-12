@@ -12,10 +12,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
+import { useI18n } from '../../shared/i18n/LanguageContext';
+import DayPickerModal from '../../shared/components/DayPickerModal';
 import { colors, gradients, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
-
-const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+import {
+  PERIODS,
+  dayLabels,
+  startOfDay,
+  addDays,
+  rangeFor,
+  countIn,
+  buildLast7Days,
+} from '../../shared/utils/period';
 
 const statusMeta = {
   pending: { label: 'Pending', color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.15)' },
@@ -27,6 +36,16 @@ const statusMeta = {
   cancelled: { label: 'Cancelled', color: '#F87171', bg: 'rgba(248, 113, 113, 0.18)' },
 };
 
+// Y-axis in fixed steps of 40 (0, 40, 80, 120, …). axisMax rounds the data up
+// to the next multiple of 40 so the bars still scale to whatever's there.
+function niceAxis(max) {
+  const STEP = 40;
+  const axisMax = Math.max(STEP, Math.ceil((max || 0) / STEP) * STEP);
+  const ticks = [];
+  for (let v = 0; v <= axisMax; v += STEP) ticks.push(v);
+  return { axisMax, ticks };
+}
+
 function StatCard({ label, value, icon, tint }) {
   return (
     <View style={[styles.stat, { backgroundColor: tint }]}>
@@ -37,48 +56,28 @@ function StatCard({ label, value, icon, tint }) {
   );
 }
 
-function startOfDay(d) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
-function buildLast7Days(orders) {
-  const today = startOfDay(new Date());
-  // bucket by day (last 7, oldest first)
-  const buckets = [];
-  for (let i = 6; i >= 0; i--) {
-    const start = new Date(today);
-    start.setDate(today.getDate() - i);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 1);
-    buckets.push({ start, end, total: 0, count: 0, dow: start.getDay() });
-  }
-  
-  for (const o of orders) {
-      const t = new Date(o.placedAt || o.createdAt);
-    const b = buckets.find((x) => t >= x.start && t < x.end);
-    if (b) {
-      b.total += o.total || 0;
-      b.count += 1;
-    } 
-  }
-   return buckets;
-}
-
 export default function AdminDashboardScreen({ navigation }) {
+  const { t } = useI18n();
   const [orders, setOrders] = useState([]);
   const [agentsCount, setAgentsCount] = useState({ total: 0, active: 0 });
   const [usersCount, setUsersCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const [period, setPeriod] = useState('today');
+  const [customDate, setCustomDate] = useState(startOfDay(new Date()));
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Bumped on every load so the stats effect refetches on refresh/focus too,
+  // not only when the selected period changes.
+  const [statsTick, setStatsTick] = useState(0);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [o, a, u] = await Promise.all([
-        api.get('/requests').catch(() => []),
-        api.get('/agents').catch(() => []),
-        api.get('/users').catch(() => []),
+        api.getAll('/requests').catch(() => []),
+        api.getAll('/agents').catch(() => []),
+        api.getAll('/users').catch(() => []),
       ]);
       setOrders(o);
       setAgentsCount({
@@ -86,6 +85,7 @@ export default function AdminDashboardScreen({ navigation }) {
         active: a.filter((x) => x.status === 'active').length,
       });
       setUsersCount(u.length);
+      setStatsTick((t) => t + 1);
     } finally {
       setLoading(false);
     }
@@ -100,84 +100,132 @@ export default function AdminDashboardScreen({ navigation }) {
     return unsub;
   }, [navigation, load]);
 
-  const today = startOfDay(new Date());
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
+  const range = useMemo(() => rangeFor(period, customDate), [period, customDate]);
 
-  const todays = useMemo(
-    () =>
-      orders.filter((o) => {
-        const t = new Date(o.placedAt || o.createdAt);
-        return t >= today && t < tomorrow;
-      }),
-    [orders, today, tomorrow]
-  );
-  const yesterdays = useMemo(
-    () =>
-      orders.filter((o) => {
-        const t = new Date(o.placedAt || o.createdAt);
-        return t >= yesterday && t < today;
-      }),
-    [orders, yesterday, today]
-  );
+  // Revenue/orders for the selected window come from the server-side stats
+  // endpoint (date-filtered in the DB), so any range — custom day, last year —
+  // is accurate regardless of how many orders the client has fetched.
+  const [stats, setStats] = useState({ revenue: 0, orders: 0, delivered: 0, prevRevenue: 0 });
+  useEffect(() => {
+    let cancelled = false;
+    const qs =
+      `from=${range.start.toISOString()}&to=${range.end.toISOString()}` +
+      `&prevFrom=${range.prevStart.toISOString()}&prevTo=${range.prevEnd.toISOString()}`;
+    api
+      .get(`/requests/stats?${qs}`)
+      .then((s) => !cancelled && setStats(s))
+      .catch(() => !cancelled && setStats({ revenue: 0, orders: 0, delivered: 0, prevRevenue: 0 }));
+    return () => {
+      cancelled = true;
+    };
+  }, [range]);
 
-  const revenueToday = todays.reduce((s, r) =>r.status === 'delivered' ? s + (r.total || 0) : s, 0);
-  const revenueYesterday = yesterdays.reduce((s, r) =>r.status === 'delivered' ? s + (r.total || 0) : s, 0);
-  const pct = revenueYesterday
-    ? Math.round(((revenueToday - revenueYesterday) / revenueYesterday) * 100)
-    : todays.length
+  const revenue = stats.revenue;
+  const revenuePrev = stats.prevRevenue;
+  const ordersInRange = stats.orders;
+  const pct = revenuePrev
+    ? Math.round(((revenue - revenuePrev) / revenuePrev) * 100)
+    : revenue
     ? 100
     : 0;
+
+  const today = startOfDay(new Date());
+  const tomorrow = addDays(today, 1);
+  const todaysCount = useMemo(() => countIn(orders, today, tomorrow), [orders, today, tomorrow]);
 
   const pendingPickups = orders.filter(
     (o) => o.status === 'pending' || o.status === 'accepted' || o.status === 'assigned'
   ).length;
 
-  const buckets = useMemo(() => buildLast7Days(orders), [orders]);
-  const maxRev = Math.max(1, ...buckets.map((b) => b.status === 'delivered' ? b.total : 0));
+  const buckets = useMemo(() => buildLast7Days(orders, 'revenue'), [orders]);
+  const maxRev = Math.max(0, ...buckets.map((b) => b.value));
+  const { axisMax, ticks } = useMemo(() => niceAxis(maxRev), [maxRev]);
 
   const recent = orders.slice(0, 3);
 
+  const handlePeriod = (key) => {
+    if (key === 'custom') {
+      setPeriod('custom');
+      setPickerOpen(true);
+    } else {
+      setPeriod(key);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <AdminHeader title="Dashboard" onBack={() => navigation.goBack()} />
+      <AdminHeader title={t('adminDashboard.title')} onBack={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={load} tintColor={colors.muted} />
         }
       >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.periodRow}
+        >
+          {PERIODS.map((p) => {
+            const active = period === p.key;
+            const label =
+              p.key === 'custom' && period === 'custom'
+                ? customDate.toLocaleDateString()
+                : p.label;
+            return (
+              <TouchableOpacity
+                key={p.key}
+                onPress={() => handlePeriod(p.key)}
+                style={[styles.chip, active && styles.chipActive]}
+                activeOpacity={0.85}
+              >
+                {p.key === 'custom' && (
+                  <Ionicons
+                    name="calendar-outline"
+                    size={13}
+                    color={active ? '#052e2b' : colors.muted}
+                    style={{ marginRight: 4 }}
+                  />
+                )}
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
         <LinearGradient
           colors={gradients.brand}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
-          <Text style={styles.heroLabel}>Revenue today</Text>
-          <Text style={styles.heroValue}>₹{revenueToday.toLocaleString()}</Text>
+          <Text style={styles.heroLabel}>{t('adminDashboard.revenueLabel', { period: range.label })}</Text>
+          <Text style={styles.heroValue}>QAR {revenue.toLocaleString()}</Text>
           <Text style={styles.heroSub}>
-            {pct >= 0 ? '+' : ''}
-            {pct}% vs yesterday · {todays.length} orders processed
+            {t('adminDashboard.heroSub', {
+              sign: pct >= 0 ? '+' : '',
+              pct,
+              compare: range.compare,
+              orders: ordersInRange,
+            })}
           </Text>
         </LinearGradient>
 
         <View style={styles.statRow}>
           <StatCard
-            label="Orders today"
-            value={todays.length}
+            label={t('adminDashboard.ordersToday')}
+            value={todaysCount}
             icon="cube-outline"
             tint="rgba(34, 211, 238, 0.10)"
           />
           <StatCard
-            label="Active agents"
+            label={t('adminDashboard.activeAgents')}
             value={agentsCount.active}
             icon="bicycle-outline"
             tint="rgba(52, 211, 153, 0.10)"
           />
           <StatCard
-            label="Pending pickups"
+            label={t('adminDashboard.pendingPickups')}
             value={pendingPickups}
             icon="time-outline"
             tint="rgba(251, 191, 36, 0.10)"
@@ -185,61 +233,80 @@ export default function AdminDashboardScreen({ navigation }) {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Last 7 days</Text>
+          <Text style={styles.cardTitle}>{t('adminDashboard.last7DaysRevenue')}</Text>
           {loading && orders.length === 0 ? (
             <ActivityIndicator color={colors.muted} />
           ) : (
-            <View style={styles.chart}>
-              {buckets.map((b, i) => (
-                <View key={i} style={styles.bar}>
-                  <View
-                    style={[
-                      styles.barFill,
-                      // { height: `${(b.total / maxRev) * 100}%` },
-                      i === buckets.length - 1 && {
-                        backgroundColor: '#34D399',
-                      },
-                    ]}
-                  />
-                  <Text style={styles.barLabel}>{dayLabels[b.dow]}</Text>
+            <View style={styles.chartRow}>
+              {/* Y-axis price scale */}
+              <View style={styles.yAxis}>
+                {[...ticks].reverse().map((t) => (
+                  <Text key={t} style={styles.yLabel}>
+                    {t}
+                  </Text>
+                ))}
+              </View>
+              {/* Bars + day labels */}
+              <View style={{ flex: 1 }}>
+                <View style={styles.plot}>
+                  {buckets.map((b, i) => (
+                    <View key={i} style={styles.bar}>
+                      <View
+                        style={[
+                          styles.barFill,
+                          { height: `${(b.value / axisMax) * 100}%` },
+                          i === buckets.length - 1 &&
+                            b.value > 0 && { backgroundColor: '#34D399', opacity: 1 },
+                        ]}
+                      />
+                    </View>
+                  ))}
                 </View>
-              ))}
+                <View style={styles.xAxis}>
+                  {buckets.map((b, i) => (
+                    <Text key={i} style={styles.xLabel}>
+                      {dayLabels[b.dow]}
+                    </Text>
+                  ))}
+                </View>
+              </View>
             </View>
           )}
         </View>
 
         <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Total users</Text>
+            <Text style={styles.metricLabel}>{t('adminDashboard.totalUsers')}</Text>
             <Text style={styles.metricValue}>{usersCount}</Text>
           </View>
           <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Total agents</Text>
+            <Text style={styles.metricLabel}>{t('adminDashboard.totalAgents')}</Text>
             <Text style={styles.metricValue}>{agentsCount.total}</Text>
           </View>
           <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Total orders</Text>
+            <Text style={styles.metricLabel}>{t('adminDashboard.totalOrders')}</Text>
             <Text style={styles.metricValue}>{orders.length}</Text>
           </View>
         </View>
 
         <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>Recent requests</Text>
+          <Text style={styles.sectionTitle}>{t('adminDashboard.recentRequests')}</Text>
           <Text
             style={styles.link}
             onPress={() => navigation.navigate('AdminRequests')}
           >
-            View all
+            {t('adminDashboard.viewAll')}
           </Text>
         </View>
 
         {recent.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>No requests yet.</Text>
+            <Text style={styles.emptyText}>{t('adminDashboard.noRequests')}</Text>
           </View>
         ) : (
           recent.map((r) => {
             const meta = statusMeta[r.status] || statusMeta.pending;
+            const statusKey = statusMeta[r.status] ? r.status : 'pending';
             return (
               <TouchableOpacity
                 key={r.id}
@@ -250,20 +317,34 @@ export default function AdminDashboardScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.reqId}>{r.code}</Text>
                   <Text style={styles.reqCustomer}>
-                    {r.customerName} · {r.items?.length || 0} items
+                    {t('adminDashboard.reqCustomer', {
+                      name: r.userId?.name || t('adminDashboard.customer'),
+                      count: r.items?.length || 0,
+                    })}
                   </Text>
                   <Text style={styles.reqMeta}>
                     {new Date(r.placedAt || r.createdAt).toLocaleString()}
                   </Text>
                 </View>
                 <View style={[styles.pill, { backgroundColor: meta.bg }]}>
-                  <Text style={[styles.pillText, { color: meta.color }]}>{meta.label}</Text>
+                  <Text style={[styles.pillText, { color: meta.color }]}>{t(`adminDashboard.status_${statusKey}`)}</Text>
                 </View>
               </TouchableOpacity>
             );
           })
         )}
       </ScrollView>
+
+      <DayPickerModal
+        visible={pickerOpen}
+        value={customDate}
+        onSelect={(d) => {
+          setCustomDate(startOfDay(d));
+          setPeriod('custom');
+          setPickerOpen(false);
+        }}
+        onClose={() => setPickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -271,6 +352,20 @@ export default function AdminDashboardScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.lg },
+  periodRow: { gap: spacing.sm, paddingRight: spacing.lg },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(43, 63, 110, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+  },
+  chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primaryLight },
+  chipText: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  chipTextActive: { color: '#052e2b', fontWeight: '800' },
   hero: { borderRadius: radii.lg, padding: spacing.lg },
   heroLabel: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 13 },
   heroValue: { color: '#fff', fontSize: 30, fontWeight: '800', marginTop: 4 },
@@ -293,7 +388,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     letterSpacing: 0.5,
   },
-  chart: {
+  chartRow: { flexDirection: 'row', gap: 8 },
+  yAxis: {
+    height: 160,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingRight: 4,
+  },
+  yLabel: { fontSize: 10, color: colors.muted, fontWeight: '600' },
+  plot: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -308,7 +411,8 @@ const styles = StyleSheet.create({
     minHeight: 6,
     opacity: 0.7,
   },
-  barLabel: { marginTop: 6, fontSize: 11, color: colors.muted, fontWeight: '600' },
+  xAxis: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginTop: 6 },
+  xLabel: { flex: 1, textAlign: 'center', fontSize: 11, color: colors.muted, fontWeight: '600' },
   metricsRow: { flexDirection: 'row', gap: spacing.sm },
   metricCard: {
     flex: 1,

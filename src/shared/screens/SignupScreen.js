@@ -12,10 +12,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from '../components/Gradient';
-import { colors, gradients } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../state/AuthContext';
+import { useI18n } from '../i18n/LanguageContext';
 
 export default function SignupScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const { t } = useI18n();
   const { checkAvailability } = useAuth();
 
   const [name, setName] = useState('');
@@ -31,15 +34,15 @@ export default function SignupScreen({ navigation }) {
   const submit = async () => {
     setError('');
     setWarning('');
-    if (name.trim().length < 2) return setError('Please enter your full name');
+    if (name.trim().length < 2) return setError(t('signup.errName'));
     if (!/^\d{10}$/.test(phone.trim()))
-      return setError('Phone number must be exactly 10 digits');
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Please enter a valid email');
-    if (password.length < 6) return setError('Password must be at least 6 characters');
-    if (!/[A-Za-z]/.test(password)) return setError('Password must include a letter');
-    if (!/\d/.test(password)) return setError('Password must include a number');
+      return setError(t('signup.errPhone'));
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError(t('signup.errEmail'));
+    if (password.length < 6) return setError(t('signup.errPwLength'));
+    if (!/[A-Za-z]/.test(password)) return setError(t('signup.errPwLetter'));
+    if (!/\d/.test(password)) return setError(t('signup.errPwNumber'));
     if (!/[^A-Za-z0-9]/.test(password))
-      return setError('Password must include a symbol (e.g. !@#$)');
+      return setError(t('signup.errPwSymbol'));
 
     setBusy(true);
     try {
@@ -51,10 +54,10 @@ export default function SignupScreen({ navigation }) {
         phone: phone.trim(),
       });
       if (phoneTaken) {
-        return setWarning('This phone number is already registered. Try logging in instead.');
+        return setWarning(t('signup.warnPhoneTaken'));
       }
       if (emailTaken) {
-        return setWarning('This email is already registered. Try logging in instead.');
+        return setWarning(t('signup.warnEmailTaken'));
       }
 
       // The account is only created after the code is verified on the next page.
@@ -65,7 +68,7 @@ export default function SignupScreen({ navigation }) {
         password,
       });
     } catch (e) {
-      setError(e.message || 'Something went wrong');
+      setError(e.message || t('signup.errGeneric'));
     } finally {
       setBusy(false);
     }
@@ -95,9 +98,9 @@ export default function SignupScreen({ navigation }) {
             >
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </TouchableOpacity>
-            <Text className="text-white text-2xl font-extrabold mt-lg">Create your account</Text>
+            <Text className="text-white text-2xl font-extrabold mt-lg">{t('signup.title')}</Text>
             <Text className="text-[#EAF4FF] text-sm mt-1.5">
-              Join Clean Pro — premium laundry at your door
+              {t('signup.subtitle')}
             </Text>
           </LinearGradient>
 
@@ -106,7 +109,7 @@ export default function SignupScreen({ navigation }) {
               <Ionicons name="person-outline" size={18} color={colors.muted} />
               <TextInput
                 className="flex-1 py-3.5 text-text text-[15px]"
-                placeholder="Full name"
+                placeholder={t('signup.phName')}
                 placeholderTextColor={colors.muted}
                 value={name}
                 onChangeText={setName}
@@ -117,7 +120,7 @@ export default function SignupScreen({ navigation }) {
               <Ionicons name="call-outline" size={18} color={colors.muted} />
               <TextInput
                 className="flex-1 py-3.5 text-text text-[15px]"
-                placeholder="Phone number"
+                placeholder={t('signup.phPhone')}
                 placeholderTextColor={colors.muted}
                 keyboardType="number-pad"
                 maxLength={10}
@@ -130,7 +133,7 @@ export default function SignupScreen({ navigation }) {
               <Ionicons name="mail-outline" size={18} color={colors.muted} />
               <TextInput
                 className="flex-1 py-3.5 text-text text-[15px]"
-                placeholder="Email"
+                placeholder={t('signup.phEmail')}
                 placeholderTextColor={colors.muted}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -143,7 +146,7 @@ export default function SignupScreen({ navigation }) {
               <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
               <TextInput
                 className="flex-1 py-3.5 text-text text-[15px]"
-                placeholder="Password"
+                placeholder={t('signup.phPassword')}
                 placeholderTextColor={colors.muted}
                 secureTextEntry={!showPw}
                 value={password}
@@ -179,14 +182,14 @@ export default function SignupScreen({ navigation }) {
                 {busy ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text className="text-white text-[15px] font-bold">Continue</Text>
+                  <Text className="text-white text-[15px] font-bold">{t('signup.continue')}</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
 
             <TouchableOpacity className="mt-md items-center" onPress={() => navigation.goBack()}>
               <Text className="text-muted text-[13px]">
-                Already have an account? <Text className="text-primary font-bold">Log in</Text>
+                {t('signup.haveAccount')} <Text className="text-primary font-bold">{t('signup.logIn')}</Text>
               </Text>
             </TouchableOpacity>
           </View>

@@ -15,12 +15,13 @@ import AdminHeader from '../components/AdminHeader';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const filters = [
-  { id: 'all', label: 'All' },
-  { id: 'pending', label: 'Pending' },
-  { id: 'approved', label: 'Approved' },
-  { id: 'hidden', label: 'Hidden' },
+  { id: 'all', labelKey: 'adminReviews.filterAll' },
+  { id: 'pending', labelKey: 'adminReviews.filterPending' },
+  { id: 'approved', labelKey: 'adminReviews.filterApproved' },
+  { id: 'hidden', labelKey: 'adminReviews.filterHidden' },
 ];
 
 function Stars({ value }) {
@@ -39,6 +40,7 @@ function Stars({ value }) {
 }
 
 export default function AdminReviewsScreen({ navigation }) {
+  const { t } = useI18n();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -74,9 +76,9 @@ export default function AdminReviewsScreen({ navigation }) {
 
   const confirmApprove = (r) =>
     confirmAction({
-      title: 'Approve review?',
-      message: `Publish ${r.customerName}'s review on the customer-facing app?`,
-      confirmLabel: 'Approve',
+      title: t('adminReviews.approveTitle'),
+      message: t('adminReviews.approveMessage', { name: r.customerName }),
+      confirmLabel: t('adminReviews.approveConfirm'),
       onConfirm: async () => {
         const updated = await api.patch(`/reviews/${r.id}/status`, { status: 'approved' });
         setReviews((prev) => prev.map((x) => (x.id === r.id ? updated : x)));
@@ -85,9 +87,9 @@ export default function AdminReviewsScreen({ navigation }) {
 
   const confirmHide = (r) =>
     confirmAction({
-      title: 'Hide review?',
-      message: `${r.customerName}'s review will no longer be visible to customers.`,
-      confirmLabel: 'Hide',
+      title: t('adminReviews.hideTitle'),
+      message: t('adminReviews.hideMessage', { name: r.customerName }),
+      confirmLabel: t('adminReviews.hideConfirm'),
       destructive: true,
       onConfirm: async () => {
         const updated = await api.patch(`/reviews/${r.id}/status`, { status: 'hidden' });
@@ -97,35 +99,46 @@ export default function AdminReviewsScreen({ navigation }) {
 
   const confirmDelete = (r) =>
     confirmAction({
-      title: 'Delete review?',
-      message: 'This cannot be undone.',
-      confirmLabel: 'Delete',
+      title: t('adminReviews.deleteTitle'),
+      message: t('adminReviews.deleteMessage'),
+      confirmLabel: t('adminReviews.deleteConfirm'),
       destructive: true,
       onConfirm: async () => {
-        await api.delete(`/reviews/${r.id}`);
+        // Remove instantly; restore via reload if the server call fails.
         setReviews((prev) => prev.filter((x) => x.id !== r.id));
+        try {
+          await api.delete(`/reviews/${r.id}`);
+        } catch (e) {
+          load();
+          confirmAction({
+            title: t('adminReviews.deleteFailedTitle'),
+            message: e.message,
+            confirmLabel: t('adminReviews.okButton'),
+            onConfirm: () => {},
+          });
+        }
       },
     });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <AdminHeader title="Reviews" onBack={() => navigation.goBack()} />
+      <AdminHeader title={t('adminReviews.title')} onBack={() => navigation.goBack()} />
 
       <View style={styles.summary}>
         <View style={styles.summaryCol}>
           <Text style={styles.summaryValue}>{avg}</Text>
           <Stars value={Math.round(parseFloat(avg))} />
-          <Text style={styles.summaryLabel}>Avg rating</Text>
+          <Text style={styles.summaryLabel}>{t('adminReviews.avgRating')}</Text>
         </View>
         <View style={styles.summaryCol}>
           <Text style={styles.summaryValue}>{reviews.length}</Text>
-          <Text style={styles.summaryLabel}>Total reviews</Text>
+          <Text style={styles.summaryLabel}>{t('adminReviews.totalReviews')}</Text>
         </View>
         <View style={styles.summaryCol}>
           <Text style={[styles.summaryValue, { color: '#FBBF24' }]}>
             {reviews.filter((r) => r.status === 'pending').length}
           </Text>
-          <Text style={styles.summaryLabel}>Pending</Text>
+          <Text style={styles.summaryLabel}>{t('adminReviews.pending')}</Text>
         </View>
       </View>
 
@@ -144,7 +157,7 @@ export default function AdminReviewsScreen({ navigation }) {
                 activeOpacity={0.85}
                 style={[styles.chip, active && styles.chipActive]}
               >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.label}</Text>
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{t(f.labelKey)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -163,7 +176,7 @@ export default function AdminReviewsScreen({ navigation }) {
         ) : rows.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="star-outline" size={48} color={colors.muted} />
-            <Text style={styles.emptyText}>No reviews match this filter.</Text>
+            <Text style={styles.emptyText}>{t('adminReviews.emptyText')}</Text>
           </View>
         ) : (
           rows.map((r) => (
@@ -179,7 +192,7 @@ export default function AdminReviewsScreen({ navigation }) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.customer}>{r.customerName}</Text>
                     <Text style={styles.orderId}>
-                      Order {r.requestId} ·{' '}
+                      {t('adminReviews.orderLabel', { id: r.requestId })} ·{' '}
                       {new Date(r.createdAt).toLocaleDateString()}
                     </Text>
                   </View>
@@ -215,7 +228,7 @@ export default function AdminReviewsScreen({ navigation }) {
                         },
                       ]}
                     >
-                      {r.status[0].toUpperCase() + r.status.slice(1)}
+                      {t(`adminReviews.status_${r.status}`)}
                     </Text>
                   </View>
 

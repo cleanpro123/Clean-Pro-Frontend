@@ -15,26 +15,28 @@ import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const filters = [
-  { id: 'all', label: 'All' },
-  { id: 'pending', label: 'Pending' },
-  { id: 'assigned', label: 'Assigned' },
-  { id: 'in_progress', label: 'In progress' },
-  { id: 'delivered', label: 'Delivered' },
+  { id: 'all', labelKey: 'adminRequests.filterAll' },
+  { id: 'pending', labelKey: 'adminRequests.filterPending' },
+  { id: 'assigned', labelKey: 'adminRequests.filterAssigned' },
+  { id: 'in_progress', labelKey: 'adminRequests.filterInProgress' },
+  { id: 'delivered', labelKey: 'adminRequests.filterDelivered' },
 ];
 
 const statusMeta = {
-  pending: { label: 'Pending', color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.15)' },
-  accepted: { label: 'Accepted', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.18)' },
-  assigned: { label: 'Assigned', color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.18)' },
-  in_progress: { label: 'In progress', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.18)' },
-  out_for_delivery: { label: 'Out', color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.18)' },
-  delivered: { label: 'Delivered', color: '#34D399', bg: 'rgba(52, 211, 153, 0.18)' },
-  cancelled: { label: 'Cancelled', color: '#F87171', bg: 'rgba(248, 113, 113, 0.18)' },
+  pending: { labelKey: 'adminRequests.statusPending', color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.15)' },
+  accepted: { labelKey: 'adminRequests.statusAccepted', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.18)' },
+  assigned: { labelKey: 'adminRequests.statusAssigned', color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.18)' },
+  in_progress: { labelKey: 'adminRequests.statusInProgress', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.18)' },
+  out_for_delivery: { labelKey: 'adminRequests.statusOut', color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.18)' },
+  delivered: { labelKey: 'adminRequests.statusDelivered', color: '#34D399', bg: 'rgba(52, 211, 153, 0.18)' },
+  cancelled: { labelKey: 'adminRequests.statusCancelled', color: '#F87171', bg: 'rgba(248, 113, 113, 0.18)' },
 };
 
 export default function AdminRequestsScreen({ navigation }) {
+  const { t } = useI18n();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -65,20 +67,20 @@ export default function AdminRequestsScreen({ navigation }) {
       if (!q) return true;
       return (
         r.code?.toLowerCase().includes(q) ||
-        r.customerName?.toLowerCase().includes(q)
+        r.userId?.name?.toLowerCase().includes(q)
       );
     });
   }, [items, filter, query]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <AdminHeader title="Requests" onBack={() => navigation.goBack()} />
+      <AdminHeader title={t('adminRequests.title')} onBack={() => navigation.goBack()} />
 
       <View style={styles.searchWrap}>
         <Ionicons name="search-outline" size={18} color={colors.muted} />
         <TextInput
           style={styles.search}
-          placeholder="Search by code or customer"
+          placeholder={t('adminRequests.searchPlaceholder')}
           placeholderTextColor={colors.muted}
           value={query}
           onChangeText={setQuery}
@@ -100,7 +102,7 @@ export default function AdminRequestsScreen({ navigation }) {
                 activeOpacity={0.85}
                 style={[styles.chip, active && styles.chipActive]}
               >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.label}</Text>
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{t(f.labelKey)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -119,7 +121,7 @@ export default function AdminRequestsScreen({ navigation }) {
         ) : rows.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="file-tray-outline" size={48} color={colors.muted} />
-            <Text style={styles.emptyText}>No requests match this filter.</Text>
+            <Text style={styles.emptyText}>{t('adminRequests.emptyText')}</Text>
           </View>
         ) : (
           rows.map((r) => {
@@ -142,22 +144,22 @@ export default function AdminRequestsScreen({ navigation }) {
                   <View style={styles.cardBorder} pointerEvents="none" />
                   <View style={styles.avatarBubble}>
                     <Text style={styles.avatarText}>
-                      {(r.customerName || '?').split(' ').map((s) => s[0]).join('').toUpperCase()}
+                      {(r.userId?.name || '?').split(' ').map((s) => s[0]).join('').toUpperCase()}
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.id}>{r.code}</Text>
                     <Text style={styles.customer}>
-                      {r.customerName} · {r.items?.length || 0} items
+                      {r.userId?.name || t('adminRequests.customer')} · {t('adminRequests.itemsCount', { count: r.items?.length || 0 })}
                     </Text>
                     <Text style={styles.meta}>
                       {new Date(r.placedAt || r.createdAt).toLocaleString()}
                     </Text>
                   </View>
                   <View style={styles.rightCol}>
-                    <Text style={styles.total}>₹{r.total}</Text>
+                    <Text style={styles.total}>QAR {r.total}</Text>
                     <View style={[styles.pill, { backgroundColor: meta.bg }]}>
-                      <Text style={[styles.pillText, { color: meta.color }]}>{meta.label}</Text>
+                      <Text style={[styles.pillText, { color: meta.color }]}>{t(meta.labelKey)}</Text>
                     </View>
                   </View>
                 </LinearGradient>

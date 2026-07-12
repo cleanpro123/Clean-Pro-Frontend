@@ -12,10 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import MapPreview from '../components/MapPreview';
+import MapPreview from '../../shared/components/MapPreview';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 function PillRow({ icon, label, value, onPress }) {
   const Wrap = onPress ? TouchableOpacity : View;
@@ -42,6 +43,7 @@ function PillRow({ icon, label, value, onPress }) {
 }
 
 export default function AdminMapDetailScreen({ route, navigation }) {
+  const { t } = useI18n();
   const id = route.params?.id;
   const [m, setM] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export default function AdminMapDetailScreen({ route, navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <AdminHeader title="Location details" onBack={() => navigation.goBack()} />
+        <AdminHeader title={t('adminMapDetail.locationDetails')} onBack={() => navigation.goBack()} />
         <ActivityIndicator color={colors.muted} style={{ marginTop: 32 }} />
       </SafeAreaView>
     );
@@ -82,10 +84,10 @@ export default function AdminMapDetailScreen({ route, navigation }) {
           <Text style={styles.title}>{m.name}</Text>
         </View>
 
-        <Text style={styles.section}>Address</Text>
+        <Text style={styles.section}>{t('adminMapDetail.address')}</Text>
         <PillRow
           icon="location-sharp"
-          label="Place"
+          label={t('adminMapDetail.place')}
           value={m.place}
           onPress={() =>
             Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(m.place)}`)
@@ -94,7 +96,7 @@ export default function AdminMapDetailScreen({ route, navigation }) {
 
         {m.description ? (
           <>
-            <Text style={styles.section}>About</Text>
+            <Text style={styles.section}>{t('adminMapDetail.about')}</Text>
             <View style={styles.descShadow}>
               <LinearGradient
                 colors={['#2B3F6E', '#1B2B52']}
@@ -109,16 +111,16 @@ export default function AdminMapDetailScreen({ route, navigation }) {
           </>
         ) : null}
 
-        <Text style={styles.section}>Coverage</Text>
-        <PillRow icon="radio-outline" label="Pickup radius" value={m.pickupRadius || '—'} />
+        <Text style={styles.section}>{t('adminMapDetail.coverage')}</Text>
+        <PillRow icon="radio-outline" label={t('adminMapDetail.pickupRadius')} value={m.pickupRadius || '—'} />
 
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() =>
             confirmAction({
-              title: 'Delete location?',
-              message: `${m.name} will be permanently removed. This cannot be undone.`,
-              confirmLabel: 'Delete',
+              title: t('adminMapDetail.deleteLocationTitle'),
+              message: t('adminMapDetail.deleteLocationMessage', { name: m.name }),
+              confirmLabel: t('adminMapDetail.delete'),
               destructive: true,
               onConfirm: async () => {
                 await api.delete(`/maps/${m.id}`);
@@ -136,7 +138,7 @@ export default function AdminMapDetailScreen({ route, navigation }) {
           >
             <View style={styles.deleteBorder} pointerEvents="none" />
             <Ionicons name="trash-outline" size={18} color="#F87171" />
-            <Text style={styles.deleteText}>Delete location</Text>
+            <Text style={styles.deleteText}>{t('adminMapDetail.deleteLocation')}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>

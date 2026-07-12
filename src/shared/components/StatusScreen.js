@@ -6,80 +6,81 @@
 //   <StatusScreen preset="notFound" onAction={() => navigation.goBack()} />
 // or pass explicit props to build a one-off state:
 //   <StatusScreen icon="cloud-offline-outline" title="…" message="…" />
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, gradients, radii, spacing } from '../theme/colors';
+import { radii, spacing } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/LanguageContext';
 
 // Each preset is a sensible default; any field can be overridden via props.
+// title/message/actionLabel hold i18n keys, resolved with t() at render time.
+// `gradient` holds a theme gradient key, resolved against the runtime theme.
 export const STATUS_PRESETS = {
   crash: {
     icon: 'bug-outline',
-    gradient: gradients.ocean,
-    title: 'Something went wrong',
-    message:
-      'The app hit an unexpected error. You can try again — if it keeps happening, please reopen the app.',
-    actionLabel: 'Try again',
+    gradient: 'ocean',
+    title: 'status.somethingWentWrong',
+    message: 'status.crashMessage',
+    actionLabel: 'status.tryAgain',
   },
   notFound: {
     icon: 'help-circle-outline',
-    gradient: gradients.sky,
-    title: "We couldn't find that",
-    message: 'The page or item you were looking for no longer exists or was moved.',
-    actionLabel: 'Go back',
+    gradient: 'sky',
+    title: 'status.notFoundTitle',
+    message: 'status.notFoundMessage',
+    actionLabel: 'status.goBack',
   },
   blocked: {
     icon: 'lock-closed-outline',
-    gradient: gradients.ocean,
-    title: 'Account blocked',
-    message:
-      'Your account has been blocked. If you think this is a mistake, please contact our support team.',
-    actionLabel: 'Back to login',
+    gradient: 'ocean',
+    title: 'status.blockedTitle',
+    message: 'status.blockedMessage',
+    actionLabel: 'status.backToLogin',
   },
   forbidden: {
     icon: 'shield-outline',
-    gradient: gradients.ocean,
-    title: "You don't have access",
-    message: "You don't have permission to view this. Try signing in with the right account.",
-    actionLabel: 'Back to login',
+    gradient: 'ocean',
+    title: 'status.forbiddenTitle',
+    message: 'status.forbiddenMessage',
+    actionLabel: 'status.backToLogin',
   },
   sessionExpired: {
     icon: 'time-outline',
-    gradient: gradients.sky,
-    title: 'Session expired',
-    message: 'For your security you have been signed out. Please log in again to continue.',
-    actionLabel: 'Log in',
+    gradient: 'sky',
+    title: 'status.sessionExpiredTitle',
+    message: 'status.sessionExpiredMessage',
+    actionLabel: 'status.login',
   },
   offline: {
     icon: 'cloud-offline-outline',
-    gradient: gradients.mist,
-    title: "You're offline",
-    message: 'We can’t reach the internet right now. Check your connection and try again.',
-    actionLabel: 'Retry',
+    gradient: 'mist',
+    title: 'status.offlineTitle',
+    message: 'status.offlineMessage',
+    actionLabel: 'status.retry',
   },
   serverDown: {
     icon: 'server-outline',
-    gradient: gradients.ocean,
-    title: 'Service unavailable',
-    message:
-      'Our servers are taking a break or under maintenance. Please try again in a few minutes.',
-    actionLabel: 'Retry',
+    gradient: 'ocean',
+    title: 'status.serverDownTitle',
+    message: 'status.serverDownMessage',
+    actionLabel: 'status.retry',
   },
   empty: {
     icon: 'file-tray-outline',
-    gradient: gradients.mist,
-    title: 'Nothing here yet',
-    message: 'There is nothing to show right now.',
+    gradient: 'mist',
+    title: 'status.emptyTitle',
+    message: 'status.emptyMessage',
     actionLabel: null,
   },
   generic: {
     icon: 'alert-circle-outline',
-    gradient: gradients.sky,
-    title: 'Something went wrong',
-    message: 'Please try again.',
-    actionLabel: 'Try again',
+    gradient: 'sky',
+    title: 'status.somethingWentWrong',
+    message: 'status.genericMessage',
+    actionLabel: 'status.tryAgain',
   },
 };
 
@@ -97,12 +98,16 @@ export default function StatusScreen({
   // Dev-only detail (e.g. the error message from an ErrorBoundary).
   detail,
 }) {
+  const { t } = useI18n();
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const base = STATUS_PRESETS[preset] || STATUS_PRESETS.generic;
   const _icon = icon ?? base.icon;
-  const _gradient = gradient ?? base.gradient;
-  const _title = title ?? base.title;
-  const _message = message ?? base.message;
-  const _actionLabel = actionLabel !== undefined ? actionLabel : base.actionLabel;
+  const _gradient = gradient ?? gradients[base.gradient];
+  const _title = title ?? t(base.title);
+  const _message = message ?? t(base.message);
+  const _actionLabel =
+    actionLabel !== undefined ? actionLabel : base.actionLabel ? t(base.actionLabel) : null;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -161,7 +166,7 @@ export default function StatusScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
   content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
   badge: {

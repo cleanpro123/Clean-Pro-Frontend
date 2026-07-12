@@ -64,6 +64,13 @@ export function AppProvider({ children }) {
     return newAddr;
   };
 
+  const updateAddress = async (id, patch) => {
+    const updated = await api.patch(`/users/me/addresses/${id}`, patch);
+    const merged = { ...updated, id: updated.id || updated._id || id };
+    setAddresses((prev) => prev.map((a) => (a.id === id ? { ...a, ...merged } : a)));
+    return merged;
+  };
+
   const removeAddress = async (id) => {
     const next = addresses.filter((a) => a.id !== id);
     setAddresses(next);
@@ -90,6 +97,7 @@ export function AppProvider({ children }) {
     totals,
     addresses,
     addAddress,
+    updateAddress,
     removeAddress,
     selectedAddressId,
     setSelectedAddressId,

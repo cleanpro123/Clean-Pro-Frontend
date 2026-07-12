@@ -80,8 +80,24 @@ export async function apiRequest(path, options = {}, { auth = true, retry = true
   return body.data;
 }
 
+// Page through a paginated list endpoint and return every item. Screens that
+// aggregate client-side (dashboards, date filters) need the full set, not just
+// the API's first page. `limit` must respect the endpoint's max (100 here).
+async function getAll(path, { limit = 100, ...opts } = {}) {
+  const all = [];
+  for (let page = 1; ; page += 1) {
+    const sep = path.includes('?') ? '&' : '?';
+    const batch = await apiRequest(`${path}${sep}page=${page}&limit=${limit}`, { method: 'GET' }, opts);
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    all.push(...batch);
+    if (batch.length < limit) break; // last page reached
+  }
+  return all;
+}
+
 export const api = {
   get: (path, opts) => apiRequest(path, { method: 'GET' }, opts),
+  getAll,
   post: (path, body, opts) =>
     apiRequest(path, { method: 'POST', body: JSON.stringify(body || {}) }, opts),
   patch: (path, body, opts) =>

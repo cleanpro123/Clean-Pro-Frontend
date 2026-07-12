@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const ICONS = {
   Home: { off: 'home-outline', on: 'home' },
@@ -20,6 +22,8 @@ const ICONS = {
 };
 
 export default function CustomTabBar({ state, navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const openBooking = () => navigation.navigate('Booking');
 
@@ -56,7 +60,17 @@ export default function CustomTabBar({ state, navigation }) {
 }
 
 function TabButton({ route, isFocused, onPress }) {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useI18n();
   const icon = ICONS[route.name] || { off: 'ellipse-outline', on: 'ellipse' };
+  const LABELS = {
+    Home: t('tabs.home'),
+    Services: t('tabs.services'),
+    Orders: t('tabs.orders'),
+    Profile: t('tabs.profile'),
+  };
+  const label = LABELS[route.name] || route.name;
 
   const lift = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
   const press = useRef(new Animated.Value(1)).current;
@@ -159,7 +173,7 @@ function TabButton({ route, isFocused, onPress }) {
               isFocused && { fontWeight: '700' },
             ]}
           >
-            {route.name}
+            {label}
           </Text>
         </View>
       )}
@@ -168,6 +182,8 @@ function TabButton({ route, isFocused, onPress }) {
 }
 
 function FabButton({ onPress, bottom }) {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const scale = useRef(new Animated.Value(1)).current;
   const rotate = useRef(new Animated.Value(0)).current;
 
@@ -225,7 +241,7 @@ function FabButton({ onPress, bottom }) {
 
 const ICON_SIZE = 46;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   wrap: {
     position: 'absolute',
     left: 0,
@@ -246,12 +262,12 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#0F2A4F',
-        shadowOpacity: 0.12,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.07,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
       },
-      android: { elevation: 12 },
-      default: { boxShadow: '0 6px 20px rgba(15,42,79,0.14)' },
+      android: { elevation: 5 },
+      default: { boxShadow: '0 3px 8px rgba(15,42,79,0.08)' },
     }),
   },
   tabBtn: {
@@ -279,12 +295,12 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#2D8FE0',
-        shadowOpacity: 0.45,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.16,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
       },
-      android: { elevation: 10 },
-      default: { boxShadow: '0 8px 18px rgba(45,143,224,0.45)' },
+      android: { elevation: 3 },
+      default: { boxShadow: '0 2px 6px rgba(45,143,224,0.16)' },
     }),
   },
   center: { alignItems: 'center', justifyContent: 'center' },
@@ -312,13 +328,13 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#2D8FE0',
-        shadowOpacity: 0.4,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.18,
+        shadowRadius: 7,
+        shadowOffset: { width: 0, height: 3 },
       },
-      android: { elevation: 10 },
+      android: { elevation: 5 },
       default: {
-        boxShadow: '0 8px 18px rgba(45,143,224,0.45)',
+        boxShadow: '0 3px 8px rgba(45,143,224,0.18)',
         cursor: 'pointer',
       },
     }),

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,15 +6,18 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   Platform,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import * as Location from 'expo-location';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { useApp } from '../../shared/state/AppContext';
 import { api } from '../../shared/api/client';
+import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const LABELS = [
   { id: 'Home', icon: 'home-outline' },
@@ -22,19 +25,41 @@ const LABELS = [
   { id: 'Other', icon: 'location-outline' },
 ];
 
-export default function AddAddressScreen({ navigation }) {
-  const { addAddress, setSelectedAddressId } = useApp();
-  const [label, setLabel] = useState('Home');
-  const [line1, setLine1] = useState('');
-  const [line2, setLine2] = useState('');
-  const [pincode, setPincode] = useState('');
-  const [phone, setPhone] = useState('');
+export default function AddAddressScreen({ navigation, route }) {
+  const { t } = useI18n();
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { addAddress, updateAddress, setSelectedAddressId } = useApp();
+  // When an address is passed in route params we're EDITING it, not creating.
+  const editing = route?.params?.address || null;
+  const editAreaId =
+    (editing?.areaId && (editing.areaId._id || editing.areaId.id || editing.areaId)) || null;
+
+  const [label, setLabel] = useState(editing?.label || 'Home');
+  const [line1, setLine1] = useState(editing?.line1 || '');
+  const [line2, setLine2] = useState(editing?.line2 || '');
+  const [pincode, setPincode] = useState(editing?.pincode || '');
+  const [phone, setPhone] = useState(editing?.phone || '');
+  // Exact GPS coordinates for this address (from "Use current location"). If
+  // left null we geocode the typed address on save.
+  const [coords, setCoords] = useState(
+    typeof editing?.lat === 'number' && typeof editing?.lng === 'number'
+      ? { lat: editing.lat, lng: editing.lng }
+      : null
+  );
+  const [locating, setLocating] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: editing ? t('addAddress.editTitle') : t('addAddress.addTitle'),
+    });
+  }, [navigation, editing, t]);
 
   // Service areas defined by the operator. The customer must pick the
   // nearby area their address falls under before they can save it.
   const [areas, setAreas] = useState([]);
   const [areasLoading, setAreasLoading] = useState(true);
-  const [areaId, setAreaId] = useState(null);
+  const [areaId, setAreaId] = useState(editAreaId);
   const [areaOpen, setAreaOpen] = useState(false);
 
   useEffect(() => {
@@ -56,27 +81,91 @@ export default function AddAddressScreen({ navigation }) {
 
   const selectedArea = areas.find((a) => a.id === areaId);
 
+  // Grab the device's current GPS position and pre-fill the address fields.
+  const useCurrentLocation = async () => {
+    try {
+      setLocating(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        confirmAction({
+          title: t('addAddress.locationDeniedTitle'),
+          message: t('addAddress.locationDeniedMsg'),
+          hideCancel: true,
+          confirmLabel: t('common.gotIt'),
+        });
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const { latitude, longitude } = pos.coords;
+      setCoords({ lat: latitude, lng: longitude });
+      try {
+        const rev = await Location.reverseGeocodeAsync({ latitude, longitude });
+        const a = rev && rev[0];
+        if (a) {
+          if (!line1.trim()) setLine1([a.name, a.street].filter(Boolean).join(', '));
+          if (!line2.trim()) setLine2([a.district, a.city, a.region].filter(Boolean).join(', '));
+          if (!pincode.trim() && a.postalCode) setPincode(a.postalCode);
+        }
+      } catch {}
+    } catch {
+      confirmAction({
+        title: t('addAddress.locationErrTitle'),
+        message: t('addAddress.locationErrMsg'),
+        hideCancel: true,
+        confirmLabel: t('common.gotIt'),
+      });
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  // Themed validation popup naming the specific problem.
+  const invalid = (message) =>
+    confirmAction({
+      title: t('addAddress.invalidTitle'),
+      message,
+      hideCancel: true,
+      confirmLabel: t('common.gotIt'),
+    });
+
   const handleSave = async () => {
-    if (!areaId) {
-      Alert.alert('Choose an area', 'Please select the nearby area for this address.');
-      return;
+    const digits = (s) => (s || '').replace(/\D/g, '');
+
+    // Current location is mandatory so every address maps to a real point.
+    if (!coords) return invalid(t('addAddress.locationRequiredMsg'));
+    if (!areaId) return invalid(t('addAddress.chooseAreaMessage'));
+    if (line1.trim().length < 2) return invalid(t('addAddress.line1Required'));
+    // Street/Area/City must contain actual text (letters), not just digits.
+    if (line2.trim().length < 2 || !/[A-Za-z\u0600-\u06FF]/.test(line2)) {
+      return invalid(t('addAddress.line2Required'));
     }
-    if (!line1.trim() || !line2.trim() || !pincode.trim() || !phone.trim()) {
-      Alert.alert('Missing details', 'Please fill all fields.');
-      return;
-    }
+    if (!/^\d{4,8}$/.test(pincode.trim())) return invalid(t('addAddress.pincodeInvalid'));
+    if (digits(phone).length < 7) return invalid(t('addAddress.phoneInvalid'));
+
     const icon = LABELS.find((l) => l.id === label)?.icon || 'location-outline';
-    const added = await addAddress({
+
+    const payload = {
       label,
       icon,
-      line1,
-      line2,
-      pincode,
-      phone,
+      line1: line1.trim(),
+      line2: line2.trim(),
+      pincode: pincode.trim(),
+      phone: phone.trim(),
       areaId,
       area: selectedArea?.name || '',
-    });
-    setSelectedAddressId(added.id);
+      lat: coords.lat,
+      lng: coords.lng,
+    };
+
+    if (editing) {
+      await updateAddress(editing.id, payload);
+      setSelectedAddressId(editing.id);
+    } else {
+      const added = await addAddress(payload);
+      setSelectedAddressId(added.id);
+    }
     navigation.goBack();
   };
 
@@ -85,7 +174,7 @@ export default function AddAddressScreen({ navigation }) {
       <ScrollView
         contentContainerStyle={{ padding: spacing.md, paddingBottom: 120 }}
       >
-        <Text style={styles.section}>Label this address</Text>
+        <Text style={styles.section}>{t('addAddress.labelSection')}</Text>
         <View style={styles.labelsRow}>
           {LABELS.map((l) => {
             const active = label === l.id;
@@ -103,16 +192,36 @@ export default function AddAddressScreen({ navigation }) {
                 <Text
                   style={[styles.labelText, active && { color: colors.card }]}
                 >
-                  {l.id}
+                  {t(`addAddress.label${l.id}`)}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        <Text style={styles.section}>Nearby service area</Text>
+        <TouchableOpacity
+          style={styles.gpsBtn}
+          onPress={useCurrentLocation}
+          disabled={locating}
+          activeOpacity={0.85}
+        >
+          {locating ? (
+            <ActivityIndicator color={colors.primary} size="small" />
+          ) : (
+            <Ionicons
+              name={coords ? 'checkmark-circle' : 'navigate'}
+              size={16}
+              color={coords ? colors.success : colors.primary}
+            />
+          )}
+          <Text style={styles.gpsBtnText}>
+            {coords ? t('addAddress.locationSet') : t('addresses.useCurrentLocation')}
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={styles.section}>{t('addAddress.areaSection')}</Text>
         <Text style={styles.areaHint}>
-          Pick the area closest to your address. A delivery agent covers each area.
+          {t('addAddress.areaHint')}
         </Text>
 
         <TouchableOpacity
@@ -135,8 +244,8 @@ export default function AddAddressScreen({ navigation }) {
               {selectedArea
                 ? `${selectedArea.name}${selectedArea.place ? ` · ${selectedArea.place}` : ''}`
                 : areas.length
-                ? 'Select a nearby area'
-                : 'No areas available yet'}
+                ? t('addAddress.selectArea')
+                : t('addAddress.noAreas')}
             </Text>
           )}
           <Ionicons
@@ -179,19 +288,19 @@ export default function AddAddressScreen({ navigation }) {
         <View style={{ height: spacing.lg }} />
 
         <Field
-          label="House / Flat no, Building"
+          label={t('addAddress.line1Label')}
           value={line1}
           onChangeText={setLine1}
-          placeholder="e.g. 12B, Lakeview Apartments"
+          placeholder={t('addAddress.line1Placeholder')}
         />
         <Field
-          label="Street, Area, City"
+          label={t('addAddress.line2Label')}
           value={line2}
           onChangeText={setLine2}
-          placeholder="e.g. MG Road, Bengaluru"
+          placeholder={t('addAddress.line2Placeholder')}
         />
         <Field
-          label="Pincode"
+          label={t('addAddress.pincodeLabel')}
           value={pincode}
           onChangeText={setPincode}
           placeholder="560001"
@@ -199,10 +308,10 @@ export default function AddAddressScreen({ navigation }) {
           maxLength={6}
         />
         <Field
-          label="Phone"
+          label={t('addAddress.phoneLabel')}
           value={phone}
           onChangeText={setPhone}
-          placeholder="+91 …"
+          placeholder="+974 …"
           keyboardType="phone-pad"
         />
       </ScrollView>
@@ -219,7 +328,9 @@ export default function AddAddressScreen({ navigation }) {
           style={styles.saveBtn}
         >
           <Ionicons name="checkmark" size={18} color={colors.card} />
-          <Text style={styles.saveText}>Save address</Text>
+          <Text style={styles.saveText}>
+            {editing ? t('addAddress.updateButton') : t('addAddress.saveButton')}
+          </Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -227,6 +338,8 @@ export default function AddAddressScreen({ navigation }) {
 }
 
 function Field({ label, ...rest }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={{ marginBottom: spacing.md }}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -239,7 +352,7 @@ function Field({ label, ...rest }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   section: {
     color: colors.text,
     fontWeight: '700',
@@ -289,6 +402,19 @@ const styles = StyleSheet.create({
   optionName: { color: colors.text, fontSize: 14, fontWeight: '700' },
   optionSub: { color: colors.muted, fontSize: 12, marginTop: 1 },
   labelsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
+  gpsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+    marginBottom: spacing.lg,
+  },
+  gpsBtnText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   labelBtn: {
     flexDirection: 'row',
     alignItems: 'center',

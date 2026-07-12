@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const SIDE = spacing.md;
@@ -22,56 +24,59 @@ const CARD_HEIGHT = 200;
 const slides = [
   {
     id: 's1',
-    pill: 'FREE PICKUP',
+    pill: 'promo.s1Pill',
     pillIcon: 'bicycle',
-    title: 'Pickup at your\ndoorstep',
-    subtitle: 'Schedule in under a minute.',
-    cta: 'Book pickup',
+    title: 'promo.s1Title',
+    subtitle: 'promo.s1Subtitle',
+    cta: 'promo.s1Cta',
     icon: 'cube',
     gradient: ['#2D8FE0', '#1B6FC4'],
-    rating: '4.9 ★',
+    rating: 'promo.s1Rating',
   },
   {
     id: 's2',
-    pill: 'LIMITED TIME',
+    pill: 'promo.s2Pill',
     pillIcon: 'flame',
-    title: '40% off\nyour first wash',
-    subtitle: 'New customers · code CLEANPRO40',
-    cta: 'Claim offer',
+    title: 'promo.s2Title',
+    subtitle: 'promo.s2Subtitle',
+    cta: 'promo.s2Cta',
     icon: 'pricetag',
     gradient: ['#67C7EB', '#2D8FE0'],
-    rating: 'Save ₹150',
+    rating: 'promo.s2Rating',
   },
   {
     id: 's3',
-    pill: 'PREMIUM CARE',
+    pill: 'promo.s3Pill',
     pillIcon: 'sparkles',
-    title: 'Dry cleaning,\ndone right',
-    subtitle: 'Fabric-safe wash for delicates.',
-    cta: 'Explore',
+    title: 'promo.s3Title',
+    subtitle: 'promo.s3Subtitle',
+    cta: 'promo.s3Cta',
     icon: 'shirt',
     gradient: ['#1B6FC4', '#0A3D7A'],
-    rating: 'Used by 12k+',
+    rating: 'promo.s3Rating',
   },
   {
     id: 's4',
-    pill: 'ECO FRIENDLY',
+    pill: 'promo.s4Pill',
     pillIcon: 'leaf',
-    title: 'Gentle on clothes,\nthe planet.',
-    subtitle: 'Plant-based detergents only.',
-    cta: 'Learn more',
+    title: 'promo.s4Title',
+    subtitle: 'promo.s4Subtitle',
+    cta: 'promo.s4Cta',
     icon: 'leaf',
     gradient: ['#06B6D4', '#2D8FE0'],
-    rating: '100% certified',
+    rating: 'promo.s4Rating',
   },
 ];
 
 export default function PromoCarousel({ onPressSlide }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useI18n();
   const listRef = useRef(null);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       const next = (index + 1) % slides.length;
       listRef.current?.scrollToOffset({
         offset: next * SNAP,
@@ -79,7 +84,7 @@ export default function PromoCarousel({ onPressSlide }) {
       });
       setIndex(next);
     }, 4500);
-    return () => clearInterval(t);
+    return () => clearInterval(timer);
   }, [index]);
 
   return (
@@ -119,24 +124,24 @@ export default function PromoCarousel({ onPressSlide }) {
               {/* RATING / META PILL — top right */}
               <View style={styles.metaPill}>
                 <Ionicons name="star" size={10} color="#FFD700" />
-                <Text style={styles.metaText}>{item.rating}</Text>
+                <Text style={styles.metaText}>{t(item.rating)}</Text>
               </View>
 
               <View style={styles.content}>
                 {/* PILL */}
                 <View style={styles.pill}>
                   <Ionicons name={item.pillIcon} size={11} color="#FFD700" />
-                  <Text style={styles.pillText}>{item.pill}</Text>
+                  <Text style={styles.pillText}>{t(item.pill)}</Text>
                 </View>
 
                 {/* TITLE / SUB */}
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.sub}>{item.subtitle}</Text>
+                <Text style={styles.title}>{t(item.title)}</Text>
+                <Text style={styles.sub}>{t(item.subtitle)}</Text>
 
                 {/* CTA */}
                 <View style={styles.ctaRow}>
                   <View style={styles.ctaBtn}>
-                    <Text style={styles.ctaText}>{item.cta}</Text>
+                    <Text style={styles.ctaText}>{t(item.cta)}</Text>
                     <Ionicons name="arrow-forward" size={13} color={colors.primary} />
                   </View>
                 </View>
@@ -161,6 +166,8 @@ export default function PromoCarousel({ onPressSlide }) {
 }
 
 function Dot({ active }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const w = useRef(new Animated.Value(active ? 24 : 7)).current;
   useEffect(() => {
     Animated.spring(w, {
@@ -179,7 +186,7 @@ function Dot({ active }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   slide: {
     height: CARD_HEIGHT,
     borderRadius: 24,

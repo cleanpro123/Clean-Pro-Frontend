@@ -1,36 +1,41 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Switch,
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { useApp } from '../../shared/state/AppContext';
 import { useAuth } from '../../shared/state/AuthContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function ProfileScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useI18n();
   const { addresses } = useApp();
   const { profile, logout } = useAuth();
-  const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [whatsapp, setWhatsapp] = useState(true);
-  const [stats, setStats] = useState({ orders: 0, totalSpent: 0 });
+  const [stats, setStats] = useState({ orders: 0, ordersLastWeek: 0 });
 
   const load = useCallback(async () => {
     try {
       const o = await api.get('/requests/mine');
+      const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
       setStats({
         orders: o.length,
-        totalSpent: o.reduce((s, r) => s + (r.total || 0), 0),
+        // Orders placed in the last 7 days.
+        ordersLastWeek: o.filter(
+          (r) => new Date(r.placedAt || r.createdAt).getTime() >= weekAgo
+        ).length,
       });
     } catch {}
   }, []);
@@ -39,69 +44,99 @@ export default function ProfileScreen({ navigation }) {
     load();
   }, [load]);
 
-  const totalOrders = stats.orders;
-  const totalSaved = stats.totalSpent;
+  // Every completed order saves the customer a flat QAR 5 vs. walk-in pricing.
+  const SAVED_PER_ORDER = 5;
+  const ordersLastWeek = stats.ordersLastWeek;
+  const savedQar = stats.orders * SAVED_PER_ORDER;
+  const memberYear = profile?.createdAt
+    ? new Date(profile.createdAt).getFullYear()
+    : '—';
 
   // Gentle "not built yet" popup for the rows/toggles we haven't wired up.
   const showSoon = (label) =>
     confirmAction({
       title: `${label}`,
-      message: `${label} is coming soon. We're still building this — check back in a future update.`,
+      message: t('profile.comingSoonMessage', { label }),
       hideCancel: true,
       tone: 'info',
-      confirmLabel: 'Got it',
+      confirmLabel: t('profile.gotIt'),
     });
 
   const accountMenu = [
     {
-      icon: 'location-outline',
-      label: 'Saved addresses',
-      hint: `${addresses.length} saved`,
-      route: 'Addresses',
+      icon: 'receipt-outline',
+      label: t('profile.orders'),
+      hint: t('profile.ordersCount', { count: stats.orders }),
+      route: 'Orders',
       tint: '#2D8FE0',
     },
     {
-      icon: 'card-outline',
-      label: 'Payment methods',
-      hint: '2 cards · UPI',
+      icon: 'create-outline',
+      label: t('profile.editProfile'),
+      hint: t('profile.editProfileHint'),
+      route: 'EditProfile',
       tint: '#1B6FC4',
-      soon: true,
     },
     {
-      icon: 'receipt-outline',
-      label: 'Order history',
-      hint: `${totalOrders} orders`,
-      route: 'Orders',
+      icon: 'location-outline',
+      label: t('profile.savedAddresses'),
+      hint: t('profile.savedCount', { count: addresses.length }),
+      route: 'Addresses',
       tint: '#06B6D4',
     },
     {
       icon: 'notifications-outline',
-      label: 'Notifications',
-      hint: 'Order updates & offers',
+      label: t('profile.notifications'),
+      hint: t('profile.notificationsHint'),
       route: 'Notifications',
       tint: '#0EA5E9',
     },
     {
-      icon: 'pricetag-outline',
-      label: 'Coupons & offers',
-      hint: '3 available',
-      tint: '#5DADE2',
-      soon: true,
+      icon: 'shield-checkmark-outline',
+      label: t('profile.privacyCenter'),
+      hint: t('profile.privacyCenterHint'),
+      route: 'PrivacyCenter',
+      tint: '#1B6FC4',
     },
+  ];
+
+  const activityMenu = [
     {
       icon: 'star-outline',
-      label: 'My reviews',
-      hint: 'Rate your past orders',
+      label: t('profile.myReviews'),
+      hint: t('profile.myReviewsHint'),
       route: 'MyReviews',
       tint: '#F59E0B',
     },
   ];
 
-  const supportMenu = [
-    { icon: 'help-circle-outline', label: 'Help center', soon: true },
-    { icon: 'chatbubble-ellipses-outline', label: 'Contact support', soon: true },
-    { icon: 'document-text-outline', label: 'Terms & policies', soon: true },
-    { icon: 'star-outline', label: 'Rate Clean Pro on the store', soon: true },
+  // Flipkart-style "Feedback & Information" block — sits just above Sign out.
+  // Help center + Contact support live here now (the old Support section is gone).
+  const feedbackMenu = [
+    {
+      icon: 'document-text-outline',
+      label: t('profile.termsPoliciesLicenses'),
+      route: 'PrivacyPolicy',
+      tint: '#1B6FC4',
+    },
+    {
+      icon: 'help-buoy-outline',
+      label: t('profile.browseFaqs'),
+      route: 'Faqs',
+      tint: '#F59E0B',
+    },
+    {
+      icon: 'help-circle-outline',
+      label: t('profile.helpCenter'),
+      route: 'HelpCenter',
+      tint: '#1B6FC4',
+    },
+    {
+      icon: 'chatbubble-ellipses-outline',
+      label: t('profile.contactSupport'),
+      route: 'ContactSupport',
+      tint: '#16A34A',
+    },
   ];
 
   return (
@@ -119,8 +154,12 @@ export default function ProfileScreen({ navigation }) {
             style={styles.headerCard}
           >
             <View style={styles.headerTopRow}>
-              <Text style={styles.headerTitle}>My Profile</Text>
-              <TouchableOpacity style={styles.iconChip} activeOpacity={0.7}>
+              <Text style={styles.headerTitle}>{t('profile.myProfile')}</Text>
+              <TouchableOpacity
+                style={styles.iconChip}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('Settings')}
+              >
                 <Ionicons name="settings-outline" size={18} color={colors.card} />
               </TouchableOpacity>
             </View>
@@ -144,10 +183,10 @@ export default function ProfileScreen({ navigation }) {
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>
-                  <Text style={styles.name}>{profile?.name || 'Customer'}</Text>
+                  <Text style={styles.name}>{profile?.name || t('profile.customer')}</Text>
                   <View style={styles.tierBadge}>
                     <Ionicons name="diamond" size={10} color={'#FFD700'} />
-                    <Text style={styles.tierText}>Gold</Text>
+                    <Text style={styles.tierText}>{t('profile.gold')}</Text>
                   </View>
                 </View>
                 <Text style={styles.email}>{profile?.email || ''}</Text>
@@ -157,7 +196,7 @@ export default function ProfileScreen({ navigation }) {
                   onPress={() => navigation.navigate('EditProfile')}
                 >
                   <Ionicons name="create-outline" size={12} color={colors.card} />
-                  <Text style={styles.editBtnText}>Edit profile</Text>
+                  <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -165,55 +204,52 @@ export default function ProfileScreen({ navigation }) {
 
           {/* STATS CARD - floats over header */}
           <View style={styles.statsCard}>
-            <Stat icon="receipt" value={totalOrders} label="Orders" />
+            <Stat icon="receipt" value={ordersLastWeek} label={t('profile.thisWeek')} />
             <View style={styles.statDivider} />
-            <Stat icon="wallet" value={`₹${totalSaved}`} label="Saved" />
+            <Stat icon="wallet" value={`QAR ${savedQar}`} label={t('profile.saved')} />
             <View style={styles.statDivider} />
-            <Stat icon="calendar" value="2024" label="Member" />
+            <Stat icon="calendar" value={memberYear} label={t('profile.member')} />
           </View>
         </View>
 
-        {/* WALLET / REFER */}
+        {/* SERVICE HIGHLIGHTS — tap through to book */}
         <View style={styles.walletRow}>
-          <TouchableOpacity activeOpacity={0.9} style={{ flex: 1 }} onPress={() => showSoon('Wallet')}>
-            <View style={[styles.walletCard, styles.rowSoon]}>
-              <View style={styles.cardSoonBadge}>
-                <Text style={styles.soonBadgeText}>Coming soon</Text>
-              </View>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            style={{ flex: 1 }}
+            onPress={() => navigation.navigate('Services')}
+          >
+            <View style={styles.walletCard}>
               <View style={[styles.walletIcon, { backgroundColor: colors.primarySoft }]}>
-                <Ionicons name="wallet-outline" size={20} color={colors.primary} />
+                <Ionicons name="flash-outline" size={20} color={colors.primary} />
               </View>
-              <Text style={styles.walletLabel}>Wallet</Text>
-              <Text style={styles.walletValue}>₹120</Text>
+              <Text style={styles.svcTitle}>{t('profile.expressDelivery')}</Text>
+              <Text style={styles.svcSub}>{t('profile.expressDeliverySub')}</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
             activeOpacity={0.9}
             style={{ flex: 1 }}
-            onPress={() => showSoon('Refer & earn')}
+            onPress={() => navigation.navigate('Services')}
           >
             <LinearGradient
               colors={['#06B6D4', '#2D8FE0']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={[styles.referCard, styles.rowSoon]}
+              style={styles.referCard}
             >
-              <View style={styles.cardSoonBadgeLight}>
-                <Text style={styles.cardSoonBadgeLightText}>Coming soon</Text>
+              <View style={[styles.walletIcon, { backgroundColor: '#ffffff33' }]}>
+                <Ionicons name="bicycle-outline" size={20} color={colors.card} />
               </View>
-              <View style={styles.referHead}>
-                <Ionicons name="gift-outline" size={18} color={colors.card} />
-                <Text style={styles.referLabel}>Refer & earn</Text>
-              </View>
-              <Text style={styles.referValue}>Get ₹100</Text>
-              <Text style={styles.referSub}>for every friend</Text>
+              <Text style={styles.referTitle}>{t('profile.freePickup')}</Text>
+              <Text style={styles.referSub}>{t('profile.freePickupSub')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
 
-        {/* ACCOUNT */}
-        <SectionTitle title="Account" />
+        {/* MY ACCOUNT */}
+        <SectionTitle title={t('profile.myAccount')} />
         <View style={styles.menu}>
           {accountMenu.map((m, i) => (
             <MenuRow
@@ -225,44 +261,28 @@ export default function ProfileScreen({ navigation }) {
           ))}
         </View>
 
-        {/* PREFERENCES */}
-        <SectionTitle title="Preferences" />
+        {/* MY ACTIVITY */}
+        <SectionTitle title={t('profile.myActivity')} />
         <View style={styles.menu}>
-          <ToggleRow
-            icon="notifications-outline"
-            label="Push notifications"
-            hint="Order updates & offers"
-            value={notifications}
-            onValueChange={setNotifications}
-            soon
-          />
-          <ToggleRow
-            icon="logo-whatsapp"
-            label="WhatsApp updates"
-            hint="Get pickup reminders"
-            value={whatsapp}
-            onValueChange={setWhatsapp}
-            soon
-          />
-          <ToggleRow
-            icon="moon-outline"
-            label="Dark mode"
-            value={darkMode}
-            onValueChange={setDarkMode}
-            soon
-            isLast
-          />
-        </View>
-
-        {/* SUPPORT */}
-        <SectionTitle title="Support" />
-        <View style={styles.menu}>
-          {supportMenu.map((m, i) => (
+          {activityMenu.map((m, i) => (
             <MenuRow
               key={m.label}
-              item={{ ...m, tint: colors.primary }}
-              isLast={i === supportMenu.length - 1}
-              onPress={() => (m.soon ? showSoon(m.label) : undefined)}
+              item={m}
+              isLast={i === activityMenu.length - 1}
+              onPress={() => (m.soon ? showSoon(m.label) : m.route && navigation.navigate(m.route))}
+            />
+          ))}
+        </View>
+
+        {/* FEEDBACK & INFORMATION */}
+        <SectionTitle title={t('profile.feedbackInformation')} />
+        <View style={styles.menu}>
+          {feedbackMenu.map((m, i) => (
+            <MenuRow
+              key={m.label}
+              item={m}
+              isLast={i === feedbackMenu.length - 1}
+              onPress={() => (m.soon ? showSoon(m.label) : m.route && navigation.navigate(m.route))}
             />
           ))}
         </View>
@@ -273,25 +293,27 @@ export default function ProfileScreen({ navigation }) {
           style={styles.signoutBtn}
           onPress={() =>
             confirmAction({
-              title: 'Sign out?',
-              message: 'You will need to sign in again.',
-              confirmLabel: 'Sign out',
+              title: t('profile.signOutTitle'),
+              message: t('profile.signOutMessage'),
+              confirmLabel: t('profile.signOut'),
               destructive: true,
               onConfirm: logout,
             })
           }
         >
           <Ionicons name="log-out-outline" size={18} color={colors.danger} />
-          <Text style={styles.signoutText}>Sign out</Text>
+          <Text style={styles.signoutText}>{t('profile.signOut')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.version}>Clean Pro v1.0.0 · Made with 💙</Text>
+        <Text style={styles.version}>{t('profile.version')}</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 function Stat({ icon, value, label }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.statCol}>
       <View style={styles.statIconBox}>
@@ -304,18 +326,25 @@ function Stat({ icon, value, label }) {
 }
 
 function SectionTitle({ title }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return <Text style={styles.section}>{title}</Text>;
 }
 
 function SoonBadge() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useI18n();
   return (
     <View style={styles.soonBadge}>
-      <Text style={styles.soonBadgeText}>Coming soon</Text>
+      <Text style={styles.soonBadgeText}>{t('profile.comingSoon')}</Text>
     </View>
   );
 }
 
 function MenuRow({ item, isLast, onPress }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -334,32 +363,8 @@ function MenuRow({ item, isLast, onPress }) {
   );
 }
 
-function ToggleRow({ icon, label, hint, value, onValueChange, soon, isLast }) {
-  return (
-    <View style={[styles.row, !isLast && styles.rowBorder, soon && styles.rowSoon]}>
-      <View style={[styles.rowIcon, { backgroundColor: colors.primary + '18' }]}>
-        <Ionicons name={icon} size={18} color={colors.primary} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.rowLabel}>{label}</Text>
-        {hint && <Text style={styles.rowHint}>{hint}</Text>}
-      </View>
-      {soon ? (
-        <SoonBadge />
-      ) : (
-        <Switch
-          value={value}
-          onValueChange={onValueChange}
-          trackColor={{ false: colors.border, true: colors.primary }}
-          thumbColor={colors.card}
-          ios_backgroundColor={colors.border}
-        />
-      )}
-    </View>
-  );
-}
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
 
   // HEADER
@@ -481,6 +486,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   walletCard: {
+    flex: 1,
     backgroundColor: colors.card,
     padding: spacing.md,
     borderRadius: radii.md,
@@ -498,12 +504,16 @@ const styles = StyleSheet.create({
   },
   walletLabel: { color: colors.muted, fontSize: 12 },
   walletValue: { color: colors.text, fontWeight: '800', fontSize: 18 },
+  svcTitle: { color: colors.text, fontWeight: '800', fontSize: 15 },
+  svcSub: { color: colors.muted, fontSize: 11 },
   referCard: {
+    flex: 1,
     padding: spacing.md,
     borderRadius: radii.md,
     gap: 4,
     overflow: 'hidden',
   },
+  referTitle: { color: colors.card, fontWeight: '800', fontSize: 15 },
   referHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
   referLabel: { color: colors.card, fontWeight: '700', fontSize: 12 },
   referValue: { color: colors.card, fontWeight: '800', fontSize: 18 },

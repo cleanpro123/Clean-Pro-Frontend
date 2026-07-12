@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { AVATARS } from '../constants/avatars';
-import { colors, radii, spacing } from '../theme/colors';
+import { radii, spacing } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/LanguageContext';
 
 const isPreset = (uri) => AVATARS.some((a) => a.uri === uri);
 
 export default function AvatarPicker({ value, onChange }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState(value && !isPreset(value) ? value : null);
 
   const pickCustom = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission needed', 'Allow photo access to upload your own picture.');
+      Alert.alert(t('avatar.permissionNeeded'), t('avatar.permissionMessage'));
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -50,7 +55,7 @@ export default function AvatarPicker({ value, onChange }) {
           >
             <Ionicons name="happy-outline" size={18} color={colors.primaryDark} />
             <Text style={styles.actionText}>
-              {open ? 'Hide avatars' : 'Choose an avatar'}
+              {open ? t('avatar.hideAvatars') : t('avatar.chooseAvatar')}
             </Text>
           </TouchableOpacity>
 
@@ -61,7 +66,7 @@ export default function AvatarPicker({ value, onChange }) {
           >
             <Ionicons name="camera-outline" size={18} color={colors.primary} />
             <Text style={styles.actionTextAlt}>
-              {custom ? 'Change photo' : 'Upload your own'}
+              {custom ? t('avatar.changePhoto') : t('avatar.uploadYourOwn')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -96,7 +101,7 @@ export default function AvatarPicker({ value, onChange }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   previewWrap: {
     width: 64,

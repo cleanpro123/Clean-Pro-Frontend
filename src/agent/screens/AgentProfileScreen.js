@@ -16,6 +16,7 @@ import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
 import { useAuth } from '../../shared/state/AuthContext';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 function InfoPill({ icon, label, value, onPress }) {
   const Wrap = onPress ? TouchableOpacity : View;
@@ -42,6 +43,9 @@ function InfoPill({ icon, label, value, onPress }) {
 }
 
 export default function AgentProfileScreen({ navigation }) {
+  const { t, language, languages } = useI18n();
+  const currentLangLabel =
+    languages.find((l) => l.code === language)?.native || 'English (US)';
   const { logout } = useAuth();
   const [agent, setAgent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -70,9 +74,9 @@ export default function AgentProfileScreen({ navigation }) {
 
   const handleLogout = () =>
     confirmAction({
-      title: 'End shift?',
-      message: 'You will be signed out and stop receiving orders.',
-      confirmLabel: 'End shift',
+      title: t('agentProfile.endShiftQuestion'),
+      message: t('agentProfile.signOutMessage'),
+      confirmLabel: t('agentProfile.endShift'),
       destructive: true,
       onConfirm: logout,
     });
@@ -80,22 +84,22 @@ export default function AgentProfileScreen({ navigation }) {
   const showZoneDetails = () =>
     setDetail({
       icon: 'map',
-      title: 'Service zone',
+      title: t('agentProfile.serviceZone'),
       rows: [
-        { label: 'Zone', value: agent.zone || '—' },
-        { label: 'Current location', value: agent.place || '—' },
-        { label: 'Status', value: agent.status || '—' },
+        { label: t('agentProfile.zone'), value: agent.zone || '—' },
+        { label: t('agentProfile.currentLocation'), value: agent.place || '—' },
+        { label: t('agentProfile.status'), value: agent.status || '—' },
       ],
     });
 
   const showVehicleDetails = () =>
     setDetail({
       icon: 'car-sport',
-      title: 'Vehicle',
+      title: t('agentProfile.vehicle'),
       rows: [
-        { label: 'Vehicle', value: agent.vehicle || '—' },
-        { label: 'Pickups today', value: String(agent.pickupsToday ?? 0) },
-        { label: 'Status', value: agent.status || '—' },
+        { label: t('agentProfile.vehicle'), value: agent.vehicle || '—' },
+        { label: t('agentProfile.pickupsToday'), value: String(agent.pickupsToday ?? 0) },
+        { label: t('agentProfile.status'), value: agent.status || '—' },
       ],
     });
 
@@ -105,7 +109,7 @@ export default function AgentProfileScreen({ navigation }) {
         <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.title}>{t('agentProfile.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -122,28 +126,28 @@ export default function AgentProfileScreen({ navigation }) {
               <Ionicons name="bicycle" size={36} color={colors.text} />
             </View>
             <Text style={styles.name}>{agent.name}</Text>
-            <Text style={styles.subId}>Agent ID · {agent.id}</Text>
+            <Text style={styles.subId}>{t('agentProfile.agentId', { id: agent.id })}</Text>
           </LinearGradient>
         </View>
 
-        <Text style={styles.section}>Contact</Text>
+        <Text style={styles.section}>{t('agentProfile.contact')}</Text>
         <InfoPill
           icon="call"
-          label="Phone"
+          label={t('agentProfile.phone')}
           value={agent.phone}
           onPress={() => Linking.openURL(`tel:${(agent.phone || '').replace(/\s/g, '')}`)}
         />
         <InfoPill
           icon="mail"
-          label="Email"
+          label={t('agentProfile.email')}
           value={agent.email}
           onPress={() => Linking.openURL(`mailto:${agent.email}`)}
         />
 
-        <Text style={styles.section}>Location &amp; vehicle</Text>
+        <Text style={styles.section}>{t('agentProfile.locationVehicle')}</Text>
         <InfoPill
           icon="location-sharp"
-          label="Current location"
+          label={t('agentProfile.currentLocation')}
           value={agent.place || '—'}
           onPress={
             agent.place
@@ -156,15 +160,23 @@ export default function AgentProfileScreen({ navigation }) {
         />
         <InfoPill
           icon="map"
-          label="Service zone"
+          label={t('agentProfile.serviceZone')}
           value={agent.zone || '—'}
           onPress={showZoneDetails}
         />
         <InfoPill
           icon="car-sport"
-          label="Vehicle"
+          label={t('agentProfile.vehicle')}
           value={agent.vehicle || '—'}
           onPress={showVehicleDetails}
+        />
+
+        <Text style={styles.section}>{t('settings.preferences')}</Text>
+        <InfoPill
+          icon="language"
+          label={t('settings.language')}
+          value={currentLangLabel}
+          onPress={() => navigation.navigate('Language')}
         />
 
         <TouchableOpacity
@@ -180,7 +192,7 @@ export default function AgentProfileScreen({ navigation }) {
           >
             <View style={styles.pillBorder} pointerEvents="none" />
             <Ionicons name="log-out-outline" size={18} color="#F87171" />
-            <Text style={styles.logoutText}>End shift &amp; sign out</Text>
+            <Text style={styles.logoutText}>{t('agentProfile.endShiftSignOut')}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>

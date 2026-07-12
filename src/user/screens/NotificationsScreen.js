@@ -10,44 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
-
-// Each order status maps to a friendly notification. We derive the
-// notification feed from the user's orders so there is real content to show
-// without a dedicated backend endpoint.
-const STATUS_NOTIF = {
-  accepted: {
-    icon: 'thumbs-up-outline',
-    tint: '#2D8FE0',
-    title: 'Order accepted',
-    body: (o) => `${o.code} is confirmed — we'll pick it up soon.`,
-  },
-  in_progress: {
-    icon: 'water-outline',
-    tint: '#1B6FC4',
-    title: 'In wash',
-    body: (o) => `${o.code} is being washed with care.`,
-  },
-  out_for_delivery: {
-    icon: 'bicycle-outline',
-    tint: '#06B6D4',
-    title: 'Out for delivery',
-    body: (o) => `${o.code} is on its way to you.`,
-  },
-  delivered: {
-    icon: 'checkmark-circle-outline',
-    tint: colors.success,
-    title: 'Order delivered',
-    body: (o) => `${o.code} was delivered. Tap to rate it.`,
-  },
-  cancelled: {
-    icon: 'close-circle-outline',
-    tint: colors.danger,
-    title: 'Order cancelled',
-    body: (o) => `${o.code} was cancelled.`,
-  },
-};
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 function timeAgo(date) {
   const d = new Date(date);
@@ -63,8 +29,47 @@ function timeAgo(date) {
 }
 
 export default function NotificationsScreen({ navigation }) {
+  const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Each order status maps to a friendly notification. We derive the
+  // notification feed from the user's orders so there is real content to show
+  // without a dedicated backend endpoint.
+  const STATUS_NOTIF = {
+    accepted: {
+      icon: 'thumbs-up-outline',
+      tint: '#2D8FE0',
+      titleKey: 'orderAccepted',
+      bodyKey: 'acceptedBody',
+    },
+    in_progress: {
+      icon: 'water-outline',
+      tint: '#1B6FC4',
+      titleKey: 'inWash',
+      bodyKey: 'inWashBody',
+    },
+    out_for_delivery: {
+      icon: 'bicycle-outline',
+      tint: '#06B6D4',
+      titleKey: 'outForDelivery',
+      bodyKey: 'outForDeliveryBody',
+    },
+    delivered: {
+      icon: 'checkmark-circle-outline',
+      tint: colors.success,
+      titleKey: 'orderDelivered',
+      bodyKey: 'deliveredBody',
+    },
+    cancelled: {
+      icon: 'close-circle-outline',
+      tint: colors.danger,
+      titleKey: 'orderCancelled',
+      bodyKey: 'cancelledBody',
+    },
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,12 +99,12 @@ export default function NotificationsScreen({ navigation }) {
           status: o.status,
           icon: meta.icon,
           tint: meta.tint,
-          title: meta.title,
-          body: meta.body(o),
+          title: t(`notifications.${meta.titleKey}`),
+          body: t(`notifications.${meta.bodyKey}`, { code: o.code }),
           at: o.updatedAt || o.placedAt || o.createdAt,
         };
       });
-  }, [feed]);
+  }, [feed, t]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -112,8 +117,8 @@ export default function NotificationsScreen({ navigation }) {
           <Ionicons name="chevron-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <View>
-          <Text style={styles.title}>Notifications</Text>
-          <Text style={styles.sub}>Updates on your orders</Text>
+          <Text style={styles.title}>{t('notifications.title')}</Text>
+          <Text style={styles.sub}>{t('notifications.subtitle')}</Text>
         </View>
       </View>
 
@@ -129,9 +134,9 @@ export default function NotificationsScreen({ navigation }) {
             <View style={styles.emptyIcon}>
               <Ionicons name="notifications-outline" size={42} color={colors.primary} />
             </View>
-            <Text style={styles.emptyTitle}>No notifications yet</Text>
+            <Text style={styles.emptyTitle}>{t('notifications.emptyTitle')}</Text>
             <Text style={styles.emptySub}>
-              You'll see order updates and offers here.
+              {t('notifications.emptySubtitle')}
             </Text>
           </View>
         ) : (
@@ -162,7 +167,7 @@ export default function NotificationsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',

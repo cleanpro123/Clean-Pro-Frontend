@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,15 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { useApp } from '../../shared/state/AppContext';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const orderSteps = [
   { id: 'accepted', label: 'Accepted', icon: 'thumbs-up-outline' },
@@ -25,16 +28,29 @@ import { useAuth } from '../../shared/state/AuthContext';
 import PromoCarousel from '../components/PromoCarousel';
 
 const features = [
-  { id: 'pickup', title: 'Free pickup', desc: 'At your doorstep', icon: 'bicycle-outline', color: '#2D8FE0' },
-  { id: 'quality', title: 'Premium care', desc: 'Fabric-safe wash', icon: 'sparkles-outline', color: '#1B6FC4' },
-  { id: 'eco', title: 'Eco friendly', desc: 'Gentle detergents', icon: 'leaf-outline', color: '#06B6D4' },
-  { id: 'fast', title: '24h turnaround', desc: 'Wash & fold', icon: 'flash-outline', color: '#5DADE2' },
+  { id: 'pickup', titleKey: 'home.featurePickupTitle', descKey: 'home.featurePickupDesc', icon: 'bicycle-outline', color: '#2D8FE0' },
+  { id: 'quality', titleKey: 'home.featureQualityTitle', descKey: 'home.featureQualityDesc', icon: 'sparkles-outline', color: '#1B6FC4' },
+  { id: 'eco', titleKey: 'home.featureEcoTitle', descKey: 'home.featureEcoDesc', icon: 'leaf-outline', color: '#06B6D4' },
+  { id: 'fast', titleKey: 'home.featureFastTitle', descKey: 'home.featureFastDesc', icon: 'flash-outline', color: '#5DADE2' },
 ];
 
-const offers = [
-  { id: 'o1', badge: 'NEW USER', title: '40% off', sub: 'On your first wash', code: 'CLEANPRO40', gradient: ['#2D8FE0', '#1B6FC4'] },
-  { id: 'o2', badge: 'WEEKEND', title: 'Buy 2 Get 1', sub: 'On dry cleaning', code: 'DRY3', gradient: ['#06B6D4', '#1B6FC4'] },
+// Backend offers carry no colour, so cards cycle through these brand gradients.
+const OFFER_GRADIENTS = [
+  ['#2D8FE0', '#1B6FC4'],
+  ['#06B6D4', '#1B6FC4'],
+  ['#1B6FC4', '#0F4C81'],
+  ['#5DADE2', '#2D8FE0'],
 ];
+
+// Map a real offer (code, label, discount, minOrder, validTill) → card fields.
+const offerCard = (o, i, t) => ({
+  id: o.id || o.code,
+  badge: o.validTill ? t('home.offerBadgeLimited') : t('home.offerBadgeOffer'),
+  title: o.label || t('home.offerDiscountOff', { discount: o.discount }),
+  sub: o.minOrder ? t('home.offerMinOrder', { minOrder: o.minOrder }) : t('home.offerOnYourOrder'),
+  code: o.code,
+  gradient: OFFER_GRADIENTS[i % OFFER_GRADIENTS.length],
+});
 
 const greet = () => {
   const h = new Date().getHours();
@@ -46,22 +62,28 @@ const greet = () => {
 const isActive = (o) => o.status !== 'delivered' && o.status !== 'cancelled';
 
 export default function HomeScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t, td } = useI18n();
   const { addresses, selectedAddressId } = useApp();
   const { profile } = useAuth();
   const [services, setServices] = useState([]);
   const [orders, setOrders] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [offers, setOffers] = useState([]);
 
   const load = useCallback(async () => {
     try {
-      const [s, o, r] = await Promise.all([
+      const [s, o, r, of] = await Promise.all([
         api.get('/services').catch(() => []),
         api.get('/requests/mine').catch(() => []),
         api.get('/reviews').catch(() => []),
+        api.get('/offers').catch(() => []),
       ]);
       setServices(s);
       setOrders(o);
       setReviews(Array.isArray(r) ? r : []);
+      setOffers(Array.isArray(of) ? of : []);
     } catch {}
   }, []);
 
@@ -79,7 +101,7 @@ export default function HomeScreen({ navigation }) {
   const addrText =
     [currentAddr?.line1, currentAddr?.area].filter(Boolean).join(', ') ||
     currentAddr?.label ||
-    'Home';
+    t('home.addressFallbackHome');
   const activeOrder = orders.find(isActive);
   const lastOrder = orders.find((o) => !isActive(o));
   const greeting = greet();
@@ -119,7 +141,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="location" size={15} color={colors.card} />
               </LinearGradient>
               <View>
-                <Text style={styles.locLabel}>DELIVER TO</Text>
+                <Text style={styles.locLabel}>{t('home.deliverTo')}</Text>
                 <View style={styles.locRow}>
                   <Text style={styles.locValue} numberOfLines={1}>
                     {addrText}
@@ -164,7 +186,7 @@ export default function HomeScreen({ navigation }) {
             </View>
             <TextInput
               style={styles.searchInput}
-              placeholder="Search services, offers, orders…"
+              placeholder={t('home.searchPlaceholder')}
               placeholderTextColor={colors.muted}
             />
             <TouchableOpacity activeOpacity={0.7} style={styles.searchAction}>
@@ -206,9 +228,12 @@ export default function HomeScreen({ navigation }) {
                   <Ionicons name="cube" size={18} color={colors.card} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.activeLabel}>YOUR ORDER IS LIVE</Text>
+                  <Text style={styles.activeLabel}>{t('home.orderLiveLabel')}</Text>
                   <Text style={styles.activeTitle}>
-                    {activeOrder.code} · {activeOrder.items?.length || 0} items
+                    {t('home.orderCodeItems', {
+                      code: activeOrder.code,
+                      count: activeOrder.items?.length || 0,
+                    })}
                   </Text>
                 </View>
                 <View style={styles.etaChip}>
@@ -245,10 +270,10 @@ export default function HomeScreen({ navigation }) {
               </View>
               <View style={styles.activeFoot}>
                 <Text style={styles.activeStatus}>
-                  Status: {activeOrder.status}
+                  {t('home.statusLabel', { status: activeOrder.status })}
                 </Text>
                 <View style={styles.trackBtn}>
-                  <Text style={styles.trackBtnText}>Track</Text>
+                  <Text style={styles.trackBtnText}>{t('home.track')}</Text>
                   <Ionicons name="arrow-forward" size={12} color={colors.card} />
                 </View>
               </View>
@@ -259,13 +284,13 @@ export default function HomeScreen({ navigation }) {
         {/* QUICK ACTIONS */}
         <View style={styles.quickRow}>
           {[
-            { icon: 'cube-outline', label: 'Pickup', tint: '#2D8FE0' },
-            { icon: 'time-outline', label: 'Schedule', tint: '#1B6FC4' },
-            { icon: 'location-outline', label: 'Track', tint: '#06B6D4' },
-            { icon: 'pricetag-outline', label: 'Offers', tint: '#5DADE2' },
-            { icon: 'headset-outline', label: 'Support', tint: '#0EA5E9' },
+            { icon: 'cube-outline', id: 'pickup', label: t('home.quickPickup'), tint: '#2D8FE0' },
+            { icon: 'time-outline', id: 'schedule', label: t('home.quickSchedule'), tint: '#1B6FC4' },
+            { icon: 'location-outline', id: 'track', label: t('home.quickTrack'), tint: '#06B6D4' },
+            { icon: 'pricetag-outline', id: 'offers', label: t('home.quickOffers'), tint: '#5DADE2' },
+            { icon: 'headset-outline', id: 'support', label: t('home.quickSupport'), tint: '#0EA5E9' },
           ].map((q) => (
-            <TouchableOpacity key={q.label} style={styles.quickItem} activeOpacity={0.7}>
+            <TouchableOpacity key={q.id} style={styles.quickItem} activeOpacity={0.7}>
               <View style={[styles.quickIcon, { backgroundColor: q.tint + '18' }]}>
                 <Ionicons name={q.icon} size={20} color={q.tint} />
               </View>
@@ -276,9 +301,9 @@ export default function HomeScreen({ navigation }) {
 
         {/* POPULAR SERVICES — horizontal scroll */}
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Popular services</Text>
+          <Text style={styles.sectionTitle}>{t('home.popularServices')}</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Services')}>
-            <Text style={styles.link}>See all →</Text>
+            <Text style={styles.link}>{t('home.seeAll')}</Text>
           </TouchableOpacity>
         </View>
         <ScrollView
@@ -298,9 +323,9 @@ export default function HomeScreen({ navigation }) {
               <View style={[styles.serviceIconScroll, { backgroundColor: colors.primarySoft }]}>
                 <Ionicons name={s.icon} size={28} color={colors.primary} />
               </View>
-              <Text style={styles.serviceNameScroll}>{s.name}</Text>
+              <Text style={styles.serviceNameScroll}>{td('service', s.key)}</Text>
               <Text style={styles.servicePriceScroll} numberOfLines={2}>
-                {s.description}
+                {td('serviceDesc', s.key)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -308,7 +333,7 @@ export default function HomeScreen({ navigation }) {
 
         {/* WHY CLEANPRO */}
         <View style={[styles.sectionHead, { marginTop: spacing.lg }]}>
-          <Text style={styles.sectionTitle}>Why choose Clean Pro</Text>
+          <Text style={styles.sectionTitle}>{t('home.whyChoose')}</Text>
         </View>
         <View style={styles.featuresGrid}>
           {features.map((f) => (
@@ -316,47 +341,68 @@ export default function HomeScreen({ navigation }) {
               <View style={[styles.featureIcon, { backgroundColor: f.color + '20' }]}>
                 <Ionicons name={f.icon} size={22} color={f.color} />
               </View>
-              <Text style={styles.featureTitle}>{f.title}</Text>
-              <Text style={styles.featureDesc}>{f.desc}</Text>
+              <Text style={styles.featureTitle}>{t(f.titleKey)}</Text>
+              <Text style={styles.featureDesc}>{t(f.descKey)}</Text>
             </View>
           ))}
         </View>
 
         {/* SPECIAL OFFERS */}
         <View style={[styles.sectionHead, { marginTop: spacing.lg }]}>
-          <Text style={styles.sectionTitle}>Special offers</Text>
-          <Text style={styles.link}>View all</Text>
+          <Text style={styles.sectionTitle}>{t('home.specialOffers')}</Text>
+          {offers.length > 0 ? <Text style={styles.link}>{t('home.viewAll')}</Text> : null}
         </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}
-        >
-          {offers.map((o) => (
-            <TouchableOpacity key={o.id} activeOpacity={0.9}>
+        {offers.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}
+          >
+            {offers.map((o, i) => offerCard(o, i, t)).map((o) => (
+              <TouchableOpacity key={o.id} activeOpacity={0.9}>
+                <LinearGradient
+                  colors={o.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.offerCard}
+                >
+                  <Text style={styles.offerBadge}>{o.badge}</Text>
+                  <Text style={styles.offerTitle}>{o.title}</Text>
+                  <Text style={styles.offerSub}>{o.sub}</Text>
+                  <View style={styles.offerCodeBox}>
+                    <Ionicons name="pricetag" size={12} color={colors.card} />
+                    <Text style={styles.offerCode}>{o.code}</Text>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.offersEmptyWrap}>
+            <ImageBackground
+              source={require('../../../assets/admin-clothes.png')}
+              style={styles.offersEmpty}
+              imageStyle={styles.offersEmptyImg}
+            >
               <LinearGradient
-                colors={o.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.offerCard}
+                colors={['#0F2A4Fe0', '#1B6FC4b3']}
+                start={{ x: 0, y: 1 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.offersEmptyOverlay}
               >
-                <Text style={styles.offerBadge}>{o.badge}</Text>
-                <Text style={styles.offerTitle}>{o.title}</Text>
-                <Text style={styles.offerSub}>{o.sub}</Text>
-                <View style={styles.offerCodeBox}>
-                  <Ionicons name="pricetag" size={12} color={colors.card} />
-                  <Text style={styles.offerCode}>{o.code}</Text>
-                </View>
+                <Ionicons name="pricetags-outline" size={26} color={colors.card} />
+                <Text style={styles.offersEmptyTitle}>{t('home.noOffers')}</Text>
+                <Text style={styles.offersEmptySub}>{t('home.checkBackSoon')}</Text>
               </LinearGradient>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+            </ImageBackground>
+          </View>
+        )}
 
         {/* LAST ORDER */}
         {lastOrder && (
           <>
             <View style={[styles.sectionHead, { marginTop: spacing.lg }]}>
-              <Text style={styles.sectionTitle}>Last order</Text>
+              <Text style={styles.sectionTitle}>{t('home.lastOrder')}</Text>
             </View>
             <TouchableOpacity
               activeOpacity={0.85}
@@ -369,10 +415,10 @@ export default function HomeScreen({ navigation }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.reorderHead}>{lastOrder.code}</Text>
                 <Text style={styles.reorderBody}>
-                  {lastOrder.items?.length || 0} items
+                  {t('home.itemsCount', { count: lastOrder.items?.length || 0 })}
                 </Text>
                 <Text style={styles.reorderMeta}>
-                  ₹{lastOrder.total} ·{' '}
+                  QAR {lastOrder.total} ·{' '}
                   {new Date(lastOrder.updatedAt || lastOrder.createdAt).toLocaleDateString()}
                 </Text>
               </View>
@@ -385,7 +431,7 @@ export default function HomeScreen({ navigation }) {
         {reviews.length > 0 && (
           <>
             <View style={[styles.sectionHead, { marginTop: spacing.lg }]}>
-              <Text style={styles.sectionTitle}>What our customers say</Text>
+              <Text style={styles.sectionTitle}>{t('home.customerReviews')}</Text>
             </View>
             <ScrollView
               horizontal
@@ -401,7 +447,7 @@ export default function HomeScreen({ navigation }) {
                       </Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.testimonialName}>{r.customerName || 'Customer'}</Text>
+                      <Text style={styles.testimonialName}>{r.customerName || t('home.customer')}</Text>
                       <View style={styles.starsRow}>
                         {[1, 2, 3, 4, 5].map((n) => (
                           <Ionicons
@@ -427,17 +473,17 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.statsRow}>
           <View style={styles.statCol}>
             <Text style={styles.statValue}>12k+</Text>
-            <Text style={styles.statLabel}>Happy customers</Text>
+            <Text style={styles.statLabel}>{t('home.statHappyCustomers')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statCol}>
             <Text style={styles.statValue}>4.9★</Text>
-            <Text style={styles.statLabel}>Avg rating</Text>
+            <Text style={styles.statLabel}>{t('home.statAvgRating')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statCol}>
             <Text style={styles.statValue}>24h</Text>
-            <Text style={styles.statLabel}>Turnaround</Text>
+            <Text style={styles.statLabel}>{t('home.statTurnaround')}</Text>
           </View>
         </View>
 
@@ -452,7 +498,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
 
   // HERO SHELL
@@ -808,6 +854,24 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
   },
   offerCode: { color: colors.card, fontWeight: '700', fontSize: 12, letterSpacing: 1 },
+
+  // OFFERS EMPTY STATE
+  offersEmptyWrap: {
+    marginHorizontal: spacing.md,
+    borderRadius: radii.md,
+    overflow: 'hidden',
+  },
+  offersEmpty: { width: '100%', height: 130, justifyContent: 'center' },
+  offersEmptyImg: { borderRadius: radii.md },
+  offersEmptyOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    gap: 2,
+  },
+  offersEmptyTitle: { color: colors.card, fontSize: 16, fontWeight: '800', marginTop: 4 },
+  offersEmptySub: { color: '#EAF4FF', fontSize: 12 },
 
   // REORDER
   reorderCard: {

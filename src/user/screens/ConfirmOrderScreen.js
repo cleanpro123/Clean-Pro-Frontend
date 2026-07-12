@@ -12,15 +12,17 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { useApp } from '../../shared/state/AppContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const dates = [
-  { id: 'today', label: 'Today', sub: 'Now' },
-  { id: 'tomorrow', label: 'Tomorrow', sub: '+1 day' },
-  { id: 'day-after', label: 'Day after', sub: '+2 days' },
+  { id: 'today', labelKey: 'confirmOrder.dateToday', subKey: 'confirmOrder.dateTodaySub' },
+  { id: 'tomorrow', labelKey: 'confirmOrder.dateTomorrow', subKey: 'confirmOrder.dateTomorrowSub' },
+  { id: 'day-after', labelKey: 'confirmOrder.dateDayAfter', subKey: 'confirmOrder.dateDayAfterSub' },
 ];
 
 const slots = ['8 – 10 AM', '10 – 12 PM', '2 – 4 PM', '4 – 6 PM', '6 – 8 PM'];
@@ -28,15 +30,15 @@ const slots = ['8 – 10 AM', '10 – 12 PM', '2 – 4 PM', '4 – 6 PM', '6 –
 const deliveryOptions = [
   {
     id: 'normal',
-    label: 'Normal delivery',
-    sub: 'Delivered in 24 – 48 hr',
+    labelKey: 'confirmOrder.deliveryNormal',
+    subKey: 'confirmOrder.deliveryNormalSub',
     fee: 0,
     icon: 'time-outline',
   },
   {
     id: 'fast',
-    label: 'Express delivery',
-    sub: 'Delivered in 6 – 8 hr',
+    labelKey: 'confirmOrder.deliveryFast',
+    subKey: 'confirmOrder.deliveryFastSub',
     fee: 50,
     icon: 'flash-outline',
     badge: 'FAST',
@@ -44,17 +46,19 @@ const deliveryOptions = [
 ];
 
 const paymentMethods = [
-  { id: 'cod', label: 'Cash on delivery', sub: 'Pay when you receive', icon: 'cash-outline' },
-  { id: 'upi', label: 'UPI', sub: 'PhonePe, GPay, Paytm', icon: 'phone-portrait-outline', disabled: true },
-  { id: 'card', label: 'Card', sub: 'Debit / Credit', icon: 'card-outline', disabled: true },
+  { id: 'cod', labelKey: 'confirmOrder.payCod', subKey: 'confirmOrder.payCodSub', icon: 'cash-outline' },
+  { id: 'upi', labelKey: 'confirmOrder.payUpi', subKey: 'confirmOrder.payUpiSub', icon: 'phone-portrait-outline', disabled: true },
+  { id: 'card', labelKey: 'confirmOrder.payCard', subKey: 'confirmOrder.payCardSub', icon: 'card-outline', disabled: true },
 ];
 
 export default function ConfirmOrderScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t, td } = useI18n();
   const {
     totals,
     addresses,
     selectedAddressId,
-    setSelectedAddressId,
     clearCart,
   } = useApp();
 
@@ -79,14 +83,14 @@ export default function ConfirmOrderScreen({ navigation }) {
   // Place-order button stays disabled (dimmed) while this list is non-empty.
   const missing = useMemo(() => {
     const m = [];
-    if (totals.count === 0) m.push('Add at least one item to your cart');
-    if (!selectedAddress) m.push('Choose a pickup address');
-    if (!date) m.push('Pick a pickup day');
-    if (!slot) m.push('Choose a time slot');
-    if (!delivery) m.push('Select a delivery speed');
-    if (!payment) m.push('Choose a payment method');
+    if (totals.count === 0) m.push(t('confirmOrder.missingItem'));
+    if (!selectedAddress) m.push(t('confirmOrder.missingAddress'));
+    if (!date) m.push(t('confirmOrder.missingDay'));
+    if (!slot) m.push(t('confirmOrder.missingSlot'));
+    if (!delivery) m.push(t('confirmOrder.missingDelivery'));
+    if (!payment) m.push(t('confirmOrder.missingPayment'));
     return m;
-  }, [totals.count, selectedAddress, date, slot, delivery, payment]);
+  }, [totals.count, selectedAddress, date, slot, delivery, payment, t]);
   const canPlace = missing.length === 0;
 
   // Group cart items by service key for display
@@ -101,12 +105,12 @@ export default function ConfirmOrderScreen({ navigation }) {
       const svc = services.find((s) => s.key === key);
       return {
         key,
-        label: svc?.name || key,
+        label: td('service', key),
         icon: svc?.icon || 'cube-outline',
         items,
       };
     });
-  }, [totals.items, services]);
+  }, [totals.items, services, td]);
 
   // PLACE ORDER (frontend entry point)
   // Runs when the user taps "Place order": if anything required is still
@@ -116,9 +120,9 @@ export default function ConfirmOrderScreen({ navigation }) {
     // Guard: everything required must be selected first
     if (missing.length > 0) {
       confirmAction({
-        title: 'A few things left',
+        title: t('confirmOrder.fewThingsLeft'),
         message: missing.map((m) => `•  ${m}`).join('\n'),
-        confirmLabel: 'Got it',
+        confirmLabel: t('confirmOrder.gotIt'),
         hideCancel: true,
         tone: 'info',
         onConfirm: () => {},
@@ -140,6 +144,7 @@ export default function ConfirmOrderScreen({ navigation }) {
       await api.post('/requests', {
         addressId: selectedAddress.id,
         pickupSlot: `${date} · ${slot} · ${delivery}`,
+        note: notes.trim(),
         paymentMethod: payment,
         items,
       });
@@ -149,9 +154,9 @@ export default function ConfirmOrderScreen({ navigation }) {
       navigation.navigate('MainTabs', { screen: 'Orders' });
     } catch (e) {
       confirmAction({
-        title: 'Could not place order',
+        title: t('confirmOrder.couldNotPlace'),
         message: e.message,
-        confirmLabel: 'OK',
+        confirmLabel: t('confirmOrder.ok'),
         onConfirm: () => {},
       });
     } finally {
@@ -167,6 +172,7 @@ export default function ConfirmOrderScreen({ navigation }) {
     payment,
     clearCart,
     navigation,
+    t,
   ]);
 
   return (
@@ -179,10 +185,10 @@ export default function ConfirmOrderScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {/* ORDER ITEMS GROUPED BY SERVICE */}
-        <Text style={styles.section}>Your items</Text>
+        <Text style={styles.section}>{t('confirmOrder.yourItems')}</Text>
         {groups.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>Your cart is empty.</Text>
+            <Text style={styles.emptyText}>{t('confirmOrder.cartEmpty')}</Text>
           </View>
         ) : (
           groups.map((g) => (
@@ -198,9 +204,9 @@ export default function ConfirmOrderScreen({ navigation }) {
                   <Text style={styles.itemIdx}>
                     {String(idx + 1).padStart(2, '0')}.
                   </Text>
-                  <Text style={styles.itemName}>{it.name}</Text>
+                  <Text style={styles.itemName}>{td('item', it.name)}</Text>
                   <Text style={styles.itemQty}>× {it.qty}</Text>
-                  <Text style={styles.itemPrice}>₹{it.qty * it.price}</Text>
+                  <Text style={styles.itemPrice}>QAR {it.qty * it.price}</Text>
                 </View>
               ))}
             </View>
@@ -208,60 +214,45 @@ export default function ConfirmOrderScreen({ navigation }) {
         )}
 
         {/* ADDRESS */}
-        <Text style={styles.section}>Pickup address</Text>
+        <Text style={styles.section}>{t('confirmOrder.pickupAddress')}</Text>
         {addresses.length === 0 ? (
           <TouchableOpacity
             style={styles.addAddressBtn}
             onPress={() => navigation.navigate('AddAddress')}
           >
             <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-            <Text style={styles.addAddressText}>Add a pickup address</Text>
+            <Text style={styles.addAddressText}>{t('confirmOrder.addPickupAddress')}</Text>
           </TouchableOpacity>
         ) : (
-          <>
-            {addresses.map((a) => {
-              const sel = a.id === selectedAddressId;
-              const detail = [a.line1, a.line2, a.area, a.pincode]
-                .filter(Boolean)
-                .join(', ');
-              return (
-                <TouchableOpacity
-                  key={a.id}
-                  style={[styles.addrCard, sel && styles.addrCardActive]}
-                  onPress={() => setSelectedAddressId(a.id)}
-                >
+          (() => {
+            const a = selectedAddress || addresses[0];
+            const detail = [a.line1, a.line2, a.area, a.pincode]
+              .filter(Boolean)
+              .join(', ');
+            return (
+              <TouchableOpacity
+                style={[styles.addrCard, styles.addrCardActive]}
+                onPress={() => navigation.navigate('Addresses', { selectMode: true })}
+              >
+                <View style={[styles.addrIconBubble, styles.addrIconBubbleActive]}>
                   <Ionicons
-                    name={sel ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color={sel ? colors.primary : colors.muted}
+                    name={a.icon || 'location-outline'}
+                    size={16}
+                    color={colors.primary}
                   />
-                  <View style={[styles.addrIconBubble, sel && styles.addrIconBubbleActive]}>
-                    <Ionicons
-                      name={a.icon || 'location-outline'}
-                      size={16}
-                      color={sel ? colors.primary : colors.muted}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.addrLabel}>{a.label || 'Address'}</Text>
-                    {!!detail && <Text style={styles.addrLine}>{detail}</Text>}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-            {/* Add another saved address */}
-            <TouchableOpacity
-              style={styles.addAddressBtn}
-              onPress={() => navigation.navigate('AddAddress')}
-            >
-              <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-              <Text style={styles.addAddressText}>Add new address</Text>
-            </TouchableOpacity>
-          </>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.addrLabel}>{a.label || t('confirmOrder.addressFallback')}</Text>
+                  {!!detail && <Text style={styles.addrLine}>{detail}</Text>}
+                </View>
+                <Ionicons name="swap-horizontal" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            );
+          })()
         )}
 
         {/* DATE */}
-        <Text style={styles.section}>Pickup day</Text>
+        <Text style={styles.section}>{t('confirmOrder.pickupDay')}</Text>
         <View style={styles.pickRow}>
           {dates.map((d) => {
             const sel = d.id === date;
@@ -271,15 +262,15 @@ export default function ConfirmOrderScreen({ navigation }) {
                 onPress={() => setDate(d.id)}
                 style={[styles.pickPill, sel && styles.pickPillActive]}
               >
-                <Text style={[styles.pickLabel, sel && styles.pickLabelActive]}>{d.label}</Text>
-                <Text style={[styles.pickSub, sel && styles.pickSubActive]}>{d.sub}</Text>
+                <Text style={[styles.pickLabel, sel && styles.pickLabelActive]}>{t(d.labelKey)}</Text>
+                <Text style={[styles.pickSub, sel && styles.pickSubActive]}>{t(d.subKey)}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
         {/* SLOT */}
-        <Text style={styles.section}>Time slot</Text>
+        <Text style={styles.section}>{t('confirmOrder.timeSlot')}</Text>
         <View style={styles.slotRow}>
           {slots.map((s) => {
             const sel = s === slot;
@@ -296,7 +287,7 @@ export default function ConfirmOrderScreen({ navigation }) {
         </View>
 
         {/* DELIVERY */}
-        <Text style={styles.section}>Delivery speed</Text>
+        <Text style={styles.section}>{t('confirmOrder.deliverySpeed')}</Text>
         {deliveryOptions.map((d) => {
           const sel = d.id === delivery;
           return (
@@ -307,16 +298,16 @@ export default function ConfirmOrderScreen({ navigation }) {
             >
               <Ionicons name={d.icon} size={20} color={sel ? colors.primary : colors.muted} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.optionLabel}>{d.label}</Text>
-                <Text style={styles.optionSub}>{d.sub}</Text>
+                <Text style={styles.optionLabel}>{t(d.labelKey)}</Text>
+                <Text style={styles.optionSub}>{t(d.subKey)}</Text>
               </View>
-              <Text style={styles.optionFee}>{d.fee ? `+ ₹${d.fee}` : 'Free'}</Text>
+              <Text style={styles.optionFee}>{d.fee ? t('confirmOrder.feePlus', { fee: d.fee }) : t('confirmOrder.free')}</Text>
             </TouchableOpacity>
           );
         })}
 
         {/* PAYMENT */}
-        <Text style={styles.section}>Payment</Text>
+        <Text style={styles.section}>{t('confirmOrder.payment')}</Text>
         {paymentMethods.map((p) => {
           const sel = p.id === payment;
           // UPI / card aren't live yet — shown dimmed with a "Soon" badge and
@@ -326,11 +317,11 @@ export default function ConfirmOrderScreen({ navigation }) {
               <View key={p.id} style={[styles.option, styles.optionDisabled]}>
                 <Ionicons name={p.icon} size={20} color={colors.muted} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.optionLabel}>{p.label}</Text>
-                  <Text style={styles.optionSub}>{p.sub}</Text>
+                  <Text style={styles.optionLabel}>{t(p.labelKey)}</Text>
+                  <Text style={styles.optionSub}>{t(p.subKey)}</Text>
                 </View>
                 <View style={styles.soonBadge}>
-                  <Text style={styles.soonText}>Soon</Text>
+                  <Text style={styles.soonText}>{t('confirmOrder.soon')}</Text>
                 </View>
               </View>
             );
@@ -343,8 +334,8 @@ export default function ConfirmOrderScreen({ navigation }) {
             >
               <Ionicons name={p.icon} size={20} color={sel ? colors.primary : colors.muted} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.optionLabel}>{p.label}</Text>
-                <Text style={styles.optionSub}>{p.sub}</Text>
+                <Text style={styles.optionLabel}>{t(p.labelKey)}</Text>
+                <Text style={styles.optionSub}>{t(p.subKey)}</Text>
               </View>
               <Ionicons
                 name={sel ? 'radio-button-on' : 'radio-button-off'}
@@ -356,10 +347,10 @@ export default function ConfirmOrderScreen({ navigation }) {
         })}
 
         {/* NOTES */}
-        <Text style={styles.section}>Notes for the agent (optional)</Text>
+        <Text style={styles.section}>{t('confirmOrder.notesLabel')}</Text>
         <TextInput
           style={styles.notes}
-          placeholder="e.g. ring the bell before knocking"
+          placeholder={t('confirmOrder.notesPlaceholder')}
           placeholderTextColor={colors.muted}
           value={notes}
           onChangeText={setNotes}
@@ -367,19 +358,19 @@ export default function ConfirmOrderScreen({ navigation }) {
         />
 
         {/* SUMMARY */}
-        <Text style={styles.section}>Summary</Text>
+        <Text style={styles.section}>{t('confirmOrder.summary')}</Text>
         <View style={styles.summary}>
           <View style={styles.sumRow}>
-            <Text style={styles.sumLabel}>Subtotal ({totals.count} items)</Text>
-            <Text style={styles.sumValue}>₹{totals.subtotal}</Text>
+            <Text style={styles.sumLabel}>{t('confirmOrder.subtotalItems', { count: totals.count })}</Text>
+            <Text style={styles.sumValue}>QAR {totals.subtotal}</Text>
           </View>
           <View style={styles.sumRow}>
-            <Text style={styles.sumLabel}>Delivery</Text>
-            <Text style={styles.sumValue}>{deliveryFee ? `₹${deliveryFee}` : 'Free'}</Text>
+            <Text style={styles.sumLabel}>{t('confirmOrder.delivery')}</Text>
+            <Text style={styles.sumValue}>{deliveryFee ? `QAR ${deliveryFee}` : t('confirmOrder.free')}</Text>
           </View>
           <View style={[styles.sumRow, styles.sumTotal]}>
-            <Text style={styles.sumTotalLabel}>Total</Text>
-            <Text style={styles.sumTotalValue}>₹{grandTotal}</Text>
+            <Text style={styles.sumTotalLabel}>{t('confirmOrder.total')}</Text>
+            <Text style={styles.sumTotalValue}>QAR {grandTotal}</Text>
           </View>
         </View>
       </ScrollView>
@@ -387,9 +378,12 @@ export default function ConfirmOrderScreen({ navigation }) {
       {/* CTA */}
       <View style={styles.footer}>
         <View>
-          <Text style={styles.footTotal}>₹{grandTotal}</Text>
+          <Text style={styles.footTotal}>QAR {grandTotal}</Text>
           <Text style={styles.footMeta}>
-            {totals.count} items · {delivery === 'fast' ? 'Express' : 'Normal'}
+            {t('confirmOrder.footMeta', {
+              count: totals.count,
+              speed: delivery === 'fast' ? t('confirmOrder.express') : t('confirmOrder.normal'),
+            })}
           </Text>
         </View>
         {/* Kept pressable while incomplete so the tap explains what's left;
@@ -405,7 +399,7 @@ export default function ConfirmOrderScreen({ navigation }) {
               <ActivityIndicator color="#fff" />
             ) : (
               <>
-                <Text style={styles.ctaText}>Place order</Text>
+                <Text style={styles.ctaText}>{t('confirmOrder.placeOrder')}</Text>
                 <Ionicons
                   name={canPlace ? 'arrow-forward' : 'lock-closed'}
                   size={16}
@@ -420,7 +414,7 @@ export default function ConfirmOrderScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   section: {
     fontSize: 13,
     fontWeight: '800',

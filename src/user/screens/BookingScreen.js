@@ -9,13 +9,24 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { useApp } from '../../shared/state/AppContext';
 import { api } from '../../shared/api/client';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const categories = ['All', 'Men', 'Women', 'Home'];
 
 export default function BookingScreen({ route, navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t, td } = useI18n();
+  const catLabel = (c) => t(`booking.category${c}`);
+
+  // Localise the stack header title ("Select clothes") for the current language.
+  useEffect(() => {
+    navigation.setOptions({ title: t('booking.selectClothes') });
+  }, [navigation, t]);
   const initialKey = route.params?.serviceKey || 'wash';
   const [services, setServices] = useState([]);
   const [items, setItems] = useState([]);
@@ -83,18 +94,18 @@ export default function BookingScreen({ route, navigation }) {
             <Ionicons name={service.icon} size={32} color={colors.card} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.heroLabel}>YOU'RE BOOKING</Text>
-            <Text style={styles.heroTitle}>{service.name}</Text>
+            <Text style={styles.heroLabel}>{t('booking.heroLabel')}</Text>
+            <Text style={styles.heroTitle}>{td('service', service.key)}</Text>
             <Text style={styles.heroDesc} numberOfLines={2}>
-              {service.description}
+              {td('serviceDesc', service.key)}
             </Text>
             <View style={styles.heroPills}>
               <View style={styles.heroPill}>
                 <Ionicons name="basket-outline" size={11} color={colors.card} />
                 <Text style={styles.heroPillText}>
                   {inServiceCount > 0
-                    ? `${inServiceCount} items · ₹${inServiceTotal}`
-                    : 'No items yet'}
+                    ? t('booking.itemsTotal', { count: inServiceCount, total: inServiceTotal })
+                    : t('booking.noItemsYet')}
                 </Text>
               </View>
             </View>
@@ -121,7 +132,7 @@ export default function BookingScreen({ route, navigation }) {
               >
                 <Ionicons name={s.icon} size={16} color={active ? colors.card : colors.primary} />
                 <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                  {s.name}
+                  {td('service', s.key)}
                 </Text>
                 {qtyHere > 0 && (
                   <View style={styles.tabBadge}>
@@ -147,7 +158,7 @@ export default function BookingScreen({ route, navigation }) {
                 onPress={() => setCat(c)}
                 style={[styles.catChip, active && styles.catChipActive]}
               >
-                <Text style={[styles.catText, active && styles.catTextActive]}>{c}</Text>
+                <Text style={[styles.catText, active && styles.catTextActive]}>{catLabel(c)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -156,7 +167,7 @@ export default function BookingScreen({ route, navigation }) {
         {/* ITEMS */}
         <View style={styles.itemList}>
           {visibleItems.length === 0 ? (
-            <Text style={styles.empty}>No items priced for this service yet.</Text>
+            <Text style={styles.empty}>{t('booking.emptyItems')}</Text>
           ) : (
             visibleItems.map((it) => {
               const price = it.prices?.[activeKey] || 0;
@@ -167,9 +178,9 @@ export default function BookingScreen({ route, navigation }) {
                     <Ionicons name="shirt-outline" size={20} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.itemName}>{it.name}</Text>
+                    <Text style={styles.itemName}>{td('item', it.name)}</Text>
                     <Text style={styles.itemMeta}>
-                      {it.category} · ₹{price}
+                      {catLabel(it.category)} · QAR {price}
                     </Text>
                   </View>
                   <View style={styles.qtyRow}>
@@ -202,8 +213,8 @@ export default function BookingScreen({ route, navigation }) {
       {totalsCount > 0 && (
         <View style={styles.footer}>
           <View>
-            <Text style={styles.footTotal}>₹{totalsAll}</Text>
-            <Text style={styles.footMeta}>{totalsCount} items in cart</Text>
+            <Text style={styles.footTotal}>QAR {totalsAll}</Text>
+            <Text style={styles.footMeta}>{t('booking.itemsInCart', { count: totalsCount })}</Text>
           </View>
           <TouchableOpacity
             activeOpacity={0.85}
@@ -215,7 +226,7 @@ export default function BookingScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={styles.checkout}
             >
-              <Text style={styles.checkoutText}>Continue</Text>
+              <Text style={styles.checkoutText}>{t('booking.continue')}</Text>
               <Ionicons name="arrow-forward" size={16} color="#fff" />
             </LinearGradient>
           </TouchableOpacity>
@@ -225,7 +236,7 @@ export default function BookingScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   hero: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg, margin: spacing.md, borderRadius: radii.lg },
   heroIconBox: { width: 60, height: 60, borderRadius: radii.md, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },

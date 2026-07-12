@@ -1,6 +1,10 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  DefaultTheme as NavDefaultTheme,
+  DarkTheme as NavDarkTheme,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import LoginScreen from '../shared/screens/LoginScreen';
@@ -9,6 +13,9 @@ import SignupOtpScreen from '../shared/screens/SignupOtpScreen';
 import ForgotPasswordScreen from '../shared/screens/ForgotPasswordScreen';
 import NotFoundScreen from '../shared/screens/NotFoundScreen';
 import AccountBlockedScreen from '../shared/screens/AccountBlockedScreen';
+import PrivacyPolicyScreen from '../shared/screens/PrivacyPolicyScreen';
+import AboutScreen from '../shared/screens/AboutScreen';
+import LanguageScreen from '../shared/screens/LanguageScreen';
 import PartnerLoginScreen from '../partner/screens/PartnerLoginScreen';
 import AdminLoginGate from '../admin/screens/AdminLoginScreen';
 import AgentLoginGate from '../agent/screens/AgentLoginScreen';
@@ -16,14 +23,15 @@ import UserNavigator from '../user/navigation/UserNavigator';
 import AdminNavigator from '../admin/navigation/AdminNavigator';
 import AgentNavigator from '../agent/navigation/AgentNavigator';
 import { useAuth } from '../shared/state/AuthContext';
-import { colors } from '../shared/theme/colors';
+import { useTheme } from '../shared/theme/ThemeContext';
 import { isPartner } from '../config/appVariant';
 
 const Stack = createNativeStackNavigator();
 
 function Splash() {
+  const { colors } = useTheme();
   return (
-    <View style={styles.splash}>
+    <View style={[styles.splash, { backgroundColor: colors.background }]}>
       <ActivityIndicator color={colors.primary} />
     </View>
   );
@@ -60,14 +68,31 @@ function userScreens(role) {
 
 export default function RootNavigator() {
   const { role, loading } = useAuth();
+  const { colors, isDark } = useTheme();
 
   if (loading) return <Splash />;
 
+  const base = isDark ? NavDarkTheme : NavDefaultTheme;
+  const navTheme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: colors.background,
+      card: colors.card,
+      text: colors.text,
+      border: colors.border,
+      primary: colors.primary,
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isPartner ? partnerScreens(role) : userScreens(role)}
         {/* Shared fallback routes available in every stack. */}
+        <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+        <Stack.Screen name="About" component={AboutScreen} />
+        <Stack.Screen name="Language" component={LanguageScreen} />
         <Stack.Screen name="AccountBlocked" component={AccountBlockedScreen} />
         <Stack.Screen name="NotFound" component={NotFoundScreen} />
       </Stack.Navigator>
@@ -78,7 +103,6 @@ export default function RootNavigator() {
 const styles = StyleSheet.create({
   splash: {
     flex: 1,
-    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -11,20 +11,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radii, spacing, gradients } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const orderSteps = [
-  { id: 'accepted', label: 'Accepted', icon: 'thumbs-up-outline' },
-  { id: 'in_progress', label: 'In wash', icon: 'water-outline' },
-  { id: 'out_for_delivery', label: 'Out for delivery', icon: 'bicycle-outline' },
-  { id: 'delivered', label: 'Delivered', icon: 'checkmark-circle-outline' },
+  { id: 'accepted', labelKey: 'orders.stepAccepted', icon: 'thumbs-up-outline' },
+  { id: 'in_progress', labelKey: 'orders.stepInWash', icon: 'water-outline' },
+  { id: 'out_for_delivery', labelKey: 'orders.stepOutForDelivery', icon: 'bicycle-outline' },
+  { id: 'delivered', labelKey: 'orders.stepDelivered', icon: 'checkmark-circle-outline' },
 ];
 
 const FILTERS = [
-  { id: 'all', label: 'All' },
-  { id: 'active', label: 'Active' },
-  { id: 'done', label: 'Completed' },
+  { id: 'all', labelKey: 'orders.filterAll' },
+  { id: 'active', labelKey: 'orders.filterActive' },
+  { id: 'done', labelKey: 'orders.filterCompleted' },
 ];
 
 const isDone = (o) => o.status === 'delivered' || o.status === 'cancelled';
@@ -41,6 +43,9 @@ function orderAddress(order) {
 }
 
 export default function OrdersScreen({ navigation }) {
+  const { t } = useI18n();
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -85,8 +90,8 @@ export default function OrdersScreen({ navigation }) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Your orders</Text>
-          <Text style={styles.sub}>Track and manage your laundry</Text>
+          <Text style={styles.title}>{t('orders.title')}</Text>
+          <Text style={styles.sub}>{t('orders.subtitle')}</Text>
         </View>
       </View>
 
@@ -101,7 +106,7 @@ export default function OrdersScreen({ navigation }) {
               style={[styles.filterChip, sel && styles.filterChipActive]}
             >
               <Text style={[styles.filterText, sel && styles.filterTextActive]}>
-                {f.label}
+                {t(f.labelKey)}
               </Text>
               <View style={[styles.countBadge, sel && styles.countBadgeActive]}>
                 <Text style={[styles.countBadgeText, sel && styles.countBadgeTextActive]}>
@@ -125,8 +130,8 @@ export default function OrdersScreen({ navigation }) {
             <View style={styles.emptyIcon}>
               <Ionicons name="receipt-outline" size={42} color={colors.primary} />
             </View>
-            <Text style={styles.emptyTitle}>No orders yet</Text>
-            <Text style={styles.emptySub}>Place your first laundry order in a minute.</Text>
+            <Text style={styles.emptyTitle}>{t('orders.emptyTitle')}</Text>
+            <Text style={styles.emptySub}>{t('orders.emptySub')}</Text>
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => navigation.navigate('Services')}
@@ -137,7 +142,7 @@ export default function OrdersScreen({ navigation }) {
                 end={{ x: 1, y: 1 }}
                 style={styles.emptyCta}
               >
-                <Text style={styles.emptyCtaText}>Browse services</Text>
+                <Text style={styles.emptyCtaText}>{t('orders.browseServices')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -145,7 +150,7 @@ export default function OrdersScreen({ navigation }) {
           <>
             {active.length > 0 && (
               <>
-                <Text style={styles.section}>Active</Text>
+                <Text style={styles.section}>{t('orders.filterActive')}</Text>
                 {active.map((o) => (
                   <ActiveOrderCard
                     key={o.id}
@@ -157,7 +162,7 @@ export default function OrdersScreen({ navigation }) {
             )}
             {past.length > 0 && (
               <>
-                <Text style={styles.section}>Past orders</Text>
+                <Text style={styles.section}>{t('orders.sectionPast')}</Text>
                 {past.map((o) => (
                   <PastOrderCard
                     key={o.id}
@@ -180,6 +185,9 @@ function statusIndex(status) {
 }
 
 function ActiveOrderCard({ order, onPress }) {
+  const { t } = useI18n();
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const idx = statusIndex(order.status);
   const address = orderAddress(order);
   return (
@@ -197,7 +205,7 @@ function ActiveOrderCard({ order, onPress }) {
         <View style={{ flex: 1 }}>
           <Text style={styles.orderId}>{order.code}</Text>
           <Text style={styles.orderService}>
-            {order.items?.length || 0} items · ₹{order.total}
+            {t('orders.itemsCount', { count: order.items?.length || 0 })} · QAR {order.total}
           </Text>
         </View>
         <View style={styles.etaPill}>
@@ -241,7 +249,7 @@ function ActiveOrderCard({ order, onPress }) {
                   style={[styles.stepLabel, (done || current) && styles.stepLabelActive]}
                   numberOfLines={1}
                 >
-                  {step.label}
+                  {t(step.labelKey)}
                 </Text>
               </View>
               {i < orderSteps.length - 1 && (
@@ -256,6 +264,9 @@ function ActiveOrderCard({ order, onPress }) {
 }
 
 function PastOrderCard({ order, onPress, onRate }) {
+  const { t } = useI18n();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <TouchableOpacity style={styles.pastCard} activeOpacity={0.9} onPress={onPress}>
       <View style={styles.pastIcon}>
@@ -267,11 +278,11 @@ function PastOrderCard({ order, onPress, onRate }) {
           <View style={styles.deliveredBadge}>
             <Ionicons name="checkmark-circle" size={12} color={colors.success} />
             <Text style={styles.deliveredText}>
-              {order.status === 'cancelled' ? 'Cancelled' : 'Delivered'}
+              {order.status === 'cancelled' ? t('orders.statusCancelled') : t('orders.stepDelivered')}
             </Text>
           </View>
         </View>
-        <Text style={styles.pastService}>{order.items?.length || 0} items</Text>
+        <Text style={styles.pastService}>{t('orders.itemsCount', { count: order.items?.length || 0 })}</Text>
         {!!orderAddress(order) && (
           <View style={styles.addrRow}>
             <Ionicons name="location-outline" size={12} color={colors.muted} />
@@ -291,19 +302,19 @@ function PastOrderCard({ order, onPress, onRate }) {
               style={[styles.reorderBtn, { backgroundColor: '#FEF3C7' }]}
             >
               <Ionicons name="star-outline" size={14} color="#B45309" />
-              <Text style={[styles.reorderText, { color: '#B45309' }]}>Rate</Text>
+              <Text style={[styles.reorderText, { color: '#B45309' }]}>{t('orders.rate')}</Text>
             </TouchableOpacity>
           ) : (
             <View style={{ flex: 1 }} />
           )}
-          <Text style={styles.pastTotal}>₹{order.total}</Text>
+          <Text style={styles.pastTotal}>QAR {order.total}</Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
   title: { fontSize: 24, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },

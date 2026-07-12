@@ -1,9 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing } from '../../shared/theme/colors';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function ServiceCard({ service, onPress }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useI18n();
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.card}>
       <View style={[styles.iconWrap, { backgroundColor: service.color + '22' }]}>
@@ -15,7 +20,11 @@ export default function ServiceCard({ service, onPress }) {
           {service.description}
         </Text>
         <Text style={styles.meta}>
-          ₹{service.pricePerKg} / {service.unit} · {service.turnaroundHours}h
+          {t('serviceCard.priceMeta', {
+            price: service.pricePerKg,
+            unit: service.unit,
+            hours: service.turnaroundHours,
+          })}
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.muted} />
@@ -23,7 +32,7 @@ export default function ServiceCard({ service, onPress }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',

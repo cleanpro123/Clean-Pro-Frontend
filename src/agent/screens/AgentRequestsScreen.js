@@ -13,14 +13,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const tabs = [
-  { id: 'new', label: 'New Orders', statuses: ['assigned'] },
-  { id: 'accepted', label: 'Accepted', statuses: ['accepted', 'in_progress', 'out_for_delivery'] },
-  { id: 'history', label: 'Order History', statuses: ['delivered', 'cancelled'] },
+  { id: 'new', labelKey: 'agentRequests.tabNewOrders', statuses: ['assigned'] },
+  { id: 'accepted', labelKey: 'agentRequests.tabAccepted', statuses: ['accepted', 'in_progress', 'out_for_delivery'] },
+  { id: 'history', labelKey: 'agentRequests.tabOrderHistory', statuses: ['delivered', 'cancelled'] },
 ];
 
 export default function AgentRequestsScreen({ navigation }) {
+  const { t } = useI18n();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('new');
@@ -44,15 +46,15 @@ export default function AgentRequestsScreen({ navigation }) {
   }, [navigation, load]);
 
   const rows = useMemo(() => {
-    const t = tabs.find((x) => x.id === tab);
-    return requests.filter((r) => t.statuses.includes(r.status));
+    const active = tabs.find((x) => x.id === tab);
+    return requests.filter((r) => active.statuses.includes(r.status));
   }, [requests, tab]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <View style={{ width: 40 }} />
-        <Text style={styles.title}>Requests</Text>
+        <Text style={styles.title}>{t('agentRequests.title')}</Text>
         <TouchableOpacity
           style={styles.profileBtn}
           onPress={() => navigation.navigate('AgentProfile')}
@@ -63,16 +65,16 @@ export default function AgentRequestsScreen({ navigation }) {
       </View>
 
       <View style={styles.tabs}>
-        {tabs.map((t) => {
-          const active = t.id === tab;
+        {tabs.map((tabItem) => {
+          const active = tabItem.id === tab;
           return (
             <TouchableOpacity
-              key={t.id}
+              key={tabItem.id}
               style={styles.tab}
-              onPress={() => setTab(t.id)}
+              onPress={() => setTab(tabItem.id)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.tabText, active && styles.tabTextActive]}>{t.label}</Text>
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{t(tabItem.labelKey)}</Text>
               <View style={[styles.tabUnderline, active && styles.tabUnderlineActive]} />
             </TouchableOpacity>
           );
@@ -91,7 +93,7 @@ export default function AgentRequestsScreen({ navigation }) {
         ) : rows.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="file-tray-outline" size={48} color={colors.muted} />
-            <Text style={styles.emptyText}>No requests in this tab.</Text>
+            <Text style={styles.emptyText}>{t('agentRequests.emptyText')}</Text>
           </View>
         ) : (
           rows.map((r) => (
@@ -111,10 +113,10 @@ export default function AgentRequestsScreen({ navigation }) {
               >
                 <View style={styles.rowBorder} pointerEvents="none" />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.customer}>{r.customerName}</Text>
-                  <Text style={styles.phone}>{r.phone}</Text>
+                  <Text style={styles.customer}>{r.userId?.name || t('agentRequests.customer')}</Text>
+                  <Text style={styles.phone}>{r.userId?.phone || ''}</Text>
                 </View>
-                <Text style={styles.price}>Rs {r.total}</Text>
+                <Text style={styles.price}>QAR {r.total}</Text>
               </LinearGradient>
             </TouchableOpacity>
           ))

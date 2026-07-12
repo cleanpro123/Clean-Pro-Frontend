@@ -19,8 +19,10 @@ import AdminHeader from '../components/AdminHeader';
 import { colors, radii, spacing } from '../../shared/theme/dark';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
+import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function AdminAgentsScreen({ navigation }) {
+  const { t } = useI18n();
   const [agents, setAgents] = useState([]);
   const [maps, setMaps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export default function AdminAgentsScreen({ navigation }) {
     setLoading(true);
     try {
       const [a, m] = await Promise.all([
-        api.get('/agents'),
+        api.getAll('/agents'), // all agents, not just the first page
         api.get('/maps').catch(() => []),
       ]);
       setAgents(a);
@@ -58,20 +60,29 @@ export default function AdminAgentsScreen({ navigation }) {
 
   const save = async () => {
     setError('');
-    if (!form.name.trim() || !form.phone.trim() || !form.place.trim() || !form.vehicle.trim() || !form.email.trim() || !form.password.trim()) {
+    const digits = (s) => (s || '').replace(/\D/g, '');
+    const fail = (message) =>
       confirmAction({
-        title: 'Missing info',
-        message: 'Name, phone, place, vehicle, email and password are required.',
-        confirmLabel: 'OK',
+        title: t('adminAgents.missingInfoTitle'),
+        message,
+        confirmLabel: t('adminAgents.ok'),
         onConfirm: () => {},
       });
-      return;
+
+    // Validate each field individually so the admin knows exactly what's wrong.
+    if (form.name.trim().length < 2) return fail(t('adminAgents.nameRequired'));
+    if (digits(form.phone).length < 7) return fail(t('adminAgents.phoneInvalid'));
+    if (!form.place.trim()) return fail(t('adminAgents.placeRequired'));
+    if (!form.vehicle.trim()) return fail(t('adminAgents.vehicleRequired'));
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      return fail(t('adminAgents.emailInvalid'));
     }
+    if (form.password.length < 6) return fail(t('adminAgents.passwordMin'));
     if (!form.mapId) {
       confirmAction({
-        title: 'Pick a location',
-        message: 'Assign the agent to a map location.',
-        confirmLabel: 'OK',
+        title: t('adminAgents.pickLocationTitle'),
+        message: t('adminAgents.pickLocationMessage'),
+        confirmLabel: t('adminAgents.ok'),
         onConfirm: () => {},
       });
       return;
@@ -97,7 +108,7 @@ export default function AdminAgentsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AdminHeader
-        title="Agents"
+        title={t('adminAgents.title')}
         onBack={() => navigation.goBack()}
         rightAction={{ icon: 'add-circle-outline', onPress: () => setAdding(true) }}
       />
@@ -114,7 +125,7 @@ export default function AdminAgentsScreen({ navigation }) {
         ) : agents.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="bicycle-outline" size={48} color={colors.muted} />
-            <Text style={styles.emptyText}>No agents yet. Tap + to add one.</Text>
+            <Text style={styles.emptyText}>{t('adminAgents.emptyText')}</Text>
           </View>
         ) : (
           agents.map((a) => (
@@ -169,13 +180,13 @@ export default function AdminAgentsScreen({ navigation }) {
                       ]}
                     >
                       {a.status === 'blocked'
-                        ? 'Blocked'
+                        ? t('adminAgents.statusBlocked')
                         : a.status === 'active'
-                        ? 'Active'
-                        : 'Offline'}
+                        ? t('adminAgents.statusActive')
+                        : t('adminAgents.statusOffline')}
                     </Text>
                   </View>
-                  <Text style={styles.todayCount}>{a.pickupsToday || 0} today</Text>
+                  <Text style={styles.todayCount}>{t('adminAgents.pickupsToday', { count: a.pickupsToday || 0 })}</Text>
                 </View>
               </LinearGradient>
             </TouchableOpacity>
@@ -202,14 +213,14 @@ export default function AdminAgentsScreen({ navigation }) {
               style={styles.modal}
             >
               <View style={styles.modalBorder} pointerEvents="none" />
-              <Text style={styles.modalTitle}>New agent</Text>
+              <Text style={styles.modalTitle}>{t('adminAgents.newAgent')}</Text>
 
               {[
-                { k: 'name', label: 'Name' },
-                { k: 'phone', label: 'Phone', kb: 'phone-pad' },
-                { k: 'place', label: 'Place', kb: 'default' },
-                { k: 'vehicle', label: 'Vehicle-number', kb: 'vehicle-number' },
-                { k: 'email', label: 'Email', kb: 'email-address' },
+                { k: 'name', label: t('adminAgents.fieldName') },
+                { k: 'phone', label: t('adminAgents.fieldPhone'), kb: 'phone-pad' },
+                { k: 'place', label: t('adminAgents.fieldPlace'), kb: 'default' },
+                { k: 'vehicle', label: t('adminAgents.fieldVehicleNumber'), kb: 'vehicle-number' },
+                { k: 'email', label: t('adminAgents.fieldEmail'), kb: 'email-address' },
               ].map((f) => (
                 <View key={f.k} style={styles.inputWrap}>
                   <TextInput
@@ -226,7 +237,7 @@ export default function AdminAgentsScreen({ navigation }) {
               <View style={styles.inputWrap}>
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
-                  placeholder="Password"
+                  placeholder={t('adminAgents.fieldPassword')}
                   placeholderTextColor={colors.muted}
                   secureTextEntry={!showPw}
                   value={form.password}
@@ -250,7 +261,7 @@ export default function AdminAgentsScreen({ navigation }) {
                   ]}
                   numberOfLines={1}
                 >
-                  {selectedMap ? selectedMap.name : 'Assign a map location'}
+                  {selectedMap ? selectedMap.name : t('adminAgents.assignMapLocation')}
                 </Text>
                 <Ionicons
                   name={mapMenuOpen ? 'chevron-up' : 'chevron-down'}
@@ -262,7 +273,7 @@ export default function AdminAgentsScreen({ navigation }) {
                 <View style={styles.mapMenu}>
                   {maps.length === 0 ? (
                     <Text style={styles.mapMenuEmpty}>
-                      No locations yet. Add one in the Maps section.
+                      {t('adminAgents.noLocations')}
                     </Text>
                   ) : (
                     maps.map((m) => (
@@ -302,7 +313,7 @@ export default function AdminAgentsScreen({ navigation }) {
                   onPress={() => setAdding(false)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>{t('adminAgents.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalBtn, styles.saveBtn]}
@@ -310,7 +321,7 @@ export default function AdminAgentsScreen({ navigation }) {
                   disabled={busy}
                   activeOpacity={0.85}
                 >
-                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>Add agent</Text>}
+                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>{t('adminAgents.addAgent')}</Text>}
                 </TouchableOpacity>
               </View>
             </LinearGradient>
