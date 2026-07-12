@@ -27,11 +27,7 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "extra": {
-      "eas": {
-        "projectId": "0dc895a6-0083-47c6-9dd1-b52417bd0920"
-      }
-    },
+    "extra": {},
     "plugins": [
       "expo-font",
       "@sentry/react-native/expo",
@@ -47,6 +43,7 @@
           "photosPermission": "Clean Pro uses your photos so you can set a profile picture."
         }
       ]
-    ]
+    ],
+    "owner": "mhdnihal"
   }
 }

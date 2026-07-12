@@ -30,7 +30,8 @@ const VARIANT = IS_PARTNER
       androidPackage: 'com.cleanpro.app',
       iosBundleId: 'com.cleanpro.app',
       androidBg: '#1B6FC4',
-      projectId: '0dc895a6-0083-47c6-9dd1-b52417bd0920',
+      // User EAS project (@mhdnihal/clean-pro). Override with EAS_PROJECT_ID_USER.
+      projectId: process.env.EAS_PROJECT_ID_USER || '5c5c857f-784d-46b7-8ad9-cf66d2802133',
     };
 
 module.exports = ({ config }) => ({
