@@ -55,7 +55,10 @@ export default function AvatarPicker({ value, onChange }) {
                 accessibilityRole="button"
                 accessibilityLabel={a.label}
                 activeOpacity={0.85}
-                onPress={() => onChange(a.uri)}
+                onPress={() => {
+                  onChange(a.uri);
+                  setOpen(false); // collapse the grid once a choice is made
+                }}
                 style={[styles.avatarWrap, selected && styles.avatarWrapSel]}
               >
                 <Image source={{ uri: a.uri }} style={styles.avatar} />
