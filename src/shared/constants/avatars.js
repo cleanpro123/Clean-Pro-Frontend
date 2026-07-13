@@ -4,9 +4,14 @@
 // senior. The chosen `uri` is stored on the user.
 const BASE = 'https://api.dicebear.com/9.x/avataaars/png';
 
-// Each preset forces the traits that convey gender + age so the render is
-// stable (probabilities pinned to 0/100, single enum values). `label` is used
-// for the accessibility hint on each option.
+// Shared traits pinned on every preset so the faces stay neutral and
+// professional — open (non-blinking) eyes, calm eyebrows, a gentle smile and a
+// consistent skin tone. Without these, DiceBear randomises the expression and
+// produces odd faces (dizzy eyes, grimaces, frowns).
+const NEUTRAL = 'eyes=default&eyebrows=default&mouth=smile&skinColor=ffdbb4';
+
+// Per-preset traits convey gender + age. Probabilities are pinned to 0/100 and
+// enums to a single value so the render is stable. `label` is the a11y hint.
 const PRESETS = [
   {
     id: 'man-young',
@@ -24,13 +29,13 @@ const PRESETS = [
     id: 'man-senior',
     label: 'Senior man',
     params:
-      'seed=Arthur&top=shortFlat&hairColor=e8e1e1&facialHair=beardMedium&facialHairProbability=100&facialHairColor=e8e1e1&accessories=prescription02&accessoriesProbability=100&clothing=shirtVNeck&backgroundColor=d1f7e8',
+      'seed=Arthur&top=shortFlat&hairColor=e8e1e1&facialHair=beardLight&facialHairProbability=100&facialHairColor=e8e1e1&accessories=prescription02&accessoriesProbability=100&clothing=shirtVNeck&backgroundColor=d1f7e8',
   },
   {
     id: 'woman-young',
     label: 'Young woman',
     params:
-      'seed=Sofia&top=straight02&hairColor=724133&facialHairProbability=0&accessoriesProbability=0&clothing=graphicShirt&backgroundColor=ffd5dc',
+      'seed=Sofia&top=straight02&hairColor=724133&facialHairProbability=0&accessoriesProbability=0&clothing=shirtScoopNeck&clothesColor=ff6680&backgroundColor=ffd5dc',
   },
   {
     id: 'woman-middle',
@@ -49,5 +54,5 @@ const PRESETS = [
 export const AVATARS = PRESETS.map((p) => ({
   id: p.id,
   label: p.label,
-  uri: `${BASE}?${p.params}&radius=50`,
+  uri: `${BASE}?${p.params}&${NEUTRAL}&radius=50`,
 }));
