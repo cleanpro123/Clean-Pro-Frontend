@@ -19,14 +19,6 @@ import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
-const dates = [
-  { id: 'today', labelKey: 'confirmOrder.dateToday', subKey: 'confirmOrder.dateTodaySub' },
-  { id: 'tomorrow', labelKey: 'confirmOrder.dateTomorrow', subKey: 'confirmOrder.dateTomorrowSub' },
-  { id: 'day-after', labelKey: 'confirmOrder.dateDayAfter', subKey: 'confirmOrder.dateDayAfterSub' },
-];
-
-const slots = ['8 – 10 AM', '10 – 12 PM', '2 – 4 PM', '4 – 6 PM', '6 – 8 PM'];
-
 const deliveryOptions = [
   {
     id: 'normal',
@@ -63,8 +55,6 @@ export default function ConfirmOrderScreen({ navigation }) {
   } = useApp();
 
   const [services, setServices] = useState([]);
-  const [date, setDate] = useState('tomorrow');
-  const [slot, setSlot] = useState(slots[1]);
   const [delivery, setDelivery] = useState('normal');
   const [payment, setPayment] = useState('cod');
   const [notes, setNotes] = useState('');
@@ -85,12 +75,10 @@ export default function ConfirmOrderScreen({ navigation }) {
     const m = [];
     if (totals.count === 0) m.push(t('confirmOrder.missingItem'));
     if (!selectedAddress) m.push(t('confirmOrder.missingAddress'));
-    if (!date) m.push(t('confirmOrder.missingDay'));
-    if (!slot) m.push(t('confirmOrder.missingSlot'));
     if (!delivery) m.push(t('confirmOrder.missingDelivery'));
     if (!payment) m.push(t('confirmOrder.missingPayment'));
     return m;
-  }, [totals.count, selectedAddress, date, slot, delivery, payment, t]);
+  }, [totals.count, selectedAddress, delivery, payment, t]);
   const canPlace = missing.length === 0;
 
   // Group cart items by service key for display
@@ -143,7 +131,6 @@ export default function ConfirmOrderScreen({ navigation }) {
       // populates the full pickup address from it.
       await api.post('/requests', {
         addressId: selectedAddress.id,
-        pickupSlot: `${date} · ${slot} · ${delivery}`,
         note: notes.trim(),
         paymentMethod: payment,
         items,
@@ -250,41 +237,6 @@ export default function ConfirmOrderScreen({ navigation }) {
             );
           })()
         )}
-
-        {/* DATE */}
-        <Text style={styles.section}>{t('confirmOrder.pickupDay')}</Text>
-        <View style={styles.pickRow}>
-          {dates.map((d) => {
-            const sel = d.id === date;
-            return (
-              <TouchableOpacity
-                key={d.id}
-                onPress={() => setDate(d.id)}
-                style={[styles.pickPill, sel && styles.pickPillActive]}
-              >
-                <Text style={[styles.pickLabel, sel && styles.pickLabelActive]}>{t(d.labelKey)}</Text>
-                <Text style={[styles.pickSub, sel && styles.pickSubActive]}>{t(d.subKey)}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* SLOT */}
-        <Text style={styles.section}>{t('confirmOrder.timeSlot')}</Text>
-        <View style={styles.slotRow}>
-          {slots.map((s) => {
-            const sel = s === slot;
-            return (
-              <TouchableOpacity
-                key={s}
-                onPress={() => setSlot(s)}
-                style={[styles.slot, sel && styles.slotActive]}
-              >
-                <Text style={[styles.slotText, sel && styles.slotTextActive]}>{s}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
 
         {/* DELIVERY */}
         <Text style={styles.section}>{t('confirmOrder.deliverySpeed')}</Text>

@@ -289,9 +289,6 @@ export default function OrderDetailScreen({ route, navigation }) {
             }
           />
           <InfoLine icon="wallet-outline" label={t('orderDetail.payment')} value={payLabel} />
-          {!!order.pickupSlot && (
-            <InfoLine icon="time-outline" label={t('orderDetail.pickupSlot')} value={order.pickupSlot} />
-          )}
           {!!order.note && (
             <InfoLine icon="document-text-outline" label={t('orderDetail.noteForAgent')} value={order.note} />
           )}
