@@ -190,7 +190,7 @@ export default function AddAddressScreen({ navigation, route }) {
                   color={active ? colors.card : colors.primary}
                 />
                 <Text
-                  style={[styles.labelText, active && { color: colors.card }]}
+                  style={[styles.labelText, active && { color: '#fff' }]}
                 >
                   {t(`addAddress.label${l.id}`)}
                 </Text>
@@ -327,7 +327,7 @@ export default function AddAddressScreen({ navigation, route }) {
           end={{ x: 1, y: 1 }}
           style={styles.saveBtn}
         >
-          <Ionicons name="checkmark" size={18} color={colors.card} />
+          <Ionicons name="checkmark" size={18} color="#fff" />
           <Text style={styles.saveText}>
             {editing ? t('addAddress.updateButton') : t('addAddress.saveButton')}
           </Text>
@@ -468,5 +468,5 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingVertical: 14,
     borderRadius: radii.pill,
   },
-  saveText: { color: colors.card, fontWeight: '700', fontSize: 15 },
+  saveText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

@@ -129,7 +129,7 @@ export default function SignupOtpScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-background dark:bg-[#0A1424]" edges={['top']}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -165,11 +165,11 @@ export default function SignupOtpScreen({ navigation, route }) {
             </Text>
           </LinearGradient>
 
-          <View className="-mt-[22px] mx-lg bg-card rounded-lg p-lg shadow-[0px_8px_16px_rgba(27,111,196,0.08)]">
-            <View className="flex-row items-center bg-surface rounded-md px-md mb-3 gap-sm">
+          <View className="-mt-[22px] mx-lg bg-card dark:bg-[#152A44] rounded-lg p-lg shadow-[0px_8px_16px_rgba(27,111,196,0.08)]">
+            <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
               <Ionicons name="keypad-outline" size={18} color={colors.muted} />
               <TextInput
-                className="flex-1 py-3.5 text-text text-[18px] tracking-[6px]"
+                className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[18px] tracking-[6px]"
                 placeholder={t('signupOtp.codePlaceholder')}
                 placeholderTextColor={colors.muted}
                 keyboardType="number-pad"
@@ -192,7 +192,7 @@ export default function SignupOtpScreen({ navigation, route }) {
               />
               <Text
                 className={`font-bold text-[13px] ${
-                  resendTimer.active ? 'text-muted' : 'text-primary'
+                  resendTimer.active ? 'text-muted dark:text-[#7C97B5]' : 'text-primary'
                 }`}
               >
                 {resendTimer.active

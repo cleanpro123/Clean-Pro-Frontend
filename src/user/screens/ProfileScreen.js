@@ -160,7 +160,7 @@ export default function ProfileScreen({ navigation }) {
                 activeOpacity={0.7}
                 onPress={() => navigation.navigate('Settings')}
               >
-                <Ionicons name="settings-outline" size={18} color={colors.card} />
+                <Ionicons name="settings-outline" size={18} color="#fff" />
               </TouchableOpacity>
             </View>
 
@@ -174,11 +174,11 @@ export default function ProfileScreen({ navigation }) {
                   {profile?.avatar ? (
                     <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
                   ) : (
-                    <Ionicons name="person" size={36} color={colors.card} />
+                    <Ionicons name="person" size={36} color="#fff" />
                   )}
                 </View>
                 <View style={styles.avatarEdit}>
-                  <Ionicons name="camera" size={12} color={colors.card} />
+                  <Ionicons name="camera" size={12} color="#fff" />
                 </View>
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
@@ -195,7 +195,7 @@ export default function ProfileScreen({ navigation }) {
                   activeOpacity={0.8}
                   onPress={() => navigation.navigate('EditProfile')}
                 >
-                  <Ionicons name="create-outline" size={12} color={colors.card} />
+                  <Ionicons name="create-outline" size={12} color="#fff" />
                   <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
                 </TouchableOpacity>
               </View>
@@ -240,7 +240,7 @@ export default function ProfileScreen({ navigation }) {
               style={styles.referCard}
             >
               <View style={[styles.walletIcon, { backgroundColor: '#ffffff33' }]}>
-                <Ionicons name="bicycle-outline" size={20} color={colors.card} />
+                <Ionicons name="bicycle-outline" size={20} color="#fff" />
               </View>
               <Text style={styles.referTitle}>{t('profile.freePickup')}</Text>
               <Text style={styles.referSub}>{t('profile.freePickupSub')}</Text>
@@ -382,7 +382,7 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.lg,
   },
-  headerTitle: { color: colors.card, fontSize: 18, fontWeight: '800' },
+  headerTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
   iconChip: {
     width: 36,
     height: 36,
@@ -423,7 +423,7 @@ const makeStyles = (colors) => StyleSheet.create({
     borderColor: colors.card,
   },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  name: { color: colors.card, fontSize: 20, fontWeight: '800' },
+  name: { color: '#fff', fontSize: 20, fontWeight: '800' },
   tierBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -446,7 +446,7 @@ const makeStyles = (colors) => StyleSheet.create({
     borderRadius: radii.pill,
     marginTop: spacing.sm,
   },
-  editBtnText: { color: colors.card, fontWeight: '700', fontSize: 11 },
+  editBtnText: { color: '#fff', fontWeight: '700', fontSize: 11 },
 
   // STATS
   statsCard: {
@@ -513,10 +513,10 @@ const makeStyles = (colors) => StyleSheet.create({
     gap: 4,
     overflow: 'hidden',
   },
-  referTitle: { color: colors.card, fontWeight: '800', fontSize: 15 },
+  referTitle: { color: '#fff', fontWeight: '800', fontSize: 15 },
   referHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
-  referLabel: { color: colors.card, fontWeight: '700', fontSize: 12 },
-  referValue: { color: colors.card, fontWeight: '800', fontSize: 18 },
+  referLabel: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  referValue: { color: '#fff', fontWeight: '800', fontSize: 18 },
   referSub: { color: '#ffffffcc', fontSize: 11 },
 
   // SECTION
@@ -595,7 +595,7 @@ const makeStyles = (colors) => StyleSheet.create({
     zIndex: 1,
   },
   cardSoonBadgeLightText: {
-    color: colors.card,
+    color: '#fff',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.3,

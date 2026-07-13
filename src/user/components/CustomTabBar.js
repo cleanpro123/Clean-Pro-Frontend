@@ -161,7 +161,7 @@ function TabButton({ route, isFocused, onPress }) {
                 end={{ x: 1, y: 1 }}
                 style={styles.activeBg}
               >
-                <Ionicons name={icon.on} size={22} color={colors.card} />
+                <Ionicons name={icon.on} size={22} color="#fff" />
               </LinearGradient>
             </Animated.View>
           </Animated.View>
@@ -231,7 +231,7 @@ function FabButton({ onPress, bottom }) {
           style={styles.fabInner}
         >
           <Animated.View style={{ transform: [{ rotate: rotateInterp }] }}>
-            <Ionicons name="add" size={28} color={colors.card} />
+            <Ionicons name="add" size={28} color="#fff" />
           </Animated.View>
         </LinearGradient>
       </Animated.View>

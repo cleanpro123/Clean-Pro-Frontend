@@ -36,7 +36,7 @@ export default function AboutScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.brandWrap}>
           <View style={styles.logoBadge}>
-            <Ionicons name="shirt-outline" size={30} color={colors.card} />
+            <Ionicons name="shirt-outline" size={30} color="#fff" />
           </View>
           <Text style={styles.brandName}>Clean Pro</Text>
           <Text style={styles.tagline}>{t('about.tagline')}</Text>

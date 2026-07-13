@@ -138,7 +138,7 @@ export default function HomeScreen({ navigation }) {
                 end={{ x: 1, y: 1 }}
                 style={styles.locPin}
               >
-                <Ionicons name="location" size={15} color={colors.card} />
+                <Ionicons name="location" size={15} color="#fff" />
               </LinearGradient>
               <View>
                 <Text style={styles.locLabel}>{t('home.deliverTo')}</Text>
@@ -171,7 +171,7 @@ export default function HomeScreen({ navigation }) {
                   end={{ x: 1, y: 1 }}
                   style={styles.avatar}
                 >
-                  <Ionicons name="person" size={16} color={colors.card} />
+                  <Ionicons name="person" size={16} color="#fff" />
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -193,7 +193,7 @@ export default function HomeScreen({ navigation }) {
               <Ionicons name="mic-outline" size={16} color={colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity activeOpacity={0.7} style={styles.searchActionFilter}>
-              <Ionicons name="options-outline" size={16} color={colors.card} />
+              <Ionicons name="options-outline" size={16} color="#fff" />
             </TouchableOpacity>
           </View>
         </LinearGradient>
@@ -225,7 +225,7 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.activeCircle2} />
               <View style={styles.activeHead}>
                 <View style={styles.activeIconBg}>
-                  <Ionicons name="cube" size={18} color={colors.card} />
+                  <Ionicons name="cube" size={18} color="#fff" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.activeLabel}>{t('home.orderLiveLabel')}</Text>
@@ -274,7 +274,7 @@ export default function HomeScreen({ navigation }) {
                 </Text>
                 <View style={styles.trackBtn}>
                   <Text style={styles.trackBtnText}>{t('home.track')}</Text>
-                  <Ionicons name="arrow-forward" size={12} color={colors.card} />
+                  <Ionicons name="arrow-forward" size={12} color="#fff" />
                 </View>
               </View>
             </LinearGradient>
@@ -370,7 +370,7 @@ export default function HomeScreen({ navigation }) {
                   <Text style={styles.offerTitle}>{o.title}</Text>
                   <Text style={styles.offerSub}>{o.sub}</Text>
                   <View style={styles.offerCodeBox}>
-                    <Ionicons name="pricetag" size={12} color={colors.card} />
+                    <Ionicons name="pricetag" size={12} color="#fff" />
                     <Text style={styles.offerCode}>{o.code}</Text>
                   </View>
                 </LinearGradient>
@@ -390,7 +390,7 @@ export default function HomeScreen({ navigation }) {
                 end={{ x: 1, y: 0 }}
                 style={styles.offersEmptyOverlay}
               >
-                <Ionicons name="pricetags-outline" size={26} color={colors.card} />
+                <Ionicons name="pricetags-outline" size={26} color="#fff" />
                 <Text style={styles.offersEmptyTitle}>{t('home.noOffers')}</Text>
                 <Text style={styles.offersEmptySub}>{t('home.checkBackSoon')}</Text>
               </LinearGradient>
@@ -686,14 +686,14 @@ const makeStyles = (colors) => StyleSheet.create({
     justifyContent: 'center',
   },
   activeLabel: { color: '#ffffffaa', fontWeight: '800', fontSize: 9, letterSpacing: 1 },
-  activeTitle: { color: colors.card, fontWeight: '800', fontSize: 14, marginTop: 2 },
+  activeTitle: { color: '#fff', fontWeight: '800', fontSize: 14, marginTop: 2 },
   etaChip: {
     backgroundColor: '#ffffff25',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: radii.pill,
   },
-  etaText: { color: colors.card, fontSize: 11, fontWeight: '700' },
+  etaText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   miniTimeline: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -725,7 +725,7 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingVertical: 5,
     borderRadius: radii.pill,
   },
-  trackBtnText: { color: colors.card, fontWeight: '700', fontSize: 11 },
+  trackBtnText: { color: '#fff', fontWeight: '700', fontSize: 11 },
 
   // QUICK ACTIONS
   quickRow: {
@@ -831,7 +831,7 @@ const makeStyles = (colors) => StyleSheet.create({
   offerBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#ffffff33',
-    color: colors.card,
+    color: '#fff',
     fontSize: 10,
     fontWeight: '700',
     paddingHorizontal: 8,
@@ -839,7 +839,7 @@ const makeStyles = (colors) => StyleSheet.create({
     borderRadius: radii.pill,
     letterSpacing: 0.5,
   },
-  offerTitle: { color: colors.card, fontSize: 22, fontWeight: '800' },
+  offerTitle: { color: '#fff', fontSize: 22, fontWeight: '800' },
   offerSub: { color: '#ffffffdd', fontSize: 12, marginTop: -4 },
   offerCodeBox: {
     flexDirection: 'row',
@@ -853,7 +853,7 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radii.sm,
   },
-  offerCode: { color: colors.card, fontWeight: '700', fontSize: 12, letterSpacing: 1 },
+  offerCode: { color: '#fff', fontWeight: '700', fontSize: 12, letterSpacing: 1 },
 
   // OFFERS EMPTY STATE
   offersEmptyWrap: {
@@ -870,7 +870,7 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingHorizontal: spacing.md,
     gap: 2,
   },
-  offersEmptyTitle: { color: colors.card, fontSize: 16, fontWeight: '800', marginTop: 4 },
+  offersEmptyTitle: { color: '#fff', fontSize: 16, fontWeight: '800', marginTop: 4 },
   offersEmptySub: { color: '#EAF4FF', fontSize: 12 },
 
   // REORDER
@@ -909,7 +909,7 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  testimonialInitial: { color: colors.card, fontWeight: '800', fontSize: 14 },
+  testimonialInitial: { color: '#fff', fontWeight: '800', fontSize: 14 },
   testimonialName: { color: colors.text, fontWeight: '700', fontSize: 13 },
   starsRow: { flexDirection: 'row', gap: 2, marginTop: 2 },
   testimonialText: { color: colors.text, fontSize: 12, lineHeight: 17, fontStyle: 'italic' },

@@ -152,7 +152,7 @@ function DefaultAddressCard({ address, onEdit, onDelete, onPress }) {
               end={{ x: 1, y: 1 }}
               style={styles.defaultIconBg}
             >
-              <Ionicons name={address.icon} size={20} color={colors.card} />
+              <Ionicons name={address.icon} size={20} color="#fff" />
             </LinearGradient>
           </View>
           <View style={{ flex: 1 }}>

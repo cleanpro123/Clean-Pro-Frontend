@@ -174,7 +174,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
       : t('forgot.subtitlePassword');
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-background dark:bg-[#0A1424]" edges={['top']}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -210,12 +210,12 @@ export default function ForgotPasswordScreen({ navigation, route }) {
             <Text className="text-[#EAF4FF] text-sm mt-1.5">{subtitle}</Text>
           </LinearGradient>
 
-          <View className="-mt-[22px] mx-lg bg-card rounded-lg p-lg shadow-[0px_8px_16px_rgba(27,111,196,0.08)]">
+          <View className="-mt-[22px] mx-lg bg-card dark:bg-[#152A44] rounded-lg p-lg shadow-[0px_8px_16px_rgba(27,111,196,0.08)]">
             {step === 1 ? (
-              <View className="flex-row items-center bg-surface rounded-md px-md mb-3 gap-sm">
+              <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
                 <Ionicons name="mail-outline" size={18} color={colors.muted} />
                 <TextInput
-                  className="flex-1 py-3.5 text-text text-[15px]"
+                  className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"
                   placeholder={t('forgot.emailPlaceholder')}
                   placeholderTextColor={colors.muted}
                   keyboardType="email-address"
@@ -230,10 +230,10 @@ export default function ForgotPasswordScreen({ navigation, route }) {
               </View>
             ) : step === 2 ? (
               <>
-                <View className="flex-row items-center bg-surface rounded-md mb-2 px-md gap-sm">
+                <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md mb-2 px-md gap-sm">
                   <Ionicons name="keypad-outline" size={18} color={colors.muted} />
                   <TextInput
-                    className="flex-1 py-3.5 text-text text-[16px] tracking-[4px]"
+                    className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[16px] tracking-[4px]"
                     placeholder={t('forgot.codePlaceholder')}
                     placeholderTextColor={colors.muted}
                     keyboardType="number-pad"
@@ -250,7 +250,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
                 >
                   <Text
                     className={`font-bold text-[12px] ${
-                      resendTimer.active ? 'text-muted' : 'text-primary'
+                      resendTimer.active ? 'text-muted dark:text-[#7C97B5]' : 'text-primary'
                     }`}
                   >
                     {resendTimer.active
@@ -261,10 +261,10 @@ export default function ForgotPasswordScreen({ navigation, route }) {
               </>
             ) : (
               <>
-                <View className="flex-row items-center bg-surface rounded-md px-md mb-3 gap-sm">
+                <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
                   <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
                   <TextInput
-                    className="flex-1 py-3.5 text-text text-[15px]"
+                    className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"
                     placeholder={t('forgot.newPasswordPlaceholder')}
                     placeholderTextColor={colors.muted}
                     secureTextEntry={!showPw}
@@ -280,10 +280,10 @@ export default function ForgotPasswordScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
 
-                <View className="flex-row items-center bg-surface rounded-md px-md mb-3 gap-sm">
+                <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
                   <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
                   <TextInput
-                    className="flex-1 py-3.5 text-text text-[15px]"
+                    className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"
                     placeholder={t('forgot.confirmPasswordPlaceholder')}
                     placeholderTextColor={colors.muted}
                     secureTextEntry={!showPw}

@@ -131,7 +131,7 @@ export default function SecurityScreen({ navigation }) {
             activeOpacity={0.9}
           >
             {busy ? (
-              <ActivityIndicator color={colors.card} />
+              <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.ctaText}>{t('security.update')}</Text>
             )}
@@ -228,7 +228,7 @@ const makeStyles = (colors) => StyleSheet.create({
     marginTop: spacing.md,
   },
   ctaDisabled: { opacity: 0.5 },
-  ctaText: { color: colors.card, fontSize: 15, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 
   row: {
     flexDirection: 'row',

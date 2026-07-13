@@ -159,7 +159,7 @@ export default function OrderDetailScreen({ route, navigation }) {
           <View style={styles.summaryCircle2} />
           <View style={styles.summaryTop}>
             <View style={styles.summaryIcon}>
-              <Ionicons name="cube" size={20} color={colors.card} />
+              <Ionicons name="cube" size={20} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.summaryCode}>{order.code}</Text>
@@ -306,7 +306,7 @@ export default function OrderDetailScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={styles.rateBtn}
             >
-              <Ionicons name="star-outline" size={18} color={colors.card} />
+              <Ionicons name="star-outline" size={18} color="#fff" />
               <Text style={styles.rateBtnText}>{t('orderDetail.rateThisOrder')}</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -363,11 +363,11 @@ const makeStyles = (colors) => StyleSheet.create({
   summaryCircle2: { position: 'absolute', bottom: -40, left: -10, width: 110, height: 110, borderRadius: 55, backgroundColor: '#ffffff12' },
   summaryTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   summaryIcon: { width: 42, height: 42, borderRadius: radii.md, backgroundColor: '#ffffff2e', alignItems: 'center', justifyContent: 'center' },
-  summaryCode: { color: colors.card, fontWeight: '800', fontSize: 17 },
+  summaryCode: { color: '#fff', fontWeight: '800', fontSize: 17 },
   summarySub: { color: '#ffffffd9', fontSize: 12, marginTop: 2 },
   statusPill: { backgroundColor: '#ffffff2e', paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill },
   statusPillCancel: { backgroundColor: '#ef444455' },
-  statusPillText: { color: colors.card, fontWeight: '700', fontSize: 11 },
+  statusPillText: { color: '#fff', fontWeight: '700', fontSize: 11 },
   summaryDate: { color: '#ffffffcc', fontSize: 12, marginTop: spacing.sm },
 
   card: { backgroundColor: colors.card, borderRadius: radii.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md },
@@ -407,5 +407,5 @@ const makeStyles = (colors) => StyleSheet.create({
   infoSub: { color: colors.muted, fontSize: 12, marginTop: 2, lineHeight: 17 },
 
   rateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15, borderRadius: radii.pill },
-  rateBtnText: { color: colors.card, fontWeight: '800', fontSize: 15 },
+  rateBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
 });

@@ -75,7 +75,7 @@ export default function SignupScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-background dark:bg-[#0A1424]" edges={['top']}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -104,18 +104,18 @@ export default function SignupScreen({ navigation }) {
             </Text>
           </LinearGradient>
 
-          <View className="-mt-[22px] mx-lg bg-card rounded-lg p-lg shadow-[0px_8px_16px_rgba(27,111,196,0.08)]">
-            <Text className="text-text text-[13px] font-bold mb-2">
+          <View className="-mt-[22px] mx-lg bg-card dark:bg-[#152A44] rounded-lg p-lg shadow-[0px_8px_16px_rgba(27,111,196,0.08)]">
+            <Text className="text-text dark:text-[#EAF2FB] text-[13px] font-bold mb-2">
               {t('signup.avatarOptional')}
             </Text>
             <View className="mb-3">
               <AvatarPicker value={avatar} onChange={setAvatar} />
             </View>
 
-            <View className="flex-row items-center bg-surface rounded-md px-md mb-3 gap-sm">
+            <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
               <Ionicons name="person-outline" size={18} color={colors.muted} />
               <TextInput
-                className="flex-1 py-3.5 text-text text-[15px]"
+                className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"
                 placeholder={t('signup.phName')}
                 placeholderTextColor={colors.muted}
                 value={name}
@@ -123,10 +123,10 @@ export default function SignupScreen({ navigation }) {
               />
             </View>
 
-            <View className="flex-row items-center bg-surface rounded-md px-md mb-3 gap-sm">
+            <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
               <Ionicons name="call-outline" size={18} color={colors.muted} />
               <TextInput
-                className="flex-1 py-3.5 text-text text-[15px]"
+                className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"
                 placeholder={t('signup.phPhone')}
                 placeholderTextColor={colors.muted}
                 keyboardType="number-pad"
@@ -136,10 +136,10 @@ export default function SignupScreen({ navigation }) {
               />
             </View>
 
-            <View className="flex-row items-center bg-surface rounded-md px-md mb-3 gap-sm">
+            <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
               <Ionicons name="mail-outline" size={18} color={colors.muted} />
               <TextInput
-                className="flex-1 py-3.5 text-text text-[15px]"
+                className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"
                 placeholder={t('signup.phEmail')}
                 placeholderTextColor={colors.muted}
                 keyboardType="email-address"
@@ -149,10 +149,10 @@ export default function SignupScreen({ navigation }) {
               />
             </View>
 
-            <View className="flex-row items-center bg-surface rounded-md px-md mb-3 gap-sm">
+            <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
               <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
               <TextInput
-                className="flex-1 py-3.5 text-text text-[15px]"
+                className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"
                 placeholder={t('signup.phPassword')}
                 placeholderTextColor={colors.muted}
                 secureTextEntry={!showPw}
@@ -195,7 +195,7 @@ export default function SignupScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity className="mt-md items-center" onPress={() => navigation.goBack()}>
-              <Text className="text-muted text-[13px]">
+              <Text className="text-muted dark:text-[#7C97B5] text-[13px]">
                 {t('signup.haveAccount')} <Text className="text-primary font-bold">{t('signup.logIn')}</Text>
               </Text>
             </TouchableOpacity>

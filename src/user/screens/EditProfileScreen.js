@@ -186,7 +186,7 @@ export default function EditProfileScreen({ navigation }) {
                   activeOpacity={0.85}
                 >
                   {emailBusy ? (
-                    <ActivityIndicator size="small" color={colors.card} />
+                    <ActivityIndicator size="small" color="#fff" />
                   ) : (
                     <Text style={styles.smallBtnText}>{t('editProfile.sendCode')}</Text>
                   )}
@@ -246,7 +246,7 @@ export default function EditProfileScreen({ navigation }) {
                 activeOpacity={0.85}
               >
                 {emailBusy ? (
-                  <ActivityIndicator size="small" color={colors.card} />
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text style={styles.smallBtnText}>{t('editProfile.verifyAndUpdate')}</Text>
                 )}
@@ -310,10 +310,10 @@ export default function EditProfileScreen({ navigation }) {
           style={styles.saveBtn}
         >
           {busy ? (
-            <ActivityIndicator color={colors.card} />
+            <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Ionicons name="checkmark" size={18} color={colors.card} />
+              <Ionicons name="checkmark" size={18} color="#fff" />
               <Text style={styles.saveText}>{t('editProfile.saveChanges')}</Text>
             </>
           )}
@@ -374,7 +374,7 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  smallBtnText: { color: colors.card, fontWeight: '700', fontSize: 13 },
+  smallBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(15,23,42,0.55)',
@@ -474,5 +474,5 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingVertical: 14,
     borderRadius: radii.pill,
   },
-  saveText: { color: colors.card, fontWeight: '700', fontSize: 15 },
+  saveText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

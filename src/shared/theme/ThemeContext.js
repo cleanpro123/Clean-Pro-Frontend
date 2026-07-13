@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { colorScheme } from 'nativewind';
 import {
   colors as lightColors,
   gradients as lightGradients,
@@ -47,6 +48,12 @@ export function ThemeProvider({ children }) {
       return next;
     });
   }, []);
+
+  // Keep NativeWind's color scheme in sync with our theme so className-based
+  // `dark:` variants follow the in-app toggle (not the device setting).
+  useEffect(() => {
+    colorScheme.set(mode);
+  }, [mode]);
 
   const isDark = mode === 'dark';
   const value = {

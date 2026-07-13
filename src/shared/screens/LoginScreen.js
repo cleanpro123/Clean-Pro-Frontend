@@ -275,7 +275,7 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingTop: 6,
   },
   welcome: {
-    color: NAVY,
+    color: colors.text,
     fontSize: 20,
     fontWeight: '700',
     textAlign: 'center',
@@ -285,7 +285,7 @@ const makeStyles = (colors) => StyleSheet.create({
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     marginBottom: 10,
@@ -329,9 +329,9 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   ctaText: { color: '#fff', fontSize: 15.5, fontWeight: '700', letterSpacing: 0.3 },
 
-  createRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  createRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 10 },
   createText: { color: colors.muted, fontSize: 13 },
-  createLink: { color: NAVY, fontSize: 13, fontWeight: '800' },
+  createLink: { color: colors.primary, fontSize: 13, fontWeight: '800' },
 
   spacer: { flex: 1, minHeight: spacing.sm },
   legal: {

@@ -236,7 +236,7 @@ const makeStyles = (colors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ffffff35',
   },
-  metaText: { color: colors.card, fontWeight: '800', fontSize: 11 },
+  metaText: { color: '#fff', fontWeight: '800', fontSize: 11 },
 
   content: { gap: 6 },
   pill: {
@@ -252,13 +252,13 @@ const makeStyles = (colors) => StyleSheet.create({
     borderColor: '#ffffff30',
   },
   pillText: {
-    color: colors.card,
+    color: '#fff',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   title: {
-    color: colors.card,
+    color: '#fff',
     fontSize: 24,
     fontWeight: '800',
     lineHeight: 28,

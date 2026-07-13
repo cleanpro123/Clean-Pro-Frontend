@@ -91,7 +91,7 @@ export default function BookingScreen({ route, navigation }) {
           style={styles.hero}
         >
           <View style={styles.heroIconBox}>
-            <Ionicons name={service.icon} size={32} color={colors.card} />
+            <Ionicons name={service.icon} size={32} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroLabel}>{t('booking.heroLabel')}</Text>
@@ -101,7 +101,7 @@ export default function BookingScreen({ route, navigation }) {
             </Text>
             <View style={styles.heroPills}>
               <View style={styles.heroPill}>
-                <Ionicons name="basket-outline" size={11} color={colors.card} />
+                <Ionicons name="basket-outline" size={11} color="#fff" />
                 <Text style={styles.heroPillText}>
                   {inServiceCount > 0
                     ? t('booking.itemsTotal', { count: inServiceCount, total: inServiceTotal })
