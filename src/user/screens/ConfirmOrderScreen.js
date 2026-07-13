@@ -153,8 +153,6 @@ export default function ConfirmOrderScreen({ navigation }) {
     missing,
     totals.items,
     selectedAddress,
-    date,
-    slot,
     delivery,
     payment,
     clearCart,
