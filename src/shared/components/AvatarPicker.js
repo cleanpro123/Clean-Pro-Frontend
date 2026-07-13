@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AVATARS } from '../constants/avatars';
@@ -8,11 +8,13 @@ import { useI18n } from '../i18n/LanguageContext';
 
 // Users pick from a fixed set of preset avatars — there is no device-photo
 // upload (keeps the app off the photo-library permission and avoids hosting
-// user-uploaded images).
+// user-uploaded images). The grid is retractable: tapping the heading toggles
+// it open/closed.
 export default function AvatarPicker({ value, onChange }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useI18n();
+  const [open, setOpen] = useState(false);
 
   return (
     <View>
@@ -24,34 +26,49 @@ export default function AvatarPicker({ value, onChange }) {
             <Ionicons name="person" size={28} color={colors.muted} />
           )}
         </View>
-        <View style={styles.headingCol}>
+        <TouchableOpacity
+          style={styles.headingBtn}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          onPress={() => setOpen((o) => !o)}
+        >
           <Ionicons name="happy-outline" size={18} color={colors.primaryDark} />
-          <Text style={styles.heading}>{t('avatar.chooseAvatar')}</Text>
-        </View>
+          <Text style={styles.heading}>
+            {open ? t('avatar.hideAvatars') : t('avatar.chooseAvatar')}
+          </Text>
+          <Ionicons
+            name={open ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={colors.primaryDark}
+          />
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.grid}>
-        {AVATARS.map((a) => {
-          const selected = value === a.uri;
-          return (
-            <TouchableOpacity
-              key={a.id}
-              accessibilityRole="button"
-              accessibilityLabel={a.label}
-              activeOpacity={0.85}
-              onPress={() => onChange(a.uri)}
-              style={[styles.avatarWrap, selected && styles.avatarWrapSel]}
-            >
-              <Image source={{ uri: a.uri }} style={styles.avatar} />
-              {selected && (
-                <View style={styles.check}>
-                  <Ionicons name="checkmark" size={12} color="#fff" />
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {open && (
+        <View style={styles.grid}>
+          {AVATARS.map((a) => {
+            const selected = value === a.uri;
+            return (
+              <TouchableOpacity
+                key={a.id}
+                accessibilityRole="button"
+                accessibilityLabel={a.label}
+                activeOpacity={0.85}
+                onPress={() => onChange(a.uri)}
+                style={[styles.avatarWrap, selected && styles.avatarWrapSel]}
+              >
+                <Image source={{ uri: a.uri }} style={styles.avatar} />
+                {selected && (
+                  <View style={styles.check}>
+                    <Ionicons name="checkmark" size={12} color="#fff" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }
@@ -70,13 +87,13 @@ const makeStyles = (colors) => StyleSheet.create({
     borderColor: colors.border,
   },
   preview: { width: '100%', height: '100%' },
-  headingCol: {
+  headingBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  heading: { color: colors.primaryDark, fontWeight: '700', fontSize: 14 },
+  heading: { flex: 1, color: colors.primaryDark, fontWeight: '700', fontSize: 14 },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
