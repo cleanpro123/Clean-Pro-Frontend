@@ -26,7 +26,7 @@ export default function SignupOtpScreen({ navigation, route }) {
   const { colors, gradients } = useTheme();
   const { t } = useI18n();
   const { verifyOtp, requestOtp, registerOnly } = useAuth();
-  const { name, phone, email, password } = route.params || {};
+  const { name, phone, email, password, avatar } = route.params || {};
 
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -113,7 +113,7 @@ export default function SignupOtpScreen({ navigation, route }) {
     try {
       // 1) verify the email, then 2) create the account (no auto-login).
       await verifyOtp(email, code.trim());
-      await registerOnly({ name, phone, email, password });
+      await registerOnly({ name, phone, email, password, avatar });
       // 3) redirect to login with a success message; clear the signup stack.
       //    Bypass the back-lock — this is a forward completion, not a "go back".
       allowLeaveRef.current = true;

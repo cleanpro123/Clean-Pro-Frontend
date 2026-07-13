@@ -8,6 +8,7 @@ export const LANGUAGES = [
 ];
 
 const en = {
+  'signup.avatarOptional': 'Profile photo (optional)',
   'booking.selectClothes': 'Select clothes',
   'common.cancel': 'Cancel',
   'common.save': 'Save',
@@ -127,6 +128,7 @@ const en = {
 };
 
 const ar = {
+  'signup.avatarOptional': 'صورة الملف الشخصي (اختياري)',
   'booking.selectClothes': 'اختر الملابس',
   'common.cancel': 'إلغاء',
   'common.save': 'حفظ',

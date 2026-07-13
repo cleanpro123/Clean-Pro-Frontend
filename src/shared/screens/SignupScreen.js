@@ -15,6 +15,7 @@ import { LinearGradient } from '../components/Gradient';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../state/AuthContext';
 import { useI18n } from '../i18n/LanguageContext';
+import AvatarPicker from '../components/AvatarPicker';
 
 export default function SignupScreen({ navigation }) {
   const { colors, gradients } = useTheme();
@@ -25,6 +26,7 @@ export default function SignupScreen({ navigation }) {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [avatar, setAvatar] = useState('');
   const [showPw, setShowPw] = useState(false);
 
   const [busy, setBusy] = useState(false);
@@ -46,16 +48,13 @@ export default function SignupScreen({ navigation }) {
 
     setBusy(true);
     try {
-      // One round-trip: if the phone/email is taken we get a flag and no OTP is
-      // sent (show an inline warning); otherwise the code is sent right here and
-      // we move to the verification page carrying the account details.
-      const { phoneTaken, emailTaken } = await checkAvailability({
+      // One round-trip: if the email is taken we get a flag and no OTP is sent
+      // (show an inline warning); otherwise the code is sent right here and we
+      // move to the verification page carrying the account details. Phone is
+      // not checked for uniqueness — numbers may be shared across accounts.
+      const { emailTaken } = await checkAvailability({
         email: email.trim(),
-        phone: phone.trim(),
       });
-      if (phoneTaken) {
-        return setWarning(t('signup.warnPhoneTaken'));
-      }
       if (emailTaken) {
         return setWarning(t('signup.warnEmailTaken'));
       }
@@ -66,6 +65,7 @@ export default function SignupScreen({ navigation }) {
         phone: phone.trim(),
         email: email.trim(),
         password,
+        avatar,
       });
     } catch (e) {
       setError(e.message || t('signup.errGeneric'));
@@ -105,6 +105,13 @@ export default function SignupScreen({ navigation }) {
           </LinearGradient>
 
           <View className="-mt-[22px] mx-lg bg-card rounded-lg p-lg shadow-[0px_8px_16px_rgba(27,111,196,0.08)]">
+            <Text className="text-text text-[13px] font-bold mb-2">
+              {t('signup.avatarOptional')}
+            </Text>
+            <View className="mb-3">
+              <AvatarPicker value={avatar} onChange={setAvatar} />
+            </View>
+
             <View className="flex-row items-center bg-surface rounded-md px-md mb-3 gap-sm">
               <Ionicons name="person-outline" size={18} color={colors.muted} />
               <TextInput
