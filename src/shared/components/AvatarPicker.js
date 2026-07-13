@@ -1,40 +1,18 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import React, { useMemo } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AVATARS } from '../constants/avatars';
 import { radii, spacing } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { useI18n } from '../i18n/LanguageContext';
 
-const isPreset = (uri) => AVATARS.some((a) => a.uri === uri);
-
+// Users pick from a fixed set of preset avatars — there is no device-photo
+// upload (keeps the app off the photo-library permission and avoids hosting
+// user-uploaded images).
 export default function AvatarPicker({ value, onChange }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [custom, setCustom] = useState(value && !isPreset(value) ? value : null);
-
-  const pickCustom = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert(t('avatar.permissionNeeded'), t('avatar.permissionMessage'));
-      return;
-    }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.6,
-    });
-    if (!res.canceled && res.assets?.length) {
-      const uri = res.assets[0].uri;
-      setCustom(uri);
-      setOpen(false);
-      onChange(uri);
-    }
-  };
 
   return (
     <View>
@@ -46,57 +24,34 @@ export default function AvatarPicker({ value, onChange }) {
             <Ionicons name="person" size={28} color={colors.muted} />
           )}
         </View>
-
-        <View style={styles.btnCol}>
-          <TouchableOpacity
-            style={styles.actionBtn}
-            activeOpacity={0.85}
-            onPress={() => setOpen((o) => !o)}
-          >
-            <Ionicons name="happy-outline" size={18} color={colors.primaryDark} />
-            <Text style={styles.actionText}>
-              {open ? t('avatar.hideAvatars') : t('avatar.chooseAvatar')}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionBtnAlt}
-            activeOpacity={0.85}
-            onPress={pickCustom}
-          >
-            <Ionicons name="camera-outline" size={18} color={colors.primary} />
-            <Text style={styles.actionTextAlt}>
-              {custom ? t('avatar.changePhoto') : t('avatar.uploadYourOwn')}
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.headingCol}>
+          <Ionicons name="happy-outline" size={18} color={colors.primaryDark} />
+          <Text style={styles.heading}>{t('avatar.chooseAvatar')}</Text>
         </View>
       </View>
 
-      {open && (
-        <View style={styles.grid}>
-          {AVATARS.map((a) => {
-            const selected = value === a.uri;
-            return (
-              <TouchableOpacity
-                key={a.id}
-                activeOpacity={0.85}
-                onPress={() => {
-                  setCustom(null);
-                  onChange(a.uri);
-                }}
-                style={[styles.avatarWrap, selected && styles.avatarWrapSel]}
-              >
-                <Image source={{ uri: a.uri }} style={styles.avatar} />
-                {selected && (
-                  <View style={styles.check}>
-                    <Ionicons name="checkmark" size={12} color="#fff" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
+      <View style={styles.grid}>
+        {AVATARS.map((a) => {
+          const selected = value === a.uri;
+          return (
+            <TouchableOpacity
+              key={a.id}
+              accessibilityRole="button"
+              accessibilityLabel={a.label}
+              activeOpacity={0.85}
+              onPress={() => onChange(a.uri)}
+              style={[styles.avatarWrap, selected && styles.avatarWrapSel]}
+            >
+              <Image source={{ uri: a.uri }} style={styles.avatar} />
+              {selected && (
+                <View style={styles.check}>
+                  <Ionicons name="checkmark" size={12} color="#fff" />
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -115,29 +70,13 @@ const makeStyles = (colors) => StyleSheet.create({
     borderColor: colors.border,
   },
   preview: { width: '100%', height: '100%' },
-  btnCol: { flex: 1, gap: spacing.sm },
-  actionBtn: {
+  headingCol: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.primarySoft,
-    paddingVertical: 11,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
   },
-  actionText: { color: colors.primaryDark, fontWeight: '700', fontSize: 13 },
-  actionBtnAlt: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    paddingVertical: 11,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  actionTextAlt: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  heading: { color: colors.primaryDark, fontWeight: '700', fontSize: 14 },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

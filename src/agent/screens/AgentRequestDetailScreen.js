@@ -211,7 +211,7 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
                     <Text style={styles.itemIdx}>{String(idx + 1).padStart(2, '0')}.</Text>
                     <Text style={styles.itemName}>{it.name}</Text>
                     <Text style={styles.itemQty}>{String(it.qty).padStart(2, '0')}</Text>
-                    <Text style={styles.itemPrice}>$ {it.price * it.qty}</Text>
+                    <Text style={styles.itemPrice}>QAR {it.price * it.qty}</Text>
                   </View>
                 ))}
               </View>

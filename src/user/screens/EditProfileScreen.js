@@ -131,19 +131,7 @@ export default function EditProfileScreen({ navigation }) {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: 120 }}>
         <Text style={styles.section}>{t('editProfile.profilePhoto')}</Text>
-        {/* Temporarily disabled — dim + non-interactive with a frosted scrim and
-            a "Coming soon" badge until avatar upload is ready. */}
-        <View>
-          <View pointerEvents="none" style={{ opacity: 0.5 }}>
-            <AvatarPicker value={avatar} onChange={setAvatar} />
-          </View>
-          <View style={styles.comingSoonScrim} pointerEvents="none">
-            <View style={styles.comingSoonBadge}>
-              <Ionicons name="time-outline" size={14} color={colors.card} />
-              <Text style={styles.comingSoonText}>{t('editProfile.comingSoon')}</Text>
-            </View>
-          </View>
-        </View>
+        <AvatarPicker value={avatar} onChange={setAvatar} />
 
         <View style={{ height: spacing.lg }} />
 
@@ -440,23 +428,6 @@ const makeStyles = (colors) => StyleSheet.create({
     width: '100%',
     marginTop: spacing.md,
   },
-  comingSoonScrim: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background + 'B3', // ~70% frosted overlay
-    borderRadius: radii.md,
-  },
-  comingSoonBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radii.pill,
-  },
-  comingSoonText: { color: colors.card, fontWeight: '700', fontSize: 13 },
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',

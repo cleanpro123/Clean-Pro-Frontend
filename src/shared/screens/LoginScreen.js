@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  useWindowDimensions,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -70,7 +70,13 @@ export default function LoginScreen({ navigation, route }) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
-  const { width: SCREEN_W, height: SCREEN_H } = useWindowDimensions();
+  // Snapshot the window size ONCE at mount. Using useWindowDimensions here made
+  // the hero height react to the Android keyboard resizing the window, which
+  // reflowed the form on focus (email tap jumped to password + keyboard closed).
+  // The app is portrait-locked, so a fixed size is safe.
+  const [{ width: SCREEN_W, height: SCREEN_H }] = useState(() =>
+    Dimensions.get('window')
+  );
 
   // Responsive hero + wave sizing. The wave height tracks screen WIDTH so the
   // arc keeps the same aspect on phones and tablets (clamped so it never gets

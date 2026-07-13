@@ -4,27 +4,31 @@
     "slug": "clean-pro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/clean-pro-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/clean-pro-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#F3F8FF"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.cleanpro.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/clean-pro-icon.png",
         "backgroundColor": "#1B6FC4"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/clean-pro-icon.png",
       "bundler": "metro"
     },
     "extra": {},
@@ -35,12 +39,6 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Clean Pro uses your location to set your pickup address on the map."
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Clean Pro uses your photos so you can set a profile picture."
         }
       ]
     ],
