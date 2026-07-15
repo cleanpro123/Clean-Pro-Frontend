@@ -8,7 +8,13 @@ export const LANGUAGES = [
 ];
 
 const en = {
-  'signup.avatarOptional': 'Profile photo (optional)',
+  'signup.avatarOptional': 'Profile photo',
+  'confirmOrder.outsideQatarTitle': 'Outside Qatar',
+  'confirmOrder.outsideQatarMessage':
+    'This address is outside Qatar. We currently provide our service inside Qatar only. Please contact the main branch or an admin for assistance.',
+  'confirmOrder.noLocationTitle': 'Location not set',
+  'confirmOrder.noLocationMessage':
+    'This address has no map location saved. Please edit the address and tap "Use current location" to set it on the map before placing your order.',
   'booking.selectClothes': 'Select clothes',
   'common.cancel': 'Cancel',
   'common.save': 'Save',
@@ -128,7 +134,13 @@ const en = {
 };
 
 const ar = {
-  'signup.avatarOptional': 'صورة الملف الشخصي (اختياري)',
+  'signup.avatarOptional': 'صورة الملف الشخصي',
+  'confirmOrder.outsideQatarTitle': 'خارج قطر',
+  'confirmOrder.outsideQatarMessage':
+    'هذا العنوان خارج قطر. نقدّم خدمتنا داخل قطر فقط حاليًا. يرجى التواصل مع الفرع الرئيسي أو المسؤول للمساعدة.',
+  'confirmOrder.noLocationTitle': 'لم يتم تحديد الموقع',
+  'confirmOrder.noLocationMessage':
+    'لا يوجد موقع محفوظ على الخريطة لهذا العنوان. يرجى تعديل العنوان والضغط على «استخدام الموقع الحالي» لتحديده على الخريطة قبل تأكيد الطلب.',
   'booking.selectClothes': 'اختر الملابس',
   'common.cancel': 'إلغاء',
   'common.save': 'حفظ',

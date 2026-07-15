@@ -12,10 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from '../components/Gradient';
+import AvatarPicker from '../components/AvatarPicker';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../state/AuthContext';
 import { useI18n } from '../i18n/LanguageContext';
-import AvatarPicker from '../components/AvatarPicker';
 
 export default function SignupScreen({ navigation }) {
   const { colors, gradients } = useTheme();
@@ -105,14 +105,16 @@ export default function SignupScreen({ navigation }) {
           </LinearGradient>
 
           <View className="-mt-[22px] mx-lg bg-card dark:bg-[#152A44] rounded-lg p-lg shadow-[0px_8px_16px_rgba(27,111,196,0.08)]">
-            <Text className="text-text dark:text-[#EAF2FB] text-[13px] font-bold mb-2">
-              {t('signup.avatarOptional')}
-            </Text>
             <View className="mb-3">
-              <AvatarPicker value={avatar} onChange={setAvatar} />
+              <AvatarPicker
+                value={avatar}
+                onChange={setAvatar}
+                label={t('signup.avatarOptional')}
+              />
             </View>
 
-            <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
+
+            <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] mt-3 rounded-md px-md mb-3 gap-sm">
               <Ionicons name="person-outline" size={18} color={colors.muted} />
               <TextInput
                 className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"

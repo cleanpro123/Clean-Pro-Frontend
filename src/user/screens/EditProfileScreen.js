@@ -130,12 +130,14 @@ export default function EditProfileScreen({ navigation }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: 120 }}>
-        <Text style={styles.section}>{t('editProfile.profilePhoto')}</Text>
-        <AvatarPicker value={avatar} onChange={setAvatar} />
+         <AvatarPicker
+          value={avatar}
+          onChange={setAvatar}
+          label={t('editProfile.profilePhoto')}
+        />
 
         <View style={{ height: spacing.lg }} />
 
-        <Text style={styles.section}>{t('editProfile.yourDetails')}</Text>
         <View style={{ marginBottom: spacing.md }}>
           <Text style={styles.fieldLabel}>{t('editProfile.fullName')}</Text>
           <TextInput

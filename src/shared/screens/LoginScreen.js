@@ -28,19 +28,27 @@ import { useI18n } from '../i18n/LanguageContext';
 // Geometry is expressed as RATIOS (of the wave height / width) rather than
 // absolute pixels so the curve scales identically on every screen size and on
 // rotation — the whole reason this screen looked different across devices.
-// Soft light tint the body fades in from — strongest just under the wave,
-// easing out to the flat background further down.
-const BODY_TINT = '#E5F1FB';
-const WAVE_LAYERS = [
-  { key: 'a', edge: 0.463, fill: '#D3DCE6' },
-  { key: 'b', edge: 0.747, fill: '#E7ECF2' },
-  { key: 'c', edge: 0.979, fill: BODY_TINT },
-];
+// The hero gradient, wave, and body tint are theme-aware. Dark mode leans
+// near-black (melting into colors.background) so the whole login reads as one
+// dark surface instead of a bright blue hero over a light wave; light mode
+// keeps the original airy blue look. `tint` is the colour the body fades in
+// from just under the wave, and MUST equal the last wave layer so the two melt
+// together with no seam.
+const HERO_GRADIENT = {
+  light: ['#6FB7E6', '#2C79B8', '#0E3A5C'],
+  dark: ['#17324E', '#0D2237', '#0A1424'],
+};
+const WAVE = {
+  light: { tint: '#E5F1FB', fills: ['#D3DCE6', '#E7ECF2', '#E5F1FB'] },
+  dark: { tint: '#0B1A2C', fills: ['#102439', '#0D1D30', '#0B1A2C'] },
+};
+const WAVE_EDGES = [0.463, 0.747, 0.979]; // vertical position of each arc
 const WAVE_DIP_RATIO = 0.263; // fraction of the wave height each arc bulges up
 
 function WaveDivider({ width, height }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const fills = (isDark ? WAVE.dark : WAVE.light).fills;
   const cx = width * 0.5;
   const dip = height * WAVE_DIP_RATIO;
   return (
@@ -51,13 +59,13 @@ function WaveDivider({ width, height }) {
       style={styles.wave}
       preserveAspectRatio="none"
     >
-      {WAVE_LAYERS.map((l) => {
-        const edge = height * l.edge;
+      {WAVE_EDGES.map((e, i) => {
+        const edge = height * e;
         return (
           <Path
-            key={l.key}
+            key={i}
             d={`M0 ${edge} Q ${cx} ${edge - dip} ${width} ${edge} L ${width} ${height} L 0 ${height} Z`}
-            fill={l.fill}
+            fill={fills[i]}
           />
         );
       })}
@@ -66,8 +74,10 @@ function WaveDivider({ width, height }) {
 }
 
 export default function LoginScreen({ navigation, route }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const heroGradient = isDark ? HERO_GRADIENT.dark : HERO_GRADIENT.light;
+  const bodyTint = (isDark ? WAVE.dark : WAVE.light).tint;
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   // Snapshot the window size ONCE at mount. Using useWindowDimensions here made
@@ -129,7 +139,7 @@ export default function LoginScreen({ navigation, route }) {
           {/* Gradient hero with wordmark + curved wave */}
           <View style={[styles.hero, { height: HERO_H }]}>
             <LinearGradient
-              colors={['#6FB7E6', '#2C79B8', '#0E3A5C']}
+              colors={heroGradient}
               start={{ x: 0.2, y: 0 }}
               end={{ x: 0.8, y: 1 }}
               style={StyleSheet.absoluteFill}
@@ -148,7 +158,7 @@ export default function LoginScreen({ navigation, route }) {
           {/* Lower content sits on a soft top-down light fade */}
           <View style={styles.lower}>
             <LinearGradient
-              colors={[BODY_TINT, colors.background, colors.background]}
+              colors={[bodyTint, colors.background, colors.background]}
               locations={[0, 0.55, 1]}
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
@@ -262,7 +272,7 @@ const makeStyles = (colors) => StyleSheet.create({
 
   // Holds the light fade behind everything below the wave; flexes to fill the
   // remaining screen so the fade spans the whole lower area. Pulled up a couple
-  // px so its BODY_TINT gradient overlaps the wave bottom — kills the hairline
+  // px so its body-tint gradient overlaps the wave bottom — kills the hairline
   // seam where the lighter root background used to peek through.
   lower: { flex: 1, marginTop: -3 },
 

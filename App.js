@@ -22,10 +22,14 @@ function ThemedStatusBar() {
 
 function App() {
   return (
-    <ErrorBoundary>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <LanguageProvider>
+    // ErrorBoundary sits INSIDE the theme/i18n/safe-area providers so its
+    // fallback (StatusScreen, which calls useTheme/useI18n/SafeAreaView) can
+    // render. When it was outside, any caught error made the fallback itself
+    // throw "useI18n must be used within a LanguageProvider" → white screen.
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <ErrorBoundary>
             <AuthProvider>
               <AppProvider>
                 <ThemedStatusBar />
@@ -33,10 +37,10 @@ function App() {
                 <ConfirmHost />
               </AppProvider>
             </AuthProvider>
-          </LanguageProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </ErrorBoundary>
+          </ErrorBoundary>
+        </LanguageProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
 
