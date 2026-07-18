@@ -21,7 +21,7 @@ const VARIANTS = {
     iosBundleId: 'com.cleanpro.app',
     androidBg: '#1B6FC4',
     // User EAS project (@mhdnihal/clean-pro). Override with EAS_PROJECT_ID_USER.
-    projectId: process.env.EAS_PROJECT_ID_USER || '5c5c857f-784d-46b7-8ad9-cf66d2802133',
+    projectId: process.env.EAS_PROJECT_ID_USER || '74723b2e-346b-4d92-b879-18fadb45a912',
   },
   admin: {
     name: 'Clean Pro Admin',
@@ -30,7 +30,7 @@ const VARIANTS = {
     iosBundleId: 'com.cleanpro.admin',
     androidBg: '#0A3D7A',
     // Reuses the former Partner EAS project. Override with EAS_PROJECT_ID_ADMIN.
-    projectId: process.env.EAS_PROJECT_ID_ADMIN || '76d2c10b-f0ce-48b3-94d5-17cbb41ea714',
+    projectId: process.env.EAS_PROJECT_ID_ADMIN || '0bcacbcf-844d-4722-9805-e80faccde9aa',
   },
   agent: {
     name: 'Clean Pro Agent',
@@ -40,7 +40,7 @@ const VARIANTS = {
     androidBg: '#0A5C3D',
     // Needs its own EAS project: run `eas init` for this app, then set
     // EAS_PROJECT_ID_AGENT (or replace the empty default below).
-    projectId: process.env.EAS_PROJECT_ID_AGENT || '',
+    projectId: process.env.EAS_PROJECT_ID_AGENT || '760987ae-84a8-4ede-b30f-cb87e3481983',
   },
 };
 
