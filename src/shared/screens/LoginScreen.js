@@ -303,12 +303,15 @@ const makeStyles = (colors) => StyleSheet.create({
     borderColor: colors.border,
   },
   inputWrapFocused: {
+    // NOTE: do NOT add/remove Android `elevation` here. Toggling elevation on
+    // focus re-creates the native view that holds the focused TextInput, which
+    // drops focus (keyboard flickers, focus jumps to the next field). iOS
+    // shadow props are no-ops on Android, so they're safe to keep.
     borderColor: colors.primary,
     shadowColor: colors.primary,
     shadowOpacity: 0.14,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
   },
   input: { flex: 1, paddingVertical: 12, color: colors.text, fontSize: 15 },
   eyeBtn: { paddingLeft: 6, paddingVertical: 6 },
