@@ -118,12 +118,16 @@ export default function AgentLoginScreen({ navigation }) {
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.back}
-          >
-            <Text style={styles.backText}>{t('agentLogin.backToCustomerLogin')}</Text>
-          </TouchableOpacity>
+          {/* Standalone Clean Pro Agent build has no screen to go back to;
+              only shown if this login is ever pushed onto another stack. */}
+          {navigation.canGoBack() && (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.back}
+            >
+              <Text style={styles.backText}>{t('agentLogin.backToCustomerLogin')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

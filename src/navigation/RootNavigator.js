@@ -16,7 +16,6 @@ import AccountBlockedScreen from '../shared/screens/AccountBlockedScreen';
 import PrivacyPolicyScreen from '../shared/screens/PrivacyPolicyScreen';
 import AboutScreen from '../shared/screens/AboutScreen';
 import LanguageScreen from '../shared/screens/LanguageScreen';
-import PartnerLoginScreen from '../partner/screens/PartnerLoginScreen';
 import AdminLoginGate from '../admin/screens/AdminLoginScreen';
 import AgentLoginGate from '../agent/screens/AgentLoginScreen';
 import UserNavigator from '../user/navigation/UserNavigator';
@@ -24,7 +23,7 @@ import AdminNavigator from '../admin/navigation/AdminNavigator';
 import AgentNavigator from '../agent/navigation/AgentNavigator';
 import { useAuth } from '../shared/state/AuthContext';
 import { useTheme } from '../shared/theme/ThemeContext';
-import { isPartner } from '../config/appVariant';
+import { isAdmin, isAgent } from '../config/appVariant';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,17 +39,16 @@ function Splash() {
 // Returned as fragments (flattened by React Navigation) — NOT components, so the
 // navigator sees the Stack.Screen elements as direct children.
 
-// Clean Pro Partner — admin + agent only.
-function partnerScreens(role) {
+// Clean Pro Admin — admin only.
+function adminScreens(role) {
   if (role === 'admin') return <Stack.Screen name="Admin" component={AdminNavigator} />;
+  return <Stack.Screen name="AdminLogin" component={AdminLoginGate} />;
+}
+
+// Clean Pro Agent — agent only.
+function agentScreens(role) {
   if (role === 'agent') return <Stack.Screen name="Agent" component={AgentNavigator} />;
-  return (
-    <>
-      <Stack.Screen name="PartnerLogin" component={PartnerLoginScreen} />
-      <Stack.Screen name="AdminLogin" component={AdminLoginGate} />
-      <Stack.Screen name="AgentLogin" component={AgentLoginGate} />
-    </>
-  );
+  return <Stack.Screen name="AgentLogin" component={AgentLoginGate} />;
 }
 
 // Clean Pro — customers only.
@@ -88,7 +86,11 @@ export default function RootNavigator() {
   return (
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {isPartner ? partnerScreens(role) : userScreens(role)}
+        {isAdmin
+          ? adminScreens(role)
+          : isAgent
+            ? agentScreens(role)
+            : userScreens(role)}
         {/* Shared fallback routes available in every stack. */}
         <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
         <Stack.Screen name="About" component={AboutScreen} />

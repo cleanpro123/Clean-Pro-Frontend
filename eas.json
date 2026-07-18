@@ -19,19 +19,34 @@
       "env": { "EXPO_PUBLIC_APP_VARIANT": "user", "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
     },
 
-    "development-partner": {
+    "development-admin": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_APP_VARIANT": "partner", "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "admin", "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
     },
-    "preview-partner": {
+    "preview-admin": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_APP_VARIANT": "partner", "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "admin", "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
     },
-    "production-partner": {
+    "production-admin": {
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_APP_VARIANT": "partner", "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "admin", "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
+    },
+
+    "development-agent": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "agent", "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
+    },
+    "preview-agent": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "agent", "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
+    },
+    "production-agent": {
+      "autoIncrement": true,
+      "env": { "EXPO_PUBLIC_APP_VARIANT": "agent", "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
     }
   },
   "submit": {
@@ -47,10 +62,22 @@
         "releaseStatus": "draft"
       }
     },
-    "production-partner": {
+    "production-admin": {
       "ios": {
         "appleId": "REPLACE_WITH_APPLE_ID_EMAIL",
-        "ascAppId": "REPLACE_WITH_PARTNER_APP_STORE_CONNECT_APP_ID",
+        "ascAppId": "REPLACE_WITH_ADMIN_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./credentials/play-service-account.json",
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    },
+    "production-agent": {
+      "ios": {
+        "appleId": "REPLACE_WITH_APPLE_ID_EMAIL",
+        "ascAppId": "REPLACE_WITH_AGENT_APP_STORE_CONNECT_APP_ID",
         "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
       },
       "android": {

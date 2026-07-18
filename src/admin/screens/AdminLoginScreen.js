@@ -118,12 +118,16 @@ export default function AdminLoginScreen({ navigation }) {
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.back}
-          >
-            <Text style={styles.backText}>{t('adminLogin.backToCustomerLogin')}</Text>
-          </TouchableOpacity>
+          {/* Standalone Clean Pro Admin build has no screen to go back to;
+              only shown if this login is ever pushed onto another stack. */}
+          {navigation.canGoBack() && (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.back}
+            >
+              <Text style={styles.backText}>{t('adminLogin.backToCustomerLogin')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
