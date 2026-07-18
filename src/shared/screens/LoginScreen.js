@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -79,7 +79,14 @@ export default function LoginScreen({ navigation, route }) {
   const heroGradient = isDark ? HERO_GRADIENT.dark : HERO_GRADIENT.light;
   const bodyTint = (isDark ? WAVE.dark : WAVE.light).tint;
   const { t } = useI18n();
-  const insets = useSafeAreaInsets();
+  // Frozen launch-time insets — NOT the live useSafeAreaInsets() hook. On
+  // Android with edge-to-edge, that hook re-emits when the keyboard opens (the
+  // bottom inset changes), which re-renders and reflows the form on focus. That
+  // reflow detaches the focused email TextInput, so Android moves focus to the
+  // next field (password) and the keyboard drops. initialWindowMetrics is a
+  // launch-time constant that never reacts to the keyboard.
+  const insets =
+    initialWindowMetrics?.insets ?? { top: 0, right: 0, bottom: 0, left: 0 };
   // Snapshot the window size ONCE at mount. Using useWindowDimensions here made
   // the hero height react to the Android keyboard resizing the window, which
   // reflowed the form on focus (email tap jumped to password + keyboard closed).
