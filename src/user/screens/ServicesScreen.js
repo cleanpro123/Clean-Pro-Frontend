@@ -14,12 +14,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { radii, spacing } from '../../shared/theme/colors';
 import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
+import { useAuth } from '../../shared/state/AuthContext';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function ServicesScreen({ navigation }) {
   const { t, td } = useI18n();
   const { colors, gradients } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { profile } = useAuth();
+  const isSpecial = !!profile?.isSpecial;
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,6 +51,30 @@ export default function ServicesScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
       >
+        {/* Direct order — first option for special (VIP) customers: book a
+            pickup without picking items. */}
+        {isSpecial && (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('DirectOrder')}
+            style={[styles.card, styles.directCard]}
+          >
+            <LinearGradient
+              colors={gradients.brand}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.iconBubble}
+            >
+              <Ionicons name="flash" size={26} color="#fff" />
+            </LinearGradient>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>{t('directOrder.button')}</Text>
+              <Text style={styles.desc}>{t('directOrder.footHint')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+
         {loading && services.length === 0 ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
         ) : services.length === 0 ? (
@@ -101,6 +128,12 @@ const makeStyles = (colors) => StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  // Highlighted variant for the special-customer Direct order option.
+  directCard: {
+    borderColor: colors.primary,
+    borderWidth: 1.5,
+    backgroundColor: colors.primarySoft,
   },
   iconBubble: {
     width: 52,
