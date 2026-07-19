@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -138,11 +137,11 @@ export default function LoginScreen({ navigation, route }) {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing.md }]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
+        {/* Non-scrolling flex container (like the admin/agent logins). A
+            ScrollView here caused the Android focus-jump: tapping email made
+            the scroll + keyboard-pan fight and detach the focused input, so
+            focus advanced to password and the keyboard dropped. */}
+        <View style={[styles.flex, { paddingBottom: insets.bottom }]}>
           {/* Gradient hero with wordmark + curved wave */}
           <View style={[styles.hero, { height: HERO_H }]}>
             <LinearGradient
@@ -174,9 +173,9 @@ export default function LoginScreen({ navigation, route }) {
 
           {/* Body */}
           <View style={styles.body}>
-            <Text style={styles.welcome}>{t('login.welcome')}</Text>
+            {/* <Text style={styles.welcome}>{t('login.welcome')}</Text> */}
 
-            <View style={[styles.inputWrap, focused === 'email' && styles.inputWrapFocused]}>
+            <View style={[styles.inputWrap, focused == 'email' && styles.inputWrapFocused]}>
               <TextInput
                 style={styles.input}
                 placeholder={t('login.email')}
@@ -190,7 +189,7 @@ export default function LoginScreen({ navigation, route }) {
               />
             </View>
 
-            <View style={[styles.inputWrap, focused === 'password' && styles.inputWrapFocused]}>
+            <View style={[styles.inputWrap, focused == 'password' && styles.inputWrapFocused]}>
               <TextInput
                 style={styles.input}
                 placeholder={t('login.password')}
@@ -244,7 +243,7 @@ export default function LoginScreen({ navigation, route }) {
             .
           </Text>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -288,7 +287,7 @@ const makeStyles = (colors) => StyleSheet.create({
   body: {
     paddingHorizontal: spacing.lg + 4,
     backgroundColor: 'transparent',
-    marginTop: -6,
+    marginTop: '20%',
     paddingTop: 6,
   },
   welcome: {
@@ -349,7 +348,7 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   ctaText: { color: '#fff', fontSize: 15.5, fontWeight: '700', letterSpacing: 0.3 },
 
-  createRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 10 },
+  createRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 15 },
   createText: { color: colors.muted, fontSize: 13 },
   createLink: { color: colors.primary, fontSize: 13, fontWeight: '800' },
 
