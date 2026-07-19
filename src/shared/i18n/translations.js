@@ -19,6 +19,10 @@ const en = {
   'adminUserDetail.addSpecialMessage': 'Mark {name} as a special (VIP) customer?',
   'adminUserDetail.removeSpecialTitle': 'Remove from special list?',
   'adminUserDetail.removeSpecialMessage': 'Remove {name} from the special customers list?',
+  'directOrder.button': 'Direct order',
+  'directOrder.place': 'Place direct order',
+  'directOrder.footHint': 'Special customer · book a direct pickup',
+  'directOrder.intro': 'Book a pickup directly — an agent collects your items and sorts the details with you.',
   'confirmOrder.outsideQatarTitle': 'Outside Qatar',
   'confirmOrder.outsideQatarMessage':
     'This address is outside Qatar. We currently provide our service inside Qatar only. Please contact the main branch or an admin for assistance.',
@@ -155,6 +159,10 @@ const ar = {
   'adminUserDetail.addSpecialMessage': 'تعيين {name} كعميل مميز (VIP)؟',
   'adminUserDetail.removeSpecialTitle': 'إزالة من القائمة المميزة؟',
   'adminUserDetail.removeSpecialMessage': 'إزالة {name} من قائمة العملاء المميزين؟',
+  'directOrder.button': 'طلب مباشر',
+  'directOrder.place': 'إرسال الطلب المباشر',
+  'directOrder.footHint': 'عميل مميز · احجز استلامًا مباشرًا',
+  'directOrder.intro': 'احجز الاستلام مباشرة — سيأتي المندوب لاستلام أغراضك وترتيب التفاصيل معك.',
   'confirmOrder.outsideQatarTitle': 'خارج قطر',
   'confirmOrder.outsideQatarMessage':
     'هذا العنوان خارج قطر. نقدّم خدمتنا داخل قطر فقط حاليًا. يرجى التواصل مع الفرع الرئيسي أو المسؤول للمساعدة.',

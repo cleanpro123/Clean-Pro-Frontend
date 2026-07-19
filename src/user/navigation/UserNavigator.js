@@ -10,6 +10,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import BookingScreen from '../screens/BookingScreen';
 import ConfirmOrderScreen from '../screens/ConfirmOrderScreen';
+import DirectOrderScreen from '../screens/DirectOrderScreen';
 import AddressesScreen from '../screens/AddressesScreen';
 import AddAddressScreen from '../screens/AddAddressScreen';
 import RateOrderScreen from '../screens/RateOrderScreen';
@@ -68,6 +69,11 @@ export default function UserNavigator() {
         name="ConfirmOrder"
         component={ConfirmOrderScreen}
         options={{ title: 'Confirm order' }}
+      />
+      <Stack.Screen
+        name="DirectOrder"
+        component={DirectOrderScreen}
+        options={{ title: 'Direct order' }}
       />
       <Stack.Screen
         name="EditProfile"

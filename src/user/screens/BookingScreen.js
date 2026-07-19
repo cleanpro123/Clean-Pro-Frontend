@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { radii, spacing } from '../../shared/theme/colors';
 import { useTheme } from '../../shared/theme/ThemeContext';
 import { useApp } from '../../shared/state/AppContext';
+import { useAuth } from '../../shared/state/AuthContext';
 import { api } from '../../shared/api/client';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
@@ -34,6 +35,8 @@ export default function BookingScreen({ route, navigation }) {
   const [cat, setCat] = useState('All');
   const [loading, setLoading] = useState(true);
   const { cart, setQty, getQty } = useApp();
+  const { profile } = useAuth();
+  const isSpecial = !!profile?.isSpecial;
 
   const load = useCallback(async () => {
     try {
@@ -210,26 +213,50 @@ export default function BookingScreen({ route, navigation }) {
         </View>
       </ScrollView>
 
-      {totalsCount > 0 && (
+      {(totalsCount > 0 || isSpecial) && (
         <View style={styles.footer}>
-          <View>
-            <Text style={styles.footTotal}>QAR {totalsAll}</Text>
-            <Text style={styles.footMeta}>{t('booking.itemsInCart', { count: totalsCount })}</Text>
+          {totalsCount > 0 ? (
+            <View style={{ flex: 1 }}>
+              <Text style={styles.footTotal}>QAR {totalsAll}</Text>
+              <Text style={styles.footMeta}>{t('booking.itemsInCart', { count: totalsCount })}</Text>
+            </View>
+          ) : (
+            // Special customer with an empty cart — the direct-order button
+            // fills the bar since there's no cart total to show.
+            <View style={{ flex: 1 }}>
+              <Text style={styles.footMeta}>{t('directOrder.footHint')}</Text>
+            </View>
+          )}
+
+          <View style={styles.footActions}>
+            {/* Special (VIP) customers can book a pickup directly, no items. */}
+            {isSpecial && (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('DirectOrder')}
+                style={styles.directBtn}
+              >
+                <Ionicons name="flash" size={15} color={colors.primary} />
+                <Text style={styles.directBtnText}>{t('directOrder.button')}</Text>
+              </TouchableOpacity>
+            )}
+            {totalsCount > 0 && (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('ConfirmOrder')}
+              >
+                <LinearGradient
+                  colors={gradients.brand}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.checkout}
+                >
+                  <Text style={styles.checkoutText}>{t('booking.continue')}</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#fff" />
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
           </View>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('ConfirmOrder')}
-          >
-            <LinearGradient
-              colors={gradients.brand}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.checkout}
-            >
-              <Text style={styles.checkoutText}>{t('booking.continue')}</Text>
-              <Ionicons name="arrow-forward" size={16} color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -272,4 +299,17 @@ const makeStyles = (colors) => StyleSheet.create({
   footMeta: { color: colors.muted, fontSize: 11 },
   checkout: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.lg, paddingVertical: 12, borderRadius: radii.pill },
   checkoutText: { color: '#fff', fontWeight: '800' },
+  footActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  directBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 11,
+    borderRadius: radii.pill,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  directBtnText: { color: colors.primary, fontWeight: '800' },
 });
