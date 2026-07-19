@@ -230,18 +230,54 @@ export default function AdminRequestViewScreen({ route, navigation }) {
         )}
 
         {req.agentId ? (() => {
-          const ag = agents.find((a) => a.id === req.agentId);
-          return ag ? (
-            <PillRow
-              icon="bicycle"
-              onPress={() => Linking.openURL(`tel:${(ag.phone || '').replace(/\s/g, '')}`)}
-            >
-              {/* <Text style={styles.pillLabel}>Assigned agent</Text> */}
-              <Text style={styles.pillValue}>{ag.name} · {ag.phone}</Text>
-
-            </PillRow>
-
-          ) : null;
+          // The backend populates `agentId` with { _id, name, phone, vehicle },
+          // so it can arrive either as that object or (rarely) as a bare id.
+          const populated =
+            req.agentId && typeof req.agentId === 'object' ? req.agentId : null;
+          const agentKey = populated
+            ? populated.id || populated._id
+            : req.agentId;
+          // Merge the fuller record from the agents list (email, place/zone)
+          // over the populated fields (name, phone, vehicle) when available.
+          const listAgent = agents.find(
+            (a) => String(a.id) === String(agentKey)
+          );
+          const ag = { ...(listAgent || {}), ...(populated || {}) };
+          if (!ag.name && !ag.phone) return null;
+          const agPlace = ag.place || ag.zone;
+          return (
+            <View style={styles.agentCard}>
+              <Text style={styles.pillLabel}>{t('adminRequestView.assignedAgent')}</Text>
+              <PillRow icon="bicycle">
+                <Text style={styles.pillValue}>{ag.name}</Text>
+              </PillRow>
+              <PillRow
+                icon="call"
+                onPress={
+                  ag.phone
+                    ? () => Linking.openURL(`tel:${(ag.phone || '').replace(/\s/g, '')}`)
+                    : undefined
+                }
+              >
+                <Text style={styles.pillValue}>{ag.phone || '—'}</Text>
+              </PillRow>
+              {!!ag.email && (
+                <PillRow icon="mail" onPress={() => Linking.openURL(`mailto:${ag.email}`)}>
+                  <Text style={styles.pillValue}>{ag.email}</Text>
+                </PillRow>
+              )}
+              {!!agPlace && (
+                <PillRow icon="location-sharp">
+                  <Text style={styles.pillValue}>{agPlace}</Text>
+                </PillRow>
+              )}
+              {!!ag.vehicle && (
+                <PillRow icon="car-sport">
+                  <Text style={styles.pillValue}>{ag.vehicle}</Text>
+                </PillRow>
+              )}
+            </View>
+          );
         })() : null}
 
         <View style={styles.itemsShadow}>
@@ -468,6 +504,8 @@ const styles = StyleSheet.create({
   pillBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
   iconBubble: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
   pillValue: { color: colors.text, fontSize: 14, fontWeight: '300', letterSpacing: 0.3, lineHeight: 20 },
+  pillLabel: { color: colors.muted, fontSize: 11, fontWeight: '400', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 },
+  agentCard: { gap: spacing.sm },
   itemsShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
   itemsCard: { padding: spacing.md, borderRadius: radii.md, overflow: 'hidden' },
   itemsBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },

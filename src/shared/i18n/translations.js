@@ -82,6 +82,7 @@ const en = {
   'adminRequestView.editTotal': 'Edit total price',
   'adminRequestView.saving': 'Saving…',
   'adminRequestView.priceUpdateFailed': "Couldn't update the price",
+  'adminRequestView.assignedAgent': 'Assigned agent',
 
   // Edit-price (agent request detail)
   'agentRequestDetail.editTotal': 'Edit total price',
@@ -217,6 +218,8 @@ const ar = {
   'addAddress.locationDeniedMsg': 'اسمح بالوصول إلى الموقع لاستخدام موقعك الحالي.',
   'addAddress.locationErrTitle': 'تعذّر الحصول على الموقع',
   'addAddress.locationErrMsg': 'يرجى المحاولة مرة أخرى أو إدخال العنوان يدويًا.',
+
+  'adminRequestView.assignedAgent': 'المندوب المُسنَد',
 
   // Settings
   'settings.title': 'الإعدادات',
