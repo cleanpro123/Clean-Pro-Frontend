@@ -20,7 +20,7 @@ import { useI18n } from '../../shared/i18n/LanguageContext';
 const filters = [
   { id: 'all', labelKey: 'adminRequests.filterAll' },
   { id: 'pending', labelKey: 'adminRequests.filterPending' },
-  { id: 'assigned', labelKey: 'adminRequests.filterAssigned' },
+  { id: 'accepted', labelKey: 'adminRequests.filterAccepted' },
   { id: 'in_progress', labelKey: 'adminRequests.filterInProgress' },
   { id: 'delivered', labelKey: 'adminRequests.filterDelivered' },
 ];
@@ -45,7 +45,16 @@ export default function AdminRequestsScreen({ navigation }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setItems(await api.get('/requests'));
+      // Merge normal + direct (special) orders into one list, newest first.
+      const [normal, special] = await Promise.all([
+        api.get('/requests'),
+        api.get('/special-requests').catch(() => []),
+      ]);
+      const all = [...(normal || []), ...(special || [])].sort(
+        (a, b) =>
+          new Date(b.placedAt || b.createdAt) - new Date(a.placedAt || a.createdAt)
+      );
+      setItems(all);
     } finally {
       setLoading(false);
     }
@@ -131,7 +140,7 @@ export default function AdminRequestsScreen({ navigation }) {
                 key={r.id}
                 activeOpacity={0.85}
                 onPress={() =>
-                  navigation.navigate('AdminRequestView', { id: r.id })
+                  navigation.navigate('AdminRequestView', { id: r.id, kind: r.kind })
                 }
                 style={styles.cardShadow}
               >

@@ -67,6 +67,9 @@ function ActionBtn({ label, icon, onPress }) {
 export default function AdminRequestViewScreen({ route, navigation }) {
   const { t } = useI18n();
   const id = route.params?.id;
+  // Direct (special) orders live in a separate collection/endpoint.
+  const basePath =
+    route.params?.kind === 'special' ? '/special-requests' : '/requests';
   const [req, setReq] = useState(null);
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +82,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
   const load = useCallback(async () => {
     try {
       const [r, ag] = await Promise.all([
-        api.get(`/requests/${id}`),
+        api.get(`${basePath}/${id}`),
         api.get('/agents').catch(() => []),
       ]);
       setReq(r);
@@ -117,7 +120,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
     if (!Number.isFinite(value) || value < 0) return;
     setSavingPrice(true);
     try {
-      const updated = await api.patch(`/requests/${req.id}/total`, { total: value });
+      const updated = await api.patch(`${basePath}/${req.id}/total`, { total: value });
       setReq(updated);
       setPriceModalVisible(false);
     } catch (e) {
@@ -137,14 +140,15 @@ export default function AdminRequestViewScreen({ route, navigation }) {
       title: t('adminRequestView.setStatusConfirm', { status }),
       confirmLabel: t('adminRequestView.update'),
       onConfirm: async () => {
-        const updated = await api.patch(`/requests/${req.id}/status`, { status });
+        const updated = await api.patch(`${basePath}/${req.id}/status`, { status });
         setReq(updated);
       },
     });
   };
 
   // Assign (or re-assign) the request to a delivery agent. Hits the admin
-  // assign endpoint, which also moves the request into the "assigned" state.
+  // assign endpoint, which only sets the agent — the order keeps its current
+  // status (a new order stays "pending" until accepted).
   // Like the status actions, this first asks for confirmation before applying.
   const assignAgent = (agentId) => {
     if (assigning) return;
@@ -162,7 +166,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
       onConfirm: async () => {
         setAssigning(true);
         try {
-          const updated = await api.post(`/requests/${req.id}/assign`, { agentId });
+          const updated = await api.post(`${basePath}/${req.id}/assign`, { agentId });
           setReq(updated);
           setAgentModalVisible(false);
         } finally {
@@ -300,7 +304,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
               <ActionBtn label={t('adminRequestView.cancel')} icon="ban" onPress={() => setStatus('cancelled')} />
             </>
           )}
-          {req.status === 'assigned' && (
+          {req.status === 'accepted' && (
             <ActionBtn label={t('adminRequestView.markInProgress')} icon="hammer" onPress={() => setStatus('in_progress')} />
           )}
           {req.status === 'in_progress' && (
@@ -309,19 +313,14 @@ export default function AdminRequestViewScreen({ route, navigation }) {
           {req.status === 'out_for_delivery' && (
             <ActionBtn label={t('adminRequestView.delivered')} icon="checkmark-done" onPress={() => setStatus('delivered')} />
           )}
-        </View>
-
-
-
-        {req.status !== 'delivered' && req.status !== 'cancelled' && (
-          <View style={styles.actions}>
+          {req.status !== 'delivered' && req.status !== 'cancelled' && (
             <ActionBtn
               label={req.agentId ? t('adminRequestView.changeAgent') : t('adminRequestView.assignAgent')}
               icon="people"
               onPress={() => setAgentModalVisible(true)}
             />
-          </View>
-        )}
+          )}
+        </View>
       </ScrollView>
 
       <Modal

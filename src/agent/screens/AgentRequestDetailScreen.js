@@ -60,6 +60,9 @@ function ActionBtn({ label, icon, onPress, primary }) {
 export default function AgentRequestDetailScreen({ route, navigation }) {
   const { t } = useI18n();
   const id = route.params?.id;
+  // Direct (special) orders live in a separate collection/endpoint.
+  const basePath =
+    route.params?.kind === 'special' ? '/special-requests' : '/requests';
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [priceModalVisible, setPriceModalVisible] = useState(false);
@@ -68,7 +71,7 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
 
   const load = useCallback(async () => {
     try {
-      setReq(await api.get(`/requests/${id}`));
+      setReq(await api.get(`${basePath}/${id}`));
     } finally {
       setLoading(false);
     }
@@ -100,7 +103,7 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
     if (!Number.isFinite(value) || value < 0) return;
     setSavingPrice(true);
     try {
-      const updated = await api.patch(`/requests/${req.id}/total`, { total: value });
+      const updated = await api.patch(`${basePath}/${req.id}/total`, { total: value });
       setReq(updated);
       setPriceModalVisible(false);
     } catch (e) {
@@ -121,7 +124,7 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
       confirmLabel: label,
       onConfirm: async () => {
         try {
-          const updated = await api.patch(`/requests/${req.id}/status`, { status });
+          const updated = await api.patch(`${basePath}/${req.id}/status`, { status });
           setReq(updated);
         } catch (e) {
           confirmAction({
@@ -229,7 +232,7 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
         </View>
 
         <View style={styles.actions}>
-          {req.status === 'assigned' && (
+          {req.status === 'pending' && (
             <>
               <ActionBtn label={t('agentRequestDetail.rejectRequest')} onPress={() => setStatus('cancelled', t('agentRequestDetail.reject'))} />
               <ActionBtn label={t('agentRequestDetail.acceptRequest')} primary onPress={() => setStatus('accepted', t('agentRequestDetail.accept'))} />

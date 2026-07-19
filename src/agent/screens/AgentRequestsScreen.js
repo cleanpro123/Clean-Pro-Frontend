@@ -16,7 +16,7 @@ import { api } from '../../shared/api/client';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const tabs = [
-  { id: 'new', labelKey: 'agentRequests.tabNewOrders', statuses: ['assigned'] },
+  { id: 'new', labelKey: 'agentRequests.tabNewOrders', statuses: ['pending'] },
   { id: 'accepted', labelKey: 'agentRequests.tabAccepted', statuses: ['accepted', 'in_progress', 'out_for_delivery'] },
   { id: 'history', labelKey: 'agentRequests.tabOrderHistory', statuses: ['delivered', 'cancelled'] },
 ];
@@ -30,7 +30,16 @@ export default function AgentRequestsScreen({ navigation }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setRequests(await api.get('/requests/assigned'));
+      // Merge normal + direct (special) orders assigned to this agent.
+      const [normal, special] = await Promise.all([
+        api.get('/requests/assigned'),
+        api.get('/special-requests/assigned').catch(() => []),
+      ]);
+      const all = [...(normal || []), ...(special || [])].sort(
+        (a, b) =>
+          new Date(b.placedAt || b.createdAt) - new Date(a.placedAt || a.createdAt)
+      );
+      setRequests(all);
     } finally {
       setLoading(false);
     }
@@ -101,7 +110,7 @@ export default function AgentRequestsScreen({ navigation }) {
               key={r.id}
               activeOpacity={0.85}
               onPress={() =>
-                navigation.navigate('AgentRequestDetail', { id: r.id })
+                navigation.navigate('AgentRequestDetail', { id: r.id, kind: r.kind })
               }
               style={styles.rowShadow}
             >

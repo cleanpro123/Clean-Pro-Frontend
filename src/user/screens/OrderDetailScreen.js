@@ -80,15 +80,19 @@ export default function OrderDetailScreen({ route, navigation }) {
   const orderId = route.params?.orderId;
   const [order, setOrder] = useState(route.params?.order || null);
   const [loading, setLoading] = useState(!route.params?.order);
+  // Direct (special) orders live in a separate collection/endpoint.
+  const isDirect =
+    (route.params?.order?.kind || route.params?.kind) === 'special';
+  const basePath = isDirect ? '/special-requests' : '/requests';
 
   const load = useCallback(async () => {
     if (!orderId) return;
     try {
-      setOrder(await api.get(`/requests/${orderId}`));
+      setOrder(await api.get(`${basePath}/${orderId}`));
     } finally {
       setLoading(false);
     }
-  }, [orderId]);
+  }, [orderId, basePath]);
 
   useEffect(() => {
     load();

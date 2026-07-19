@@ -53,7 +53,17 @@ export default function OrdersScreen({ navigation }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setOrders(await api.get('/requests/mine'));
+      // Merge normal orders with the customer's direct (special) orders so both
+      // show in one list, newest first.
+      const [normal, special] = await Promise.all([
+        api.get('/requests/mine'),
+        api.get('/special-requests/mine').catch(() => []),
+      ]);
+      const all = [...(normal || []), ...(special || [])].sort(
+        (a, b) =>
+          new Date(b.placedAt || b.createdAt) - new Date(a.placedAt || a.createdAt)
+      );
+      setOrders(all);
     } finally {
       setLoading(false);
     }
