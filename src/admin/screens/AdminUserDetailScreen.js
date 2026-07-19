@@ -76,6 +76,28 @@ export default function AdminUserDetailScreen({ route, navigation }) {
   }
   if (!user) return null;
   const isActive = user.status === 'active';
+  const isSpecial = !!user.isSpecial;
+
+  // Add/remove the customer from the special (VIP) list. Opens a confirm modal,
+  // then flips the isSpecial flag on the backend.
+  const toggleSpecial = () =>
+    confirmAction({
+      title: isSpecial
+        ? t('adminUserDetail.removeSpecialTitle')
+        : t('adminUserDetail.addSpecialTitle'),
+      message: isSpecial
+        ? t('adminUserDetail.removeSpecialMessage', { name: user.name })
+        : t('adminUserDetail.addSpecialMessage', { name: user.name }),
+      confirmLabel: isSpecial
+        ? t('adminUserDetail.removeFromSpecial')
+        : t('adminUserDetail.addToSpecial'),
+      onConfirm: async () => {
+        const updated = await api.patch(`/users/${user.id}/special`, {
+          isSpecial: !isSpecial,
+        });
+        setUser(updated);
+      },
+    });
 
   const toggleStatus = () =>
     confirmAction({
@@ -154,6 +176,15 @@ export default function AdminUserDetailScreen({ route, navigation }) {
               </Text>
             </View>
 
+            {isSpecial && (
+              <View style={styles.specialBadge}>
+                <Ionicons name="star" size={12} color="#F5C542" />
+                <Text style={styles.specialBadgeText}>
+                  {t('adminUserDetail.special')}
+                </Text>
+              </View>
+            )}
+
             <View style={styles.statsRow}>
               <View style={styles.stat}>
                 <Text style={styles.statValue}>{user.orders || 0}</Text>
@@ -191,45 +222,39 @@ export default function AdminUserDetailScreen({ route, navigation }) {
           onPress={() => Linking.openURL(`mailto:${user.email}`)}
         />
 
-        <Text style={styles.section}>
-          {t('adminUserDetail.recentOrders', { count: orders.length })}
+        <Text style={[styles.section, { marginTop: spacing.lg }]}>
+          {t('adminUserDetail.manageUser')}
         </Text>
-        {orders.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>{t('adminUserDetail.noOrders')}</Text>
-          </View>
-        ) : (
-          orders.slice(0, 5).map((o) => (
-            <TouchableOpacity
-              key={o.id}
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('AdminRequestView', { id: o.id })}
-              style={styles.pillShadow}
-            >
-              <LinearGradient
-                colors={['#2B3F6E', '#1B2B52']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.orderRow}
-              >
-                <View style={styles.pillBorder} pointerEvents="none" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.orderId}>{o.code || o.id}</Text>
-                  <Text style={styles.orderMeta}>
-                    {o.status} · {new Date(o.placedAt || o.createdAt).toLocaleDateString()}
-                  </Text>
-                </View>
-                <Text style={styles.orderTotal}>QAR {o.total}</Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.muted} />
-              </LinearGradient>
-            </TouchableOpacity>
-          ))
-        )}
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={toggleSpecial}
+          style={styles.pillShadow}
+        >
+          <LinearGradient
+            colors={isSpecial ? ['#3A3320', '#241F12'] : ['#8A6D1F', '#4A3A12']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.actionBtn}
+          >
+            <View style={styles.pillBorder} pointerEvents="none" />
+            <Ionicons
+              name={isSpecial ? 'star' : 'star-outline'}
+              size={18}
+              color="#F5C542"
+            />
+            <Text style={[styles.actionText, { color: '#F5C542' }]}>
+              {isSpecial
+                ? t('adminUserDetail.removeFromSpecial')
+                : t('adminUserDetail.addToSpecial')}
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
 
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={toggleStatus}
-          style={[styles.pillShadow, { marginTop: spacing.lg }]}
+          style={styles.pillShadow}
         >
           <LinearGradient
             colors={isActive ? ['#5C1F1F', '#2D0F0F'] : ['#0F766E', '#1B2B52']}
@@ -256,7 +281,7 @@ export default function AdminUserDetailScreen({ route, navigation }) {
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={deleteUser}
-          style={[styles.pillShadow, { marginTop: spacing.md }]}
+          style={styles.pillShadow}
         >
           <LinearGradient
             colors={['#5C1F1F', '#2D0F0F']}
@@ -315,6 +340,22 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   statusText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  specialBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.pill,
+    marginTop: 6,
+    backgroundColor: 'rgba(245, 197, 66, 0.16)',
+  },
+  specialBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    color: '#F5C542',
+  },
   statsRow: {
     flexDirection: 'row',
     marginTop: spacing.lg,
