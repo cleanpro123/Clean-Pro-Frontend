@@ -9,6 +9,9 @@ export const LANGUAGES = [
 
 const en = {
   'signup.avatarOptional': 'Profile photo',
+  'orderDetail.deliveryAgent': 'Delivery agent',
+  'orderDetail.agent': 'Agent',
+  'orderDetail.vehicle': 'Vehicle',
   'confirmOrder.outsideQatarTitle': 'Outside Qatar',
   'confirmOrder.outsideQatarMessage':
     'This address is outside Qatar. We currently provide our service inside Qatar only. Please contact the main branch or an admin for assistance.',
@@ -135,6 +138,9 @@ const en = {
 
 const ar = {
   'signup.avatarOptional': 'صورة الملف الشخصي',
+  'orderDetail.deliveryAgent': 'مندوب التوصيل',
+  'orderDetail.agent': 'المندوب',
+  'orderDetail.vehicle': 'المركبة',
   'confirmOrder.outsideQatarTitle': 'خارج قطر',
   'confirmOrder.outsideQatarMessage':
     'هذا العنوان خارج قطر. نقدّم خدمتنا داخل قطر فقط حاليًا. يرجى التواصل مع الفرع الرئيسي أو المسؤول للمساعدة.',

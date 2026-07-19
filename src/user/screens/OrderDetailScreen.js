@@ -117,6 +117,8 @@ export default function OrderDetailScreen({ route, navigation }) {
 
   // Pickup address arrives populated from the linked addressId.
   const addr = order.addressId && typeof order.addressId === 'object' ? order.addressId : null;
+  // Assigned delivery agent (populated from agentId once assigned).
+  const agent = order.agentId && typeof order.agentId === 'object' ? order.agentId : null;
   const addressDetail = addr
     ? [addr.line1, addr.line2, addr.area || addr.city, addr.pincode].filter(Boolean).join(', ')
     : '';
@@ -293,6 +295,26 @@ export default function OrderDetailScreen({ route, navigation }) {
             <InfoLine icon="document-text-outline" label={t('orderDetail.noteForAgent')} value={order.note} />
           )}
         </View>
+
+        {/* DELIVERY AGENT — shown once an agent is assigned to the order */}
+        {agent && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{t('orderDetail.deliveryAgent')}</Text>
+            <InfoLine icon="bicycle-outline" label={t('orderDetail.agent')} value={agent.name || '—'} />
+            <InfoLine
+              icon="call-outline"
+              label={t('orderDetail.phone')}
+              value={agent.phone || '—'}
+              onPress={() =>
+                agent.phone &&
+                Linking.openURL(`tel:${String(agent.phone).replace(/\s/g, '')}`)
+              }
+            />
+            {!!agent.vehicle && (
+              <InfoLine icon="car-outline" label={t('orderDetail.vehicle')} value={agent.vehicle} />
+            )}
+          </View>
+        )}
 
         {/* RATE */}
         {delivered && (
