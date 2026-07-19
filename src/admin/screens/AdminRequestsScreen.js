@@ -157,7 +157,15 @@ export default function AdminRequestsScreen({ navigation }) {
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.id}>{r.code}</Text>
+                    <View style={styles.idRow}>
+                      <Text style={styles.id}>{r.code}</Text>
+                      {r.userId?.isSpecial && (
+                        <View style={styles.vipBadge}>
+                          <Ionicons name="diamond" size={9} color="#FFD700" />
+                          <Text style={styles.vipText}>{t('adminRequests.vip')}</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.customer}>
                       {r.userId?.name || t('adminRequests.customer')} · {t('adminRequests.itemsCount', { count: r.items?.length || 0 })}
                     </Text>
@@ -197,7 +205,20 @@ const styles = StyleSheet.create({
   cardBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
   avatarBubble: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontWeight: '500', color: colors.text, fontSize: 13, letterSpacing: 0.5 },
+  idRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   id: { fontSize: 13, fontWeight: '500', color: colors.text, letterSpacing: 0.3 },
+  vipBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: 'rgba(255, 215, 0, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.45)',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: radii.pill,
+  },
+  vipText: { color: '#FFD700', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
   customer: { fontSize: 12, color: colors.textSecondary, marginTop: 2, fontWeight: '300' },
   meta: { fontSize: 11, color: colors.muted, marginTop: 2, fontWeight: '300' },
   rightCol: { alignItems: 'flex-end', gap: 6 },

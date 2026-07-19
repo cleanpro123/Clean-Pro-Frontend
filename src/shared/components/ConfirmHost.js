@@ -165,7 +165,14 @@ export default function ConfirmHost() {
                   onPress={close}
                   style={[styles.btn, styles.cancelBtn]}
                 >
-                  <Text style={styles.cancelText}>{state.cancelLabel}</Text>
+                  <Text
+                    style={styles.cancelText}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.85}
+                  >
+                    {state.cancelLabel}
+                  </Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -178,7 +185,12 @@ export default function ConfirmHost() {
                   locked && styles.btnLocked,
                 ]}
               >
-                <Text style={state.destructive ? styles.confirmDangerText : styles.confirmText}>
+                <Text
+                  style={state.destructive ? styles.confirmDangerText : styles.confirmText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
+                >
                   {confirmText}
                 </Text>
               </TouchableOpacity>
@@ -257,15 +269,17 @@ const makeStyles = (T) => StyleSheet.create({
   btn: {
     flex: 1,
     paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: radii.md,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
   },
   cancelBtn: T.cancelBtn,
-  cancelText: { color: T.cancelText, fontWeight: '600', letterSpacing: 0.5 },
+  cancelText: { color: T.cancelText, fontSize: 14, fontWeight: '600', letterSpacing: 0.3 },
   confirmBtn: T.confirmBtn,
   btnLocked: { opacity: 0.5 },
-  confirmText: { color: T.confirmText, fontWeight: '700', letterSpacing: 0.5 },
+  confirmText: { color: T.confirmText, fontSize: 14, fontWeight: '700', letterSpacing: 0.3 },
   confirmDangerBtn: T.confirmDangerBtn,
-  confirmDangerText: { color: T.confirmDangerText, fontWeight: '700', letterSpacing: 0.5 },
+  confirmDangerText: { color: T.confirmDangerText, fontSize: 14, fontWeight: '700', letterSpacing: 0.3 },
 });

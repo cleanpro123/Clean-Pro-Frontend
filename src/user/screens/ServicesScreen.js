@@ -57,7 +57,7 @@ export default function ServicesScreen({ navigation }) {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() => navigation.navigate('DirectOrder')}
-            style={[styles.card, styles.directCard]}
+            style={styles.card}
           >
             <LinearGradient
               colors={gradients.brand}
@@ -71,7 +71,7 @@ export default function ServicesScreen({ navigation }) {
               <Text style={styles.name}>{t('directOrder.button')}</Text>
               <Text style={styles.desc}>{t('directOrder.footHint')}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+            <Ionicons name="chevron-forward" size={20} color={colors.muted} />
           </TouchableOpacity>
         )}
 
@@ -128,12 +128,6 @@ const makeStyles = (colors) => StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  // Highlighted variant for the special-customer Direct order option.
-  directCard: {
-    borderColor: colors.primary,
-    borderWidth: 1.5,
-    backgroundColor: colors.primarySoft,
   },
   iconBubble: {
     width: 52,

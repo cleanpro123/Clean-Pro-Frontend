@@ -75,3 +75,32 @@ export function isInsideQatar(lat, lng) {
   }
   return pointInPolygon(lat, lng, QATAR_POLYGON);
 }
+
+// India service area. A plain bounding box over mainland India (plus the
+// islands are close enough for this coarse check) — good enough to let orders
+// placed from within India through, without a precise national polygon.
+export const INDIA_BOUNDS = {
+  minLat: 6.5,
+  maxLat: 35.7,
+  minLng: 68.1,
+  maxLng: 97.4,
+};
+
+// True when the coordinate pair is a valid point inside India's bounding box.
+export function isInsideIndia(lat, lng) {
+  if (!hasCoordinates(lat, lng)) {
+    return false;
+  }
+  return (
+    lat >= INDIA_BOUNDS.minLat &&
+    lat <= INDIA_BOUNDS.maxLat &&
+    lng >= INDIA_BOUNDS.minLng &&
+    lng <= INDIA_BOUNDS.maxLng
+  );
+}
+
+// The app currently serves Qatar and India. An order can be placed when the
+// pickup address falls inside either. Add more countries here as they launch.
+export function isInsideServiceArea(lat, lng) {
+  return isInsideQatar(lat, lng) || isInsideIndia(lat, lng);
+}

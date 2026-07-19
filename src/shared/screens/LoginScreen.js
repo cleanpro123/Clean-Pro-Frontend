@@ -72,6 +72,28 @@ function WaveDivider({ width, height }) {
   );
 }
 
+// Self-contained input row. The focus-highlight state lives HERE, not on
+// LoginScreen, so focusing a field re-renders only this one small subtree —
+// not the hero, wave, gradients, and legal text. Driving the focus border off
+// LoginScreen state used to re-render the whole screen on every focus/blur,
+// which is what let layout reflows detach the focused TextInput on Android
+// (focus jumped to the next field and the keyboard dropped). Keeping the
+// re-render local makes that class of bug structurally impossible.
+const Field = React.memo(function Field({ styles, children, ...inputProps }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={[styles.inputWrap, focused && styles.inputWrapFocused]}>
+      <TextInput
+        style={styles.input}
+        {...inputProps}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      />
+      {children}
+    </View>
+  );
+});
+
 export default function LoginScreen({ navigation, route }) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -110,7 +132,6 @@ export default function LoginScreen({ navigation, route }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState(route?.params?.notice || '');
   const [showPw, setShowPw] = useState(false);
-  const [focused, setFocused] = useState(null);
 
   const submit = async () => {
     setError('');
@@ -175,7 +196,7 @@ export default function LoginScreen({ navigation, route }) {
           <View style={styles.body}>
             {/* <Text style={styles.welcome}>{t('login.welcome')}</Text> */}
 
-            <View style={[styles.inputWrap, focused == 'email' && styles.inputWrapFocused]}>
+            <View style={styles.inputWrap}>
               <TextInput
                 style={styles.input}
                 placeholder={t('login.email')}
@@ -184,12 +205,10 @@ export default function LoginScreen({ navigation, route }) {
                 autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
-                onFocus={() => setFocused('email')}
-                onBlur={() => setFocused(null)}
-              />
+               />
             </View>
 
-            <View style={[styles.inputWrap, focused == 'password' && styles.inputWrapFocused]}>
+            <View style={styles.inputWrap}>
               <TextInput
                 style={styles.input}
                 placeholder={t('login.password')}
@@ -197,9 +216,7 @@ export default function LoginScreen({ navigation, route }) {
                 secureTextEntry={!showPw}
                 value={password}
                 onChangeText={setPassword}
-                onFocus={() => setFocused('password')}
-                onBlur={() => setFocused(null)}
-              />
+               />
               <TouchableOpacity onPress={() => setShowPw((s) => !s)} style={styles.eyeBtn} hitSlop={8}>
                 <Ionicons name={showPw ? 'eye' : 'eye-off'} size={18} color={colors.muted} />
               </TouchableOpacity>
@@ -287,7 +304,7 @@ const makeStyles = (colors) => StyleSheet.create({
   body: {
     paddingHorizontal: spacing.lg + 4,
     backgroundColor: 'transparent',
-    marginTop: '20%',
+    marginTop: '14%',
     paddingTop: 6,
   },
   welcome: {

@@ -23,10 +23,16 @@ export default function ProfileScreen({ navigation }) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useI18n();
   const { addresses } = useApp();
-  const { profile, logout } = useAuth();
+  const { profile, logout, refreshProfile } = useAuth();
   const [stats, setStats] = useState({ orders: 0, ordersLastWeek: 0 });
 
   const load = useCallback(async () => {
+    // Pull the latest profile so fields changed elsewhere (e.g. an admin
+    // toggling the special/VIP flag) are reflected — otherwise the cached
+    // login profile keeps showing stale values like the Gold badge.
+    try {
+      await refreshProfile();
+    } catch {}
     try {
       const o = await api.get('/requests/mine');
       const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -38,11 +44,18 @@ export default function ProfileScreen({ navigation }) {
         ).length,
       });
     } catch {}
-  }, []);
+  }, [refreshProfile]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Refresh again whenever the screen regains focus (e.g. returning to the
+  // Profile tab), so special-status changes show without an app restart.
+  useEffect(() => {
+    const unsub = navigation.addListener?.('focus', load);
+    return unsub;
+  }, [navigation, load]);
 
   // Every completed order saves the customer a flat QAR 5 vs. walk-in pricing.
   const SAVED_PER_ORDER = 5;
@@ -184,10 +197,17 @@ export default function ProfileScreen({ navigation }) {
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>
                   <Text style={styles.name}>{profile?.name || t('profile.customer')}</Text>
-                  <View style={styles.tierBadge}>
-                    <Ionicons name="diamond" size={10} color={'#FFD700'} />
-                    <Text style={styles.tierText}>{t('profile.gold')}</Text>
-                  </View>
+                  {profile?.isSpecial ? (
+                    <View style={styles.tierBadge}>
+                      <Ionicons name="diamond" size={10} color={'#FFD700'} />
+                      <Text style={styles.tierText}>{t('profile.gold')}</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.memberBadge}>
+                      <Ionicons name="person" size={10} color={'#ffffffdd'} />
+                      <Text style={styles.memberText}>{t('profile.member')}</Text>
+                    </View>
+                  )}
                 </View>
                 <Text style={styles.email}>{profile?.email || ''}</Text>
                 <TouchableOpacity
@@ -434,6 +454,16 @@ const makeStyles = (colors) => StyleSheet.create({
     borderRadius: radii.pill,
   },
   tierText: { color: '#FFD700', fontSize: 10, fontWeight: '800' },
+  memberBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#ffffff25',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.pill,
+  },
+  memberText: { color: '#ffffffdd', fontSize: 10, fontWeight: '800' },
   email: { color: '#ffffffcc', fontSize: 13, marginTop: 4 },
   editBtn: {
     flexDirection: 'row',

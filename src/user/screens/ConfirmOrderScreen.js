@@ -17,7 +17,7 @@ import { useTheme } from '../../shared/theme/ThemeContext';
 import { useApp } from '../../shared/state/AppContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
-import { hasCoordinates, isInsideQatar } from '../../shared/constants/geo';
+import { hasCoordinates, isInsideServiceArea } from '../../shared/constants/geo';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const deliveryOptions = [
@@ -118,9 +118,9 @@ export default function ConfirmOrderScreen({ navigation }) {
       });
       return;
     }
-    // Geofence: Clean Pro only serves inside Qatar. Block the order if the chosen
-    // pickup address has no saved map location, or has coordinates that fall
-    // outside the country — with a message tailored to each case.
+    // Geofence: Clean Pro serves inside Qatar and India. Block the order if the
+    // chosen pickup address has no saved map location, or has coordinates that
+    // fall outside the service area — with a message tailored to each case.
     const { lat, lng } = selectedAddress || {};
     if (!hasCoordinates(lat, lng)) {
       confirmAction({
@@ -133,7 +133,7 @@ export default function ConfirmOrderScreen({ navigation }) {
       });
       return;
     }
-    if (!isInsideQatar(lat, lng)) {
+    if (!isInsideServiceArea(lat, lng)) {
       confirmAction({
         title: t('confirmOrder.outsideQatarTitle'),
         message: t('confirmOrder.outsideQatarMessage'),
