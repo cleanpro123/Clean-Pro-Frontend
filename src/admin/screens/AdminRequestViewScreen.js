@@ -229,57 +229,6 @@ export default function AdminRequestViewScreen({ route, navigation }) {
           </PillRow>
         )}
 
-        {req.agentId ? (() => {
-          // The backend populates `agentId` with { _id, name, phone, vehicle },
-          // so it can arrive either as that object or (rarely) as a bare id.
-          const populated =
-            req.agentId && typeof req.agentId === 'object' ? req.agentId : null;
-          const agentKey = populated
-            ? populated.id || populated._id
-            : req.agentId;
-          // Merge the fuller record from the agents list (email, place/zone)
-          // over the populated fields (name, phone, vehicle) when available.
-          const listAgent = agents.find(
-            (a) => String(a.id) === String(agentKey)
-          );
-          const ag = { ...(listAgent || {}), ...(populated || {}) };
-          if (!ag.name && !ag.phone) return null;
-          const agPlace = ag.place || ag.zone;
-          return (
-            <View style={styles.agentCard}>
-              <Text style={styles.pillLabel}>{t('adminRequestView.assignedAgent')}</Text>
-              <PillRow icon="bicycle">
-                <Text style={styles.pillValue}>{ag.name}</Text>
-              </PillRow>
-              <PillRow
-                icon="call"
-                onPress={
-                  ag.phone
-                    ? () => Linking.openURL(`tel:${(ag.phone || '').replace(/\s/g, '')}`)
-                    : undefined
-                }
-              >
-                <Text style={styles.pillValue}>{ag.phone || '—'}</Text>
-              </PillRow>
-              {!!ag.email && (
-                <PillRow icon="mail" onPress={() => Linking.openURL(`mailto:${ag.email}`)}>
-                  <Text style={styles.pillValue}>{ag.email}</Text>
-                </PillRow>
-              )}
-              {!!agPlace && (
-                <PillRow icon="location-sharp">
-                  <Text style={styles.pillValue}>{agPlace}</Text>
-                </PillRow>
-              )}
-              {!!ag.vehicle && (
-                <PillRow icon="car-sport">
-                  <Text style={styles.pillValue}>{ag.vehicle}</Text>
-                </PillRow>
-              )}
-            </View>
-          );
-        })() : null}
-
         <View style={styles.itemsShadow}>
           <LinearGradient
             colors={['#2B3F6E', '#1B2B52']}
@@ -332,6 +281,40 @@ export default function AdminRequestViewScreen({ route, navigation }) {
             </View>
           </LinearGradient>
         </View>
+
+        {req.agentId ? (() => {
+          // The backend populates `agentId` with { _id, name, phone, vehicle },
+          // so read those fields straight off it (or off the matching agents
+          // list entry on the rare chance it arrives as a bare id).
+          const ag =
+            req.agentId && typeof req.agentId === 'object'
+              ? req.agentId
+              : agents.find((a) => String(a.id) === String(req.agentId)) || {};
+          if (!ag.name && !ag.phone) return null;
+          return (
+            <View style={styles.agentCard}>
+              <Text style={styles.pillLabel}>{t('adminRequestView.assignedAgent')}</Text>
+              <PillRow icon="bicycle">
+                <Text style={styles.pillValue}>{ag.name}</Text>
+              </PillRow>
+              <PillRow
+                icon="call"
+                onPress={
+                  ag.phone
+                    ? () => Linking.openURL(`tel:${(ag.phone || '').replace(/\s/g, '')}`)
+                    : undefined
+                }
+              >
+                <Text style={styles.pillValue}>{ag.phone || '—'}</Text>
+              </PillRow>
+              {!!ag.vehicle && (
+                <PillRow icon="car-sport">
+                  <Text style={styles.pillValue}>{ag.vehicle}</Text>
+                </PillRow>
+              )}
+            </View>
+          );
+        })() : null}
 
         <View style={styles.actions}>
           {req.status === 'pending' && (
