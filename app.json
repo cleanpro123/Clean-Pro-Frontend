@@ -4,11 +4,11 @@
     "slug": "clean-pro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/clean-pro-icon.png",
+    "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/clean-pro-icon.png",
+      "image": "./assets/splash-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#F3F8FF"
     },
@@ -21,14 +21,21 @@
     "android": {
       "package": "com.cleanpro.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/clean-pro-icon.png",
+        "foregroundImage": "./assets/adaptive-icon-fg.png",
+        "backgroundImage": "./assets/adaptive-icon-bg.png",
+        "monochromeImage": "./assets/adaptive-icon-mono.png",
         "backgroundColor": "#1B6FC4"
+      },
+      "splash": {
+        "image": "./assets/splash-logo-android.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#F3F8FF"
       },
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
-      "favicon": "./assets/clean-pro-icon.png",
+      "favicon": "./assets/app-favicon.png",
       "bundler": "metro"
     },
     "extra": {},

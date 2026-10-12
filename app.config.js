@@ -20,6 +20,9 @@ const VARIANTS = {
     androidPackage: 'com.cleanpro.app',
     iosBundleId: 'com.cleanpro.app',
     androidBg: '#1B6FC4',
+    // Gradient layer behind the adaptive icon; the admin/agent apps keep a
+    // flat colour so the three apps stay easy to tell apart on a home screen.
+    androidBgImage: './assets/adaptive-icon-bg.png',
     // User EAS project (@mhdnihal/clean-pro). Override with EAS_PROJECT_ID_USER.
     projectId: process.env.EAS_PROJECT_ID_USER || '74723b2e-346b-4d92-b879-18fadb45a912',
   },
@@ -61,6 +64,7 @@ module.exports = ({ config }) => ({
     adaptiveIcon: {
       ...(config.android?.adaptiveIcon || {}),
       backgroundColor: VARIANT.androidBg,
+      backgroundImage: VARIANT.androidBgImage,
     },
   },
   extra: {
