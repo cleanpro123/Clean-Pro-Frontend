@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import { useAuth } from '../../shared/state/AuthContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
+import Avatar from '../../shared/components/Avatar';
 
 export default function ProfileScreen({ navigation }) {
   const { colors, gradients } = useTheme();
@@ -185,7 +185,7 @@ export default function ProfileScreen({ navigation }) {
               >
                 <View style={styles.avatar}>
                   {profile?.avatar ? (
-                    <Image source={{ uri: profile.avatar }} style={styles.avatarImg} />
+                    <Avatar value={profile.avatar} style={styles.avatarImg} />
                   ) : (
                     <Ionicons name="person" size={36} color="#fff" />
                   )}

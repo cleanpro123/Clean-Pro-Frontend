@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AVATARS } from '../constants/avatars';
+import Avatar from './Avatar';
 import { spacing } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { useI18n } from '../i18n/LanguageContext';
@@ -38,7 +39,7 @@ export default function AvatarPicker({ value, onChange, label }) {
       >
         <View style={styles.previewWrap}>
           {value ? (
-            <Image source={{ uri: value }} style={styles.preview} />
+            <Avatar value={value} style={styles.preview} />
           ) : (
             <Ionicons name="person" size={40} color={colors.muted} />
           )}
@@ -77,7 +78,7 @@ export default function AvatarPicker({ value, onChange, label }) {
                       selected && styles.avatarWrapSel,
                     ]}
                   >
-                    <Image source={{ uri: a.uri }} style={styles.avatar} />
+                    <Avatar value={a.uri} style={styles.avatar} />
                     {selected && (
                       <View style={styles.check}>
                         <Ionicons name="checkmark" size={13} color="#fff" />
