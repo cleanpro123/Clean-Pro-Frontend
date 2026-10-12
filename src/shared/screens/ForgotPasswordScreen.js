@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from '../components/Gradient';
+import OtpInput, { OTP_LENGTH } from '../components/OtpInput';
+import {
+  AuthScreen,
+  StepBar,
+  AuthField,
+  PasswordToggle,
+  StrengthMeter,
+  AuthBanner,
+  AuthButton,
+  ResendRow,
+} from '../components/AuthUI';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../state/AuthContext';
 import useResendTimer from '../hooks/useResendTimer';
@@ -23,7 +22,7 @@ import { useI18n } from '../i18n/LanguageContext';
 const BACK_LOCK_SECONDS = 30;
 
 export default function ForgotPasswordScreen({ navigation, route }) {
-  const { colors, gradients } = useTheme();
+  const { colors } = useTheme();
   const { requestOtp, verifyOtp, resetPassword, logout } = useAuth();
   const resendTimer = useResendTimer(60);
   const { t } = useI18n();
@@ -37,6 +36,9 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   const [step, setStep] = useState(1); // 1 = email, 2 = verify code, 3 = new password
   const [email, setEmail] = useState(presetEmail);
   const [code, setCode] = useState('');
+  const [codeRejected, setCodeRejected] = useState(false);
+  // Guards against a double submit when autofill and a keystroke both land.
+  const verifyingRef = useRef(false);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -97,11 +99,16 @@ export default function ForgotPasswordScreen({ navigation, route }) {
     setNotice('');
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError(t('forgot.invalidEmail'));
     if (resendTimer.active) return; // still cooling down
+    // On the first send the hero subtitle already says where the code went;
+    // only a resend needs the confirmation banner.
+    const resending = step === 2;
     setBusy(true);
     try {
       await requestOtp(email.trim(), 'reset');
+      setCode('');
+      setCodeRejected(false);
       setStep(2);
-      setNotice(t('forgot.codeSent', { email: email.trim() }));
+      if (resending) setNotice(t('forgot.codeSent', { email: email.trim() }));
       resendTimer.start();
       armBackLock();
     } catch (e) {
@@ -112,21 +119,33 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   };
 
   // Step 2: verify the code on its own. Only when it's correct do we move on
-  // to the new-password step.
-  const verifyCode = async () => {
+  // to the new-password step. Runs automatically once all digits are in
+  // (typed, pasted or autofilled) — there is no submit button on this step.
+  const verifyCode = async (entered) => {
+    if (verifyingRef.current) return;
     setError('');
     setNotice('');
-    if (!/^\d{4,8}$/.test(code.trim())) return setError(t('forgot.enterCode'));
+    if (entered.length !== OTP_LENGTH) return setError(t('forgot.enterCode'));
+    verifyingRef.current = true;
     setBusy(true);
     try {
-      await verifyOtp(email.trim(), code.trim());
+      await verifyOtp(email.trim(), entered);
       setStep(3);
       setNotice(t('forgot.codeVerified'));
     } catch (e) {
       setError(e.message || t('forgot.codeIncorrect'));
+      // Clear the boxes so the user can enter the code again straight away.
+      setCode('');
+      setCodeRejected(true);
     } finally {
+      verifyingRef.current = false;
       setBusy(false);
     }
+  };
+
+  const onCodeChange = (next) => {
+    setCode(next);
+    if (codeRejected) setCodeRejected(false);
   };
 
   // Step 3: set the new password (the backend allows this only because the OTP
@@ -161,169 +180,93 @@ export default function ForgotPasswordScreen({ navigation, route }) {
     }
   };
 
-  const primaryAction = step === 1 ? sendCode : step === 2 ? verifyCode : submit;
-  const primaryLabel =
-    step === 1 ? t('forgot.sendCode') : step === 2 ? t('forgot.verifyCode') : t('forgot.resetPassword');
-  const subtitle =
-    step === 1
-      ? isChange
-        ? t('forgot.subtitleChangeEmail')
-        : t('forgot.subtitleEmail')
-      : step === 2
-      ? t('forgot.subtitleCode')
-      : t('forgot.subtitlePassword');
+  // Step 2 has no button: the code verifies itself once complete.
+  const primaryAction = step === 1 ? sendCode : submit;
+  const primaryLabel = step === 1 ? t('forgot.sendCode') : t('forgot.resetPassword');
+  const stepIcon = ['key-outline', 'mail-unread-outline', 'lock-closed-outline'][step - 1];
 
   return (
-    <SafeAreaView className="flex-1 bg-background dark:bg-[#0A1424]" edges={['top']}>
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerClassName="pb-xl"
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+    <AuthScreen
+      title={isChange ? t('forgot.changePassword') : t('forgot.resetPassword')}
+      subtitle={step === 2 ? t('forgot.codeSent', { email: email.trim() }) : undefined}
+      icon={stepIcon}
+      onBack={onBack}
+      lockSeconds={locked ? lockLeft : 0}
+    >
+      <StepBar step={step} total={3} />
+
+      {step === 1 ? (
+        <AuthField
+          icon="mail-outline"
+          placeholder={t('forgot.emailPlaceholder')}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          textContentType="emailAddress"
+          returnKeyType="send"
+          onSubmitEditing={sendCode}
+          value={email}
+          onChangeText={setEmail}
+          editable={!isChange}
         >
-          <LinearGradient
-            colors={gradients.sky}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="pt-xl pb-[48px] px-lg rounded-b-[36px]"
+          {isChange ? <Ionicons name="lock-closed" size={15} color={colors.muted} /> : null}
+        </AuthField>
+      ) : step === 2 ? (
+        <>
+          <OtpInput
+            value={code}
+            onChangeText={onCodeChange}
+            onComplete={verifyCode}
+            disabled={busy}
+            error={codeRejected}
+            accessibilityLabel={t('forgot.codePlaceholder')}
+          />
+          <ResendRow
+            label={
+              resendTimer.active
+                ? t('forgot.resendIn', { seconds: resendTimer.secondsLeft })
+                : t('forgot.resend')
+            }
+            cooling={resendTimer.active}
+            onPress={sendCode}
+            disabled={busy}
+            busy={busy}
+          />
+        </>
+      ) : (
+        <>
+          <AuthField
+            icon="lock-closed-outline"
+            placeholder={t('forgot.newPasswordPlaceholder')}
+            secureTextEntry={!showPw}
+            autoComplete="new-password"
+            textContentType="newPassword"
+            value={password}
+            onChangeText={setPassword}
           >
-            <TouchableOpacity
-              className="absolute top-md left-md w-9 h-9 rounded-[18px] bg-white/20 items-center justify-center"
-              style={{ opacity: locked ? 0.45 : 1 }}
-              hitSlop={10}
-              onPress={onBack}
-            >
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </TouchableOpacity>
-            {locked ? (
-              <View className="absolute top-md left-[52px] h-9 px-2.5 rounded-full bg-white/20 flex-row items-center gap-1">
-                <Ionicons name="lock-closed" size={12} color="#fff" />
-                <Text className="text-white text-xs font-bold">{lockLeft}s</Text>
-              </View>
-            ) : null}
-            <Text className="text-white text-2xl font-extrabold mt-lg">
-              {isChange ? t('forgot.changePassword') : t('forgot.resetPassword')}
-            </Text>
-            <Text className="text-[#EAF4FF] text-sm mt-1.5">{subtitle}</Text>
-          </LinearGradient>
+            <PasswordToggle visible={showPw} onToggle={() => setShowPw((v) => !v)} />
+          </AuthField>
+          <StrengthMeter password={password} />
+          <AuthField
+            icon="shield-checkmark-outline"
+            placeholder={t('forgot.confirmPasswordPlaceholder')}
+            secureTextEntry={!showPw}
+            autoComplete="new-password"
+            textContentType="newPassword"
+            returnKeyType="go"
+            onSubmitEditing={submit}
+            value={confirm}
+            onChangeText={setConfirm}
+          />
+        </>
+      )}
 
-          <View className="-mt-[22px] mx-lg bg-card dark:bg-[#152A44] rounded-lg p-lg shadow-[0px_8px_16px_rgba(27,111,196,0.08)]">
-            {step === 1 ? (
-              <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
-                <Ionicons name="mail-outline" size={18} color={colors.muted} />
-                <TextInput
-                  className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"
-                  placeholder={t('forgot.emailPlaceholder')}
-                  placeholderTextColor={colors.muted}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
-                  editable={!isChange}
-                />
-                {isChange ? (
-                  <Ionicons name="lock-closed" size={15} color={colors.muted} />
-                ) : null}
-              </View>
-            ) : step === 2 ? (
-              <>
-                <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md mb-2 px-md gap-sm">
-                  <Ionicons name="keypad-outline" size={18} color={colors.muted} />
-                  <TextInput
-                    className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[16px] tracking-[4px]"
-                    placeholder={t('forgot.codePlaceholder')}
-                    placeholderTextColor={colors.muted}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    value={code}
-                    onChangeText={setCode}
-                  />
-                </View>
-                <TouchableOpacity
-                  className="self-end mb-3 py-1"
-                  onPress={sendCode}
-                  disabled={busy || resendTimer.active}
-                  hitSlop={8}
-                >
-                  <Text
-                    className={`font-bold text-[12px] ${
-                      resendTimer.active ? 'text-muted dark:text-[#7C97B5]' : 'text-primary'
-                    }`}
-                  >
-                    {resendTimer.active
-                      ? t('forgot.resendIn', { seconds: resendTimer.secondsLeft })
-                      : t('forgot.resend')}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
-                  <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
-                  <TextInput
-                    className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"
-                    placeholder={t('forgot.newPasswordPlaceholder')}
-                    placeholderTextColor={colors.muted}
-                    secureTextEntry={!showPw}
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPw((s) => !s)}
-                    className="pl-1.5 py-2"
-                    hitSlop={8}
-                  >
-                    <Ionicons name={showPw ? 'eye' : 'eye-off'} size={18} color={colors.muted} />
-                  </TouchableOpacity>
-                </View>
+      {notice ? <AuthBanner tone="success" text={notice} /> : null}
+      {error ? <AuthBanner tone="error" text={error} /> : null}
 
-                <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
-                  <Ionicons name="lock-closed-outline" size={18} color={colors.muted} />
-                  <TextInput
-                    className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[15px]"
-                    placeholder={t('forgot.confirmPasswordPlaceholder')}
-                    placeholderTextColor={colors.muted}
-                    secureTextEntry={!showPw}
-                    value={confirm}
-                    onChangeText={setConfirm}
-                  />
-                </View>
-              </>
-            )}
-
-            {notice ? (
-              <Text className="text-success text-xs mt-sm text-center">{notice}</Text>
-            ) : null}
-            {error ? (
-              <Text className="text-danger text-xs mt-sm mb-sm text-center">{error}</Text>
-            ) : null}
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={primaryAction}
-              disabled={busy}
-            >
-              <LinearGradient
-                colors={gradients.brand}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="py-3.5 rounded-md items-center mt-md"
-              >
-                {busy ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text className="text-white text-[15px] font-bold">{primaryLabel}</Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-
-             
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      {step !== 2 ? (
+        <AuthButton label={primaryLabel} onPress={primaryAction} busy={busy} />
+      ) : null}
+    </AuthScreen>
   );
 }

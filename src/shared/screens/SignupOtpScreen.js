@@ -1,18 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from '../components/Gradient';
-import { useTheme } from '../theme/ThemeContext';
+import OtpInput, { OTP_LENGTH } from '../components/OtpInput';
+import { AuthScreen, AuthBanner, ResendRow } from '../components/AuthUI';
 import { useAuth } from '../state/AuthContext';
 import useResendTimer from '../hooks/useResendTimer';
 import { useI18n } from '../i18n/LanguageContext';
@@ -23,14 +11,16 @@ import { useI18n } from '../i18n/LanguageContext';
 const BACK_LOCK_SECONDS = 30;
 
 export default function SignupOtpScreen({ navigation, route }) {
-  const { colors, gradients } = useTheme();
   const { t } = useI18n();
   const { verifyOtp, requestOtp, registerOnly } = useAuth();
   const { name, phone, email, password, avatar } = route.params || {};
 
   const [code, setCode] = useState('');
+  const [codeRejected, setCodeRejected] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // Guards against a double submit when autofill and a keystroke both land.
+  const verifyingRef = useRef(false);
   const [notice, setNotice] = useState('');
 
   // Countdown for the back-lock. Starts full on mount and ticks to 0.
@@ -95,6 +85,8 @@ export default function SignupOtpScreen({ navigation, route }) {
     setBusy(true);
     try {
       await requestOtp(email);
+      setCode('');
+      setCodeRejected(false);
       setNotice(t('signupOtp.newCodeSent'));
       resendTimer.start();
     } catch (e) {
@@ -104,15 +96,19 @@ export default function SignupOtpScreen({ navigation, route }) {
     }
   };
 
-  const verifyAndCreate = async () => {
+  // Runs automatically once all digits are in (typed, pasted or autofilled) —
+  // there is no submit button.
+  const verifyAndCreate = async (entered) => {
+    if (verifyingRef.current) return;
     setError('');
     setNotice('');
-    if (!/^\d{4,8}$/.test(code.trim())) return setError(t('signupOtp.enterCodeFromEmail'));
+    if (entered.length !== OTP_LENGTH) return setError(t('signupOtp.enterCodeFromEmail'));
 
+    verifyingRef.current = true;
     setBusy(true);
     try {
       // 1) verify the email, then 2) create the account (no auto-login).
-      await verifyOtp(email, code.trim());
+      await verifyOtp(email, entered);
       await registerOnly({ name, phone, email, password, avatar });
       // 3) redirect to login with a success message; clear the signup stack.
       //    Bypass the back-lock — this is a forward completion, not a "go back".
@@ -123,108 +119,51 @@ export default function SignupOtpScreen({ navigation, route }) {
       });
     } catch (e) {
       setError(e.message || t('signupOtp.verificationFailed'));
+      // Clear the boxes so the user can enter the code again straight away.
+      setCode('');
+      setCodeRejected(true);
     } finally {
+      verifyingRef.current = false;
       setBusy(false);
     }
   };
 
+  const onCodeChange = (next) => {
+    setCode(next);
+    if (codeRejected) setCodeRejected(false);
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-background dark:bg-[#0A1424]" edges={['top']}>
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerClassName="pb-xl"
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <LinearGradient
-            colors={gradients.sky}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="pt-xl pb-[48px] px-lg rounded-b-[36px]"
-          >
-            <TouchableOpacity
-              className="absolute top-md left-md w-9 h-9 rounded-[18px] bg-white/20 items-center justify-center"
-              style={{ opacity: locked ? 0.45 : 1 }}
-              hitSlop={10}
-              onPress={onBack}
-            >
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </TouchableOpacity>
-            {locked ? (
-              <View className="absolute top-md left-[52px] h-9 px-2.5 rounded-full bg-white/20 flex-row items-center gap-1">
-                <Ionicons name="lock-closed" size={12} color="#fff" />
-                <Text className="text-white text-xs font-bold">{lockLeft}s</Text>
-              </View>
-            ) : null}
-            <Text className="text-white text-2xl font-extrabold mt-lg">{t('signupOtp.title')}</Text>
-            <Text className="text-[#EAF4FF] text-sm mt-1.5">
-              {t('signupOtp.subtitle', { email })}
-            </Text>
-          </LinearGradient>
+    <AuthScreen
+      title={t('signupOtp.title')}
+      subtitle={t('signupOtp.subtitle', { email })}
+      icon="mail-unread-outline"
+      onBack={onBack}
+      lockSeconds={lockLeft}
+    >
+      <OtpInput
+        value={code}
+        onChangeText={onCodeChange}
+        onComplete={verifyAndCreate}
+        disabled={busy}
+        error={codeRejected}
+        accessibilityLabel={t('signupOtp.title')}
+      />
 
-          <View className="-mt-[22px] mx-lg bg-card dark:bg-[#152A44] rounded-lg p-lg shadow-[0px_8px_16px_rgba(27,111,196,0.08)]">
-            <View className="flex-row items-center bg-surface dark:bg-[#0F1E33] rounded-md px-md mb-3 gap-sm">
-              <Ionicons name="keypad-outline" size={18} color={colors.muted} />
-              <TextInput
-                className="flex-1 py-3.5 text-text dark:text-[#EAF2FB] text-[18px] tracking-[6px]"
-                placeholder={t('signupOtp.codePlaceholder')}
-                placeholderTextColor={colors.muted}
-                keyboardType="number-pad"
-                maxLength={6}
-                value={code}
-                onChangeText={setCode}
-                autoFocus
-              />
-            </View>
+      <ResendRow
+        label={
+          resendTimer.active
+            ? t('signupOtp.resendIn', { count: resendTimer.secondsLeft })
+            : t('signupOtp.resendCode')
+        }
+        cooling={resendTimer.active}
+        onPress={resend}
+        disabled={busy}
+        busy={busy}
+      />
 
-            <TouchableOpacity
-              className="flex-row items-center gap-1.5 self-start py-1.5 mb-sm"
-              onPress={resend}
-              disabled={busy || resendTimer.active}
-            >
-              <Ionicons
-                name="refresh-outline"
-                size={15}
-                color={resendTimer.active ? colors.muted : colors.primary}
-              />
-              <Text
-                className={`font-bold text-[13px] ${
-                  resendTimer.active ? 'text-muted dark:text-[#7C97B5]' : 'text-primary'
-                }`}
-              >
-                {resendTimer.active
-                  ? t('signupOtp.resendIn', { count: resendTimer.secondsLeft })
-                  : t('signupOtp.resendCode')}
-              </Text>
-            </TouchableOpacity>
-
-            {notice ? (
-              <Text className="text-success text-xs mt-sm text-center">{notice}</Text>
-            ) : null}
-            {error ? (
-              <Text className="text-danger text-xs mt-sm mb-sm text-center">{error}</Text>
-            ) : null}
-
-            <TouchableOpacity activeOpacity={0.85} onPress={verifyAndCreate} disabled={busy}>
-              <LinearGradient
-                colors={gradients.brand}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="py-3.5 rounded-md items-center mt-md"
-              >
-                {busy ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text className="text-white text-[15px] font-bold">{t('signupOtp.verifyAndCreate')}</Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      {notice ? <AuthBanner tone="success" text={notice} /> : null}
+      {error ? <AuthBanner tone="error" text={error} /> : null}
+    </AuthScreen>
   );
 }

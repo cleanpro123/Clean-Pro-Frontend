@@ -2,103 +2,35 @@ import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Dimensions,
+  Image,
 } from 'react-native';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts, GreatVibes_400Regular } from '@expo-google-fonts/great-vibes';
-import { radii, spacing } from '../theme/colors';
+import { spacing } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../state/AuthContext';
 import { useI18n } from '../i18n/LanguageContext';
-
-// Layered "ripple" transition from the gradient hero into the body. The arcs
-// bulge UP at the centre (∩) and the last layer is the body colour, so the
-// wave melts seamlessly into the page with no hard edge.
-//
-// Geometry is expressed as RATIOS (of the wave height / width) rather than
-// absolute pixels so the curve scales identically on every screen size and on
-// rotation — the whole reason this screen looked different across devices.
-// The hero gradient, wave, and body tint are theme-aware. Dark mode leans
-// near-black (melting into colors.background) so the whole login reads as one
-// dark surface instead of a bright blue hero over a light wave; light mode
-// keeps the original airy blue look. `tint` is the colour the body fades in
-// from just under the wave, and MUST equal the last wave layer so the two melt
-// together with no seam.
-const HERO_GRADIENT = {
-  light: ['#6FB7E6', '#2C79B8', '#0E3A5C'],
-  dark: ['#17324E', '#0D2237', '#0A1424'],
-};
-const WAVE = {
-  light: { tint: '#E5F1FB', fills: ['#D3DCE6', '#E7ECF2', '#E5F1FB'] },
-  dark: { tint: '#0B1A2C', fills: ['#102439', '#0D1D30', '#0B1A2C'] },
-};
-const WAVE_EDGES = [0.463, 0.747, 0.979]; // vertical position of each arc
-const WAVE_DIP_RATIO = 0.263; // fraction of the wave height each arc bulges up
-
-function WaveDivider({ width, height }) {
-  const { colors, isDark } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const fills = (isDark ? WAVE.dark : WAVE.light).fills;
-  const cx = width * 0.5;
-  const dip = height * WAVE_DIP_RATIO;
-  return (
-    <Svg
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      style={styles.wave}
-      preserveAspectRatio="none"
-    >
-      {WAVE_EDGES.map((e, i) => {
-        const edge = height * e;
-        return (
-          <Path
-            key={i}
-            d={`M0 ${edge} Q ${cx} ${edge - dip} ${width} ${edge} L ${width} ${height} L 0 ${height} Z`}
-            fill={fills[i]}
-          />
-        );
-      })}
-    </Svg>
-  );
-}
-
-// Self-contained input row. The focus-highlight state lives HERE, not on
-// LoginScreen, so focusing a field re-renders only this one small subtree —
-// not the hero, wave, gradients, and legal text. Driving the focus border off
-// LoginScreen state used to re-render the whole screen on every focus/blur,
-// which is what let layout reflows detach the focused TextInput on Android
-// (focus jumped to the next field and the keyboard dropped). Keeping the
-// re-render local makes that class of bug structurally impossible.
-const Field = React.memo(function Field({ styles, children, ...inputProps }) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <View style={[styles.inputWrap, focused && styles.inputWrapFocused]}>
-      <TextInput
-        style={styles.input}
-        {...inputProps}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-      />
-      {children}
-    </View>
-  );
-});
+import {
+  HERO_GRADIENT,
+  SHEET_OVERLAP,
+  Bubbles,
+  AuthField,
+  PasswordToggle,
+  AuthBanner,
+  AuthButton,
+} from '../components/AuthUI';
 
 export default function LoginScreen({ navigation, route }) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const heroGradient = isDark ? HERO_GRADIENT.dark : HERO_GRADIENT.light;
-  const bodyTint = (isDark ? WAVE.dark : WAVE.light).tint;
   const { t } = useI18n();
   // Frozen launch-time insets — NOT the live useSafeAreaInsets() hook. On
   // Android with edge-to-edge, that hook re-emits when the keyboard opens (the
@@ -116,13 +48,7 @@ export default function LoginScreen({ navigation, route }) {
     Dimensions.get('window')
   );
 
-  // Responsive hero + wave sizing. The wave height tracks screen WIDTH so the
-  // arc keeps the same aspect on phones and tablets (clamped so it never gets
-  // absurdly tall on very wide screens), and the hero height tracks HEIGHT.
-  const HERO_H = Math.max(260, Math.round(SCREEN_H * 0.36));
-  const WAVE_H = Math.min(220, Math.max(150, Math.round(SCREEN_W * 0.48)));
-  // Pulls the wordmark up out of the wave's path; scales with the wave.
-  const heroPadBottom = Math.round(WAVE_H * 0.6);
+  const HERO_H = Math.max(250, Math.round(SCREEN_H * 0.36));
 
   const [fontsLoaded] = useFonts({ GreatVibes_400Regular });
   const { loginUser } = useAuth();
@@ -162,8 +88,8 @@ export default function LoginScreen({ navigation, route }) {
             ScrollView here caused the Android focus-jump: tapping email made
             the scroll + keyboard-pan fight and detach the focused input, so
             focus advanced to password and the keyboard dropped. */}
-        <View style={[styles.flex, { paddingBottom: insets.bottom }]}>
-          {/* Gradient hero with wordmark + curved wave */}
+        <View style={styles.flex}>
+          {/* Gradient hero: logo badge and wordmark over soft bubbles */}
           <View style={[styles.hero, { height: HERO_H }]}>
             <LinearGradient
               colors={heroGradient}
@@ -171,56 +97,51 @@ export default function LoginScreen({ navigation, route }) {
               end={{ x: 0.8, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
+            <Bubbles width={SCREEN_W} height={HERO_H} />
             <View
               style={[
                 styles.heroContent,
-                { paddingTop: insets.top + spacing.lg, paddingBottom: heroPadBottom },
+                { paddingTop: insets.top + spacing.sm, paddingBottom: SHEET_OVERLAP },
               ]}
             >
+              <View style={styles.logoRing}>
+                <Image
+                  source={require('../../../assets/app-icon.png')}
+                  style={styles.logo}
+                />
+              </View>
               <Text style={[styles.brand, fontsLoaded && styles.brandScript]}>Clean Pro</Text>
             </View>
-            <WaveDivider width={SCREEN_W} height={WAVE_H} />
           </View>
 
-          {/* Lower content sits on a soft top-down light fade */}
-          <View style={styles.lower}>
-            <LinearGradient
-              colors={[bodyTint, colors.background, colors.background]}
-              locations={[0, 0.55, 1]}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={StyleSheet.absoluteFill}
+          {/* Rounded sheet that overlaps the hero and holds the form */}
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.sm }]}>
+            <Text style={styles.title}>{t('login.welcome')}</Text>
+
+            <AuthField
+              icon="mail-outline"
+              placeholder={t('login.email')}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
+              value={email}
+              onChangeText={setEmail}
             />
 
-          {/* Body */}
-          <View style={styles.body}>
-            {/* <Text style={styles.welcome}>{t('login.welcome')}</Text> */}
-
-            <View style={styles.inputWrap}>
-              <TextInput
-                style={styles.input}
-                placeholder={t('login.email')}
-                placeholderTextColor={colors.muted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-               />
-            </View>
-
-            <View style={styles.inputWrap}>
-              <TextInput
-                style={styles.input}
-                placeholder={t('login.password')}
-                placeholderTextColor={colors.muted}
-                secureTextEntry={!showPw}
-                value={password}
-                onChangeText={setPassword}
-               />
-              <TouchableOpacity onPress={() => setShowPw((s) => !s)} style={styles.eyeBtn} hitSlop={8}>
-                <Ionicons name={showPw ? 'eye' : 'eye-off'} size={18} color={colors.muted} />
-              </TouchableOpacity>
-            </View>
+            <AuthField
+              icon="lock-closed-outline"
+              placeholder={t('login.password')}
+              secureTextEntry={!showPw}
+              autoComplete="password"
+              textContentType="password"
+              value={password}
+              onChangeText={setPassword}
+              onSubmitEditing={submit}
+              returnKeyType="go"
+            >
+              <PasswordToggle visible={showPw} onToggle={() => setShowPw((s) => !s)} />
+            </AuthField>
 
             <TouchableOpacity
               style={styles.forgotWrap}
@@ -230,35 +151,28 @@ export default function LoginScreen({ navigation, route }) {
               <Text style={styles.forgot}>{t('login.forgotPassword')}</Text>
             </TouchableOpacity>
 
-            {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {notice ? <AuthBanner tone="success" text={notice} /> : null}
+            {error ? <AuthBanner tone="error" text={error} /> : null}
 
-            <TouchableOpacity activeOpacity={0.9} onPress={submit} disabled={busy} style={styles.cta}>
-              {busy ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.ctaText}>{t('login.logIn')}</Text>
-              )}
-            </TouchableOpacity>
+            <AuthButton label={t('login.logIn')} onPress={submit} busy={busy} />
 
             <View style={styles.createRow}>
               <Text style={styles.createText}>{t('login.noAccount')} </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Signup')} hitSlop={8}>
                 <Text style={styles.createLink}>{t('login.createAccount')}</Text>
-              </TouchableOpacity> 
+              </TouchableOpacity>
             </View>
-          </View>
 
-          <View style={styles.spacer} />
+            <View style={styles.spacer} />
 
-          <Text style={styles.legal}>
-            <Ionicons name="lock-closed" size={11} color={colors.muted} />{'  '}
-            {t('login.legalIntro')}{' '}
-            <Text style={styles.legalLink} onPress={() => navigation.navigate('PrivacyPolicy')}>
-              {t('login.privacyPolicy')}
+            <Text style={styles.legal}>
+              <Ionicons name="shield-checkmark-outline" size={11} color={colors.muted} />{'  '}
+              {t('login.legalIntro')}{' '}
+              <Text style={styles.legalLink} onPress={() => navigation.navigate('PrivacyPolicy')}>
+                {t('login.privacyPolicy')}
+              </Text>
+              .
             </Text>
-            .
-          </Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -266,15 +180,28 @@ export default function LoginScreen({ navigation, route }) {
   );
 }
 
-const NAVY = '#122F4A';
-
 const makeStyles = (colors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1 },
 
-  hero: { width: '100%', position: 'relative' },
+  hero: { width: '100%', overflow: 'hidden' },
   heroContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  logoRing: {
+    width: 84,
+    height: 84,
+    borderRadius: 26,
+    padding: 4,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    marginBottom: spacing.sm,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  logo: { width: '100%', height: '100%', borderRadius: 22 },
   brand: {
     color: '#fff',
     fontSize: 30,
@@ -285,94 +212,49 @@ const makeStyles = (colors) => StyleSheet.create({
   // Applied once the Great Vibes script font has loaded.
   brandScript: {
     fontFamily: 'GreatVibes_400Regular',
-    fontSize: 40,
-    fontWeight: '600',
-    fontStyle: 'medium',
+    fontSize: 42,
+    fontWeight: 'normal',
+    fontStyle: 'normal',
     letterSpacing: 1,
     lineHeight: 54,
   },
-  wave: { position: 'absolute', bottom: 0, left: 0 },
 
-  // Holds the light fade behind everything below the wave; flexes to fill the
-  // remaining screen so the fade spans the whole lower area. Pulled up a couple
-  // px so its body-tint gradient overlaps the wave bottom — kills the hairline
-  // seam where the lighter root background used to peek through.
-  lower: { flex: 1, marginTop: -3 },
-
-  // Transparent so the `lower` fade shows through; pulled up under the wave so
-  // the hero/body boundary can't show a seam line.
-  body: {
-    paddingHorizontal: spacing.lg + 4,
-    backgroundColor: 'transparent',
-    marginTop: '14%',
-    paddingTop: 6,
+  // The form sheet. Fills the rest of the screen and slides up over the hero
+  // so the rounded corners frame the form. Kept non-scrolling on purpose (see
+  // the ScrollView note in the render).
+  sheet: {
+    flex: 1,
+    marginTop: -SHEET_OVERLAP,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg + 4,
   },
-  welcome: {
+  title: {
     color: colors.text,
-    fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: spacing.md,
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+    marginBottom: spacing.lg,
   },
 
-  inputWrap: {
+  forgotWrap: { alignSelf: 'flex-end', marginBottom: spacing.md },
+  forgot: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+
+  createRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    marginBottom: 10,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  inputWrapFocused: {
-    // NOTE: do NOT add/remove Android `elevation` here. Toggling elevation on
-    // focus re-creates the native view that holds the focused TextInput, which
-    // drops focus (keyboard flickers, focus jumps to the next field). iOS
-    // shadow props are no-ops on Android, so they're safe to keep.
-    borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.14,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  input: { flex: 1, paddingVertical: 12, color: colors.text, fontSize: 15 },
-  eyeBtn: { paddingLeft: 6, paddingVertical: 6 },
-
-  forgotWrap: { alignSelf: 'flex-end', marginTop: 0, marginBottom: 10 },
-  forgot: { color: colors.primary, fontSize: 12.5, fontWeight: '700' },
-
-  error: { color: colors.danger, fontSize: 12, marginBottom: spacing.sm, textAlign: 'center' },
-  notice: {
-    color: colors.success,
-    fontSize: 12,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-
-  cta: {
-    backgroundColor: NAVY,
-    paddingVertical: 13,
-    borderRadius: radii.md,
-    alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: NAVY,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 5,
+    alignItems: 'center',
+    marginTop: spacing.lg - 4,
   },
-  ctaText: { color: '#fff', fontSize: 15.5, fontWeight: '700', letterSpacing: 0.3 },
-
-  createRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 15 },
-  createText: { color: colors.muted, fontSize: 13 },
-  createLink: { color: colors.primary, fontSize: 13, fontWeight: '800' },
+  createText: { color: colors.muted, fontSize: 13.5 },
+  createLink: { color: colors.primary, fontSize: 13.5, fontWeight: '800' },
 
   spacer: { flex: 1, minHeight: spacing.sm },
   legal: {
     paddingTop: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.sm,
     color: colors.muted,
     fontSize: 11,
     lineHeight: 16,
