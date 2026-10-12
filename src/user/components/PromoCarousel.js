@@ -9,7 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../shared/components/Icon';
 import { radii, spacing } from '../../shared/theme/colors';
 import { useTheme } from '../../shared/theme/ThemeContext';
 import { useI18n } from '../../shared/i18n/LanguageContext';
@@ -123,14 +123,14 @@ export default function PromoCarousel({ onPressSlide }) {
 
               {/* RATING / META PILL — top right */}
               <View style={styles.metaPill}>
-                <Ionicons name="star" size={10} color="#FFD700" />
+                <Icon name="star" size={10} color="#FFD700" />
                 <Text style={styles.metaText}>{t(item.rating)}</Text>
               </View>
 
               <View style={styles.content}>
                 {/* PILL */}
                 <View style={styles.pill}>
-                  <Ionicons name={item.pillIcon} size={11} color="#FFD700" />
+                  <Icon name={item.pillIcon} size={11} color="#FFD700" />
                   <Text style={styles.pillText}>{t(item.pill)}</Text>
                 </View>
 
@@ -142,14 +142,14 @@ export default function PromoCarousel({ onPressSlide }) {
                 <View style={styles.ctaRow}>
                   <View style={styles.ctaBtn}>
                     <Text style={styles.ctaText}>{t(item.cta)}</Text>
-                    <Ionicons name="arrow-forward" size={13} color={colors.primary} />
+                    <Icon name="arrow-forward" size={13} color={colors.primary} />
                   </View>
                 </View>
               </View>
 
               {/* BIG ICON */}
               <View style={styles.iconWrap}>
-                <Ionicons name={item.icon} size={120} color={'#ffffff20'} />
+                <Icon name={item.icon} size={120} color={'#ffffff26'} strokeWidth={1.5} />
               </View>
             </LinearGradient>
           </TouchableOpacity>

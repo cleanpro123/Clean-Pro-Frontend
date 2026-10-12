@@ -8,17 +8,17 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../shared/components/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { radii, spacing } from '../../shared/theme/colors';
 import { useTheme } from '../../shared/theme/ThemeContext';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 const ICONS = {
-  Home: { off: 'home-outline', on: 'home' },
-  Services: { off: 'pricetags-outline', on: 'pricetags' },
-  Orders: { off: 'receipt-outline', on: 'receipt' },
-  Profile: { off: 'person-outline', on: 'person' },
+  Home: 'home',
+  Services: 'washing-machine',
+  Orders: 'receipt',
+  Profile: 'person',
 };
 
 export default function CustomTabBar({ state, navigation }) {
@@ -63,7 +63,7 @@ function TabButton({ route, isFocused, onPress }) {
   const { colors, gradients } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useI18n();
-  const icon = ICONS[route.name] || { off: 'ellipse-outline', on: 'ellipse' };
+  const icon = ICONS[route.name] || 'ellipse-outline';
   const LABELS = {
     Home: t('tabs.home'),
     Services: t('tabs.services'),
@@ -139,10 +139,11 @@ function TabButton({ route, isFocused, onPress }) {
               ]}
               pointerEvents="none"
             >
-              <Ionicons
-                name={icon.off}
+              <Icon
+                name={icon}
                 size={22}
                 color={hovered ? colors.primary : colors.muted}
+                strokeWidth={1.9}
               />
             </Animated.View>
 
@@ -161,7 +162,7 @@ function TabButton({ route, isFocused, onPress }) {
                 end={{ x: 1, y: 1 }}
                 style={styles.activeBg}
               >
-                <Ionicons name={icon.on} size={22} color="#fff" />
+                <Icon name={icon} size={22} color="#fff" strokeWidth={2.4} />
               </LinearGradient>
             </Animated.View>
           </Animated.View>
@@ -231,7 +232,7 @@ function FabButton({ onPress, bottom }) {
           style={styles.fabInner}
         >
           <Animated.View style={{ transform: [{ rotate: rotateInterp }] }}>
-            <Ionicons name="add" size={28} color="#fff" />
+            <Icon name="add" size={28} color="#fff" strokeWidth={2.6} />
           </Animated.View>
         </LinearGradient>
       </Animated.View>
