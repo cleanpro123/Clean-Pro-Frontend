@@ -72,18 +72,16 @@ export function Bubbles({ width, height }) {
 
 // Self-contained input row. The focus-highlight state lives HERE, not on the
 // screen, so focusing a field re-renders only this one small subtree — not the
-// hero, gradients, and legal text. Driving the focus border off screen state
-// used to re-render the whole login on every focus/blur, which is what let
-// layout reflows detach the focused TextInput on Android (focus jumped to the
-// next field and the keyboard dropped). Keeping the re-render local makes that
-// class of bug structurally impossible.
+// hero, gradients, and legal text. Keep the native wrapper and its stacking
+// behavior stable as focus changes so Android does not reparent the input
+// while opening the keyboard.
 export const AuthField = React.memo(
   forwardRef(function AuthField({ icon, children, ...inputProps }, ref) {
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
     const [focused, setFocused] = useState(false);
     return (
-      <View style={[styles.inputWrap, focused && styles.inputWrapFocused]}>
+      <View collapsable={false} style={[styles.inputWrap, focused && styles.inputWrapFocused]}>
         <Ionicons
           name={icon}
           size={18}
@@ -394,15 +392,10 @@ const makeStyles = (colors, isDark) => StyleSheet.create({
     borderColor: isDark ? colors.border : '#E1ECF7',
   },
   inputWrapFocused: {
-    // NOTE: do NOT add/remove Android `elevation` here. Toggling elevation on
-    // focus re-creates the native view that holds the focused TextInput, which
-    // drops focus (keyboard flickers, focus jumps to the next field). iOS
-    // shadow props are no-ops on Android, so they're safe to keep.
+    // Only change color on focus. Fabric uses shadowColor to decide whether
+    // this view forms a stacking context, even on Android. Adding a shadow
+    // here can change the native hierarchy and interrupt TextInput focus.
     borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
   },
   inputIcon: { marginRight: 10 },
   input: { flex: 1, paddingVertical: 14, color: colors.text, fontSize: 15 },
