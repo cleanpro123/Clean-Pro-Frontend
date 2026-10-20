@@ -17,11 +17,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
 import MapPreview from '../../shared/components/MapPreview';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function AdminMapsScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -102,14 +105,14 @@ export default function AdminMapsScreen({ navigation }) {
               style={styles.rowShadow}
             >
               <LinearGradient
-                colors={['#2B3F6E', '#1B2B52']}
+                colors={gradients.panel}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.row}
               >
                 <View style={styles.rowBorder} pointerEvents="none" />
                 <View style={styles.iconBubble}>
-                  <Ionicons name="location-sharp" size={20} color={colors.text} />
+                  <Ionicons name="location-sharp" size={20} color={colors.iconAccent} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{m.name}</Text>
@@ -131,7 +134,7 @@ export default function AdminMapsScreen({ navigation }) {
           <View style={styles.modalBackdrop} />
           <View style={styles.modalShadow}>
             <LinearGradient
-              colors={['#2B3F6E', '#1B2B52']}
+              colors={gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.modal}
@@ -196,7 +199,7 @@ export default function AdminMapsScreen({ navigation }) {
                   disabled={busy}
                   activeOpacity={0.85}
                 >
-                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>{t('adminMaps.addLocation')}</Text>}
+                  {busy ? <ActivityIndicator color={colors.activeText} /> : <Text style={styles.saveText}>{t('adminMaps.addLocation')}</Text>}
                 </TouchableOpacity>
               </View>
             </LinearGradient>
@@ -207,13 +210,13 @@ export default function AdminMapsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   list: { padding: spacing.lg, gap: spacing.sm + 4, paddingBottom: spacing.xl },
   rowShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
-  row: { flexDirection: 'row', padding: spacing.md, borderRadius: radii.md, gap: spacing.md, alignItems: 'center', overflow: 'hidden' },
-  rowBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  iconBubble: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
+  row: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flexDirection: 'row', padding: spacing.md, borderRadius: radii.md, gap: spacing.md, alignItems: 'center', overflow: 'hidden' },
+  rowBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.panelBorder },
+  iconBubble: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.iconBackground, alignItems: 'center', justifyContent: 'center' },
   name: { color: colors.text, fontWeight: '400', letterSpacing: 0.3 },
   place: { color: colors.textSecondary, fontSize: 12, fontWeight: '300', marginTop: 2 },
   radius: { color: colors.muted, fontSize: 11, fontWeight: '300', marginTop: 4 },
@@ -222,16 +225,16 @@ const styles = StyleSheet.create({
   modalRoot: { flex: 1, justifyContent: 'center', padding: spacing.lg },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.65)' },
   modalShadow: { borderRadius: radii.lg, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12 },
-  modal: { borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
-  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
+  modal: { borderTopColor: colors.panelAccent, borderTopWidth: 1, borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
+  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.panelBorder },
   modalTitle: { color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1, marginBottom: spacing.sm },
-  inputWrap: { backgroundColor: 'rgba(43, 63, 110, 0.55)', borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  input: { paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300' },
-  error: { color: '#F87171', fontSize: 12, textAlign: 'center' },
+  inputWrap: { backgroundColor: colors.card, borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border },
+  input: { backgroundColor: colors.card, paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300' },
+  error: { color: colors.danger, fontSize: 12, textAlign: 'center' },
   modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   modalBtn: { flex: 1, paddingVertical: 12, borderRadius: radii.md, alignItems: 'center', borderWidth: 1 },
-  cancelBtn: { borderColor: 'rgba(255, 255, 255, 0.20)', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+  cancelBtn: { borderColor: colors.border, backgroundColor: colors.surface },
   cancelText: { color: colors.muted, fontWeight: '400', letterSpacing: 0.5 },
-  saveBtn: { borderColor: 'rgba(52, 211, 153, 0.45)', backgroundColor: 'rgba(15, 118, 110, 0.35)' },
-  saveText: { color: '#34D399', fontWeight: '400', letterSpacing: 0.5 },
+  saveBtn: { borderColor: colors.activeBackground, backgroundColor: colors.activeBackground },
+  saveText: { color: colors.activeText, fontWeight: '400', letterSpacing: 0.5 },
 });

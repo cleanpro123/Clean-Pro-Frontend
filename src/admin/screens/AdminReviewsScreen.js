@@ -12,7 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
@@ -25,6 +26,8 @@ const filters = [
 ];
 
 function Stars({ value }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   return (
     <View style={{ flexDirection: 'row' }}>
       {[1, 2, 3, 4, 5].map((i) => (
@@ -32,7 +35,7 @@ function Stars({ value }) {
           key={i}
           name={i <= value ? 'star' : 'star-outline'}
           size={14}
-          color="#FBBF24"
+          color={colors.warning}
         />
       ))}
     </View>
@@ -40,6 +43,8 @@ function Stars({ value }) {
 }
 
 export default function AdminReviewsScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +140,7 @@ export default function AdminReviewsScreen({ navigation }) {
           <Text style={styles.summaryLabel}>{t('adminReviews.totalReviews')}</Text>
         </View>
         <View style={styles.summaryCol}>
-          <Text style={[styles.summaryValue, { color: '#FBBF24' }]}>
+          <Text style={[styles.summaryValue, { color: colors.warning }]}>
             {reviews.filter((r) => r.status === 'pending').length}
           </Text>
           <Text style={styles.summaryLabel}>{t('adminReviews.pending')}</Text>
@@ -182,7 +187,7 @@ export default function AdminReviewsScreen({ navigation }) {
           rows.map((r) => (
             <View key={r.id} style={styles.cardShadow}>
               <LinearGradient
-                colors={['#2B3F6E', '#1B2B52']}
+                colors={gradients.panel}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.row}
@@ -208,7 +213,7 @@ export default function AdminReviewsScreen({ navigation }) {
                       {
                         backgroundColor:
                           r.status === 'approved'
-                            ? 'rgba(52, 211, 153, 0.20)'
+                            ? colors.primarySoft
                             : r.status === 'hidden'
                             ? 'rgba(248, 113, 113, 0.20)'
                             : 'rgba(251, 191, 36, 0.18)',
@@ -221,10 +226,10 @@ export default function AdminReviewsScreen({ navigation }) {
                         {
                           color:
                             r.status === 'approved'
-                              ? '#34D399'
+                              ? colors.primary
                               : r.status === 'hidden'
                               ? colors.danger
-                              : '#FBBF24',
+                              : colors.warning,
                         },
                       ]}
                     >
@@ -235,10 +240,10 @@ export default function AdminReviewsScreen({ navigation }) {
                   <View style={styles.actions}>
                     {r.status !== 'approved' && (
                       <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: 'rgba(52, 211, 153, 0.20)' }]}
+                        style={[styles.actionBtn, { backgroundColor: colors.primarySoft }]}
                         onPress={() => confirmApprove(r)}
                       >
-                        <Ionicons name="checkmark" size={16} color="#34D399" />
+                        <Ionicons name="checkmark" size={16} color={colors.primary} />
                       </TouchableOpacity>
                     )}
                     {r.status !== 'hidden' && (
@@ -250,10 +255,10 @@ export default function AdminReviewsScreen({ navigation }) {
                       </TouchableOpacity>
                     )}
                     <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.06)' }]}
+                      style={[styles.actionBtn, { backgroundColor: colors.surface }]}
                       onPress={() => confirmDelete(r)}
                     >
-                      <Ionicons name="trash-outline" size={16} color={colors.text} />
+                      <Ionicons name="trash-outline" size={16} color={colors.iconAccent} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -266,28 +271,28 @@ export default function AdminReviewsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  summary: { flexDirection: 'row', marginHorizontal: spacing.lg, backgroundColor: 'rgba(43, 63, 110, 0.55)', borderRadius: radii.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
+  summary: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flexDirection: 'row', marginHorizontal: spacing.lg, backgroundColor: colors.card, borderRadius: radii.lg, paddingVertical: spacing.md, borderWidth: 1, borderColor: colors.border },
   summaryCol: { flex: 1, alignItems: 'center', gap: 4 },
   summaryValue: { fontSize: 22, fontWeight: '400', color: colors.text },
   summaryLabel: { fontSize: 11, color: colors.muted, fontWeight: '300' },
   tabsWrap: { paddingTop: spacing.sm, paddingBottom: spacing.md },
   filterRow: { paddingHorizontal: spacing.lg, gap: spacing.sm },
-  chip: { minWidth: 96, paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radii.pill, backgroundColor: 'rgba(43, 63, 110, 0.45)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', alignItems: 'center' },
-  chipActive: { backgroundColor: 'rgba(15, 118, 110, 0.45)', borderColor: 'rgba(52, 211, 153, 0.50)' },
+  chip: { minWidth: 96, paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radii.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  chipActive: { backgroundColor: colors.activeBackground, borderColor: colors.activeBackground },
   chipText: { color: colors.muted, fontWeight: '300', fontSize: 13, letterSpacing: 0.5 },
-  chipTextActive: { color: '#34D399', fontWeight: '500' },
+  chipTextActive: { color: colors.activeText, fontWeight: '500' },
   list: { padding: spacing.lg, paddingTop: 0, gap: spacing.md, paddingBottom: spacing.xl },
   cardShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.30, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
-  row: { borderRadius: radii.md, padding: spacing.md, gap: spacing.sm + 2, overflow: 'hidden' },
-  cardBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
+  row: { borderTopColor: colors.panelAccent, borderTopWidth: 1, borderRadius: radii.md, padding: spacing.md, gap: spacing.sm + 2, overflow: 'hidden' },
+  cardBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.panelBorder },
   rowHeader: { flexDirection: 'row', alignItems: 'center' },
   customer: { fontWeight: '500', color: colors.text, letterSpacing: 0.3 },
   orderId: { fontSize: 11, color: colors.muted, marginTop: 2, fontWeight: '300' },
   comment: { color: colors.text, fontSize: 13, lineHeight: 19, fontWeight: '300' },
   rowFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill },
+  pill: { borderTopColor: colors.panelAccent, borderTopWidth: 1, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill },
   pillText: { fontSize: 11, fontWeight: '700' },
   actions: { flexDirection: 'row', gap: 6 },
   actionBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

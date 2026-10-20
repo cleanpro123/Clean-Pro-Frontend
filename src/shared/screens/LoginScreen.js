@@ -27,7 +27,16 @@ import {
   AuthButton,
 } from '../components/AuthUI';
 
-export default function LoginScreen({ navigation, route }) {
+// All three apps share the same login layout; only branding and authentication differ.
+const ROLE_BRANDING = {
+  user: { name: 'Clean Pro' },
+  admin: { name: 'Clean Pro Admin', icon: 'shield-checkmark-outline' },
+  agent: { name: 'Clean Pro Agent', icon: 'bicycle-outline' },
+};
+
+export default function LoginScreen({ navigation, route, role = 'user' }) {
+  const branding = ROLE_BRANDING[role];
+  const isCustomer = role === 'user';
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const heroGradient = isDark ? HERO_GRADIENT.dark : HERO_GRADIENT.light;
@@ -51,7 +60,8 @@ export default function LoginScreen({ navigation, route }) {
   const HERO_H = Math.max(250, Math.round(SCREEN_H * 0.36));
 
   const [fontsLoaded] = useFonts({ GreatVibes_400Regular });
-  const { loginUser } = useAuth();
+  const { loginUser, loginAdmin, loginAgent } = useAuth();
+  const login = { user: loginUser, admin: loginAdmin, agent: loginAgent }[role];
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -60,13 +70,14 @@ export default function LoginScreen({ navigation, route }) {
   const [showPw, setShowPw] = useState(false);
 
   const submit = async () => {
+    if (busy) return;
     setError('');
     setNotice('');
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError(t('login.invalidEmail'));
     if (!password) return setError(t('login.passwordRequired'));
     setBusy(true);
     try {
-      await loginUser(email.trim(), password);
+      await login(email.trim(), password);
     } catch (e) {
       if (e.code === 'FORBIDDEN') {
         navigation.navigate('AccountBlocked', { preset: 'blocked', message: e.message });
@@ -84,8 +95,8 @@ export default function LoginScreen({ navigation, route }) {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Non-scrolling flex container (like the admin/agent logins). A
-            ScrollView here caused the Android focus-jump: tapping email made
+        {/* Keep the shared login non-scrolling. A ScrollView caused an
+            Android focus-jump: tapping email made
             the scroll + keyboard-pan fight and detach the focused input, so
             focus advanced to password and the keyboard dropped. */}
         <View style={styles.flex}>
@@ -105,12 +116,18 @@ export default function LoginScreen({ navigation, route }) {
               ]}
             >
               <View style={styles.logoRing}>
-                <Image
-                  source={require('../../../assets/app-icon.png')}
-                  style={styles.logo}
-                />
+                {branding.icon ? (
+                  <View style={styles.roleIcon}>
+                    <Ionicons name={branding.icon} size={44} color="#FFFFFF" />
+                  </View>
+                ) : (
+                  <Image
+                    source={require('../../../assets/app-icon.png')}
+                    style={styles.logo}
+                  />
+                )}
               </View>
-              <Text style={[styles.brand, fontsLoaded && styles.brandScript]}>Clean Pro</Text>
+              <Text style={[styles.brand, fontsLoaded && styles.brandScript]}>{branding.name}</Text>
             </View>
           </View>
 
@@ -143,25 +160,29 @@ export default function LoginScreen({ navigation, route }) {
               <PasswordToggle visible={showPw} onToggle={() => setShowPw((s) => !s)} />
             </AuthField>
 
-            <TouchableOpacity
-              style={styles.forgotWrap}
-              onPress={() => navigation.navigate('ForgotPassword')}
-              hitSlop={8}
-            >
-              <Text style={styles.forgot}>{t('login.forgotPassword')}</Text>
-            </TouchableOpacity>
+            {isCustomer && (
+              <TouchableOpacity
+                style={styles.forgotWrap}
+                onPress={() => navigation.navigate('ForgotPassword')}
+                hitSlop={8}
+              >
+                <Text style={styles.forgot}>{t('login.forgotPassword')}</Text>
+              </TouchableOpacity>
+            )}
 
             {notice ? <AuthBanner tone="success" text={notice} /> : null}
             {error ? <AuthBanner tone="error" text={error} /> : null}
 
             <AuthButton label={t('login.logIn')} onPress={submit} busy={busy} />
 
-            <View style={styles.createRow}>
-              <Text style={styles.createText}>{t('login.noAccount')} </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Signup')} hitSlop={8}>
-                <Text style={styles.createLink}>{t('login.createAccount')}</Text>
-              </TouchableOpacity>
-            </View>
+            {isCustomer && (
+              <View style={styles.createRow}>
+                <Text style={styles.createText}>{t('login.noAccount')} </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Signup')} hitSlop={8}>
+                  <Text style={styles.createLink}>{t('login.createAccount')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             <View style={styles.spacer} />
 
@@ -202,6 +223,13 @@ const makeStyles = (colors) => StyleSheet.create({
     elevation: 8,
   },
   logo: { width: '100%', height: '100%', borderRadius: 22 },
+  roleIcon: {
+    flex: 1,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   brand: {
     color: '#fff',
     fontSize: 30,

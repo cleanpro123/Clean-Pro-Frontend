@@ -119,7 +119,7 @@ export default function RateOrderScreen({ route, navigation }) {
                 <View>
                   <Text style={styles.orderId}>{order?.code || '—'}</Text>
                   <Text style={styles.orderSub}>
-                    {t('rateOrder.itemsTotal', { count: order?.items?.length || 0, total: order?.total || 0 })}
+                    {t('rateOrder.itemsTotal', { count: (order?.items || []).reduce((count, item) => count + (item.qty || 0), 0), total: order?.total || 0 })}
                   </Text>
                 </View>
               </View>

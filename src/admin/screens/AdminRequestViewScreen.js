@@ -16,35 +16,38 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import MapPreview from '../../shared/components/MapPreview';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
-const statusMeta = {
-  pending: { label: 'Pending', color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.15)' },
-  accepted: { label: 'Accepted', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.18)' },
-  assigned: { label: 'Assigned', color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.18)' },
-  in_progress: { label: 'In progress', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.18)' },
-  out_for_delivery: { label: 'Out', color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.18)' },
-  delivered: { label: 'Delivered', color: '#34D399', bg: 'rgba(52, 211, 153, 0.18)' },
-  cancelled: { label: 'Cancelled', color: '#F87171', bg: 'rgba(248, 113, 113, 0.18)' },
-};
+const makeStatusMeta = (isDark) => ({
+  pending: { label: 'Pending', color: (isDark ? '#FBBF24' : '#92400E'), bg: 'rgba(251, 191, 36, 0.15)' },
+  accepted: { label: 'Accepted', color: (isDark ? '#22D3EE' : '#0E7490'), bg: 'rgba(34, 211, 238, 0.18)' },
+  assigned: { label: 'Assigned', color: (isDark ? '#60A5FA' : '#1D4ED8'), bg: 'rgba(96, 165, 250, 0.18)' },
+  in_progress: { label: 'In progress', color: (isDark ? '#22D3EE' : '#0E7490'), bg: 'rgba(34, 211, 238, 0.18)' },
+  out_for_delivery: { label: 'Out', color: (isDark ? '#A78BFA' : '#6D28D9'), bg: 'rgba(167, 139, 250, 0.18)' },
+  delivered: { label: 'Delivered', color: (isDark ? '#34D399' : '#047857'), bg: 'rgba(52, 211, 153, 0.18)' },
+  cancelled: { label: 'Cancelled', color: (isDark ? '#F87171' : '#B91C1C'), bg: 'rgba(248, 113, 113, 0.18)' },
+});
 
 function PillRow({ icon, children, onPress }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const Wrap = onPress ? TouchableOpacity : View;
   return (
     <Wrap activeOpacity={0.85} onPress={onPress} style={styles.pillShadow}>
       <LinearGradient
-        colors={['#2B3F6E', '#1B2B52']}
+        colors={gradients.panel}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.pill}
       >
         <View style={styles.pillBorder} pointerEvents="none" />
         <View style={styles.iconBubble}>
-          <Ionicons name={icon} size={16} color={colors.text} />
+          <Ionicons name={icon} size={16} color={colors.iconAccent} />
         </View>
         <View style={{ flex: 1 }}>{children}</View>
       </LinearGradient>
@@ -53,18 +56,24 @@ function PillRow({ icon, children, onPress }) {
 }
 
 function ActionBtn({ label, icon, onPress }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.actionShadow}>
       <View style={styles.action}>
         <View style={styles.actionBorder} pointerEvents="none" />
         <Text style={styles.actionText}>{label}</Text>
-        {icon && <Ionicons name={icon} size={18} color={colors.text} />}
+        {icon && <Ionicons name={icon} size={18} color={colors.iconAccent} />}
       </View>
     </TouchableOpacity>
   );
 }
 
 export default function AdminRequestViewScreen({ route, navigation }) {
+  const { isDark } = useTheme();
+  const statusMeta = React.useMemo(() => makeStatusMeta(isDark), [isDark]);
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const id = route.params?.id;
   // Direct (special) orders live in a separate collection/endpoint.
@@ -195,15 +204,15 @@ export default function AdminRequestViewScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <LinearGradient colors={gradients.header} locations={[0, 0.5, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.header}>
         <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
+          <Ionicons name="arrow-back" size={22} color={colors.headerText} />
         </TouchableOpacity>
         <Text style={styles.title}>{req.code}</Text>
         <View style={[styles.statusPill, { backgroundColor: meta.bg }]}>
           <Text style={[styles.statusText, { color: meta.color }]}>{t('adminRequestView.status_' + statusKey)}</Text>
         </View>
-      </View>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <PillRow icon="person">
@@ -231,7 +240,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
 
         <View style={styles.itemsShadow}>
           <LinearGradient
-            colors={['#2B3F6E', '#1B2B52']}
+            colors={gradients.panel}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.itemsCard}
@@ -247,7 +256,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
                 >
                   <View style={styles.serviceHeader}>
                     <View style={styles.serviceIconBubble}>
-                      <Ionicons name="cube-outline" size={14} color={colors.text} />
+                      <Ionicons name="cube-outline" size={14} color={colors.iconAccent} />
                     </View>
                     <Text style={styles.serviceLabel}>{service}</Text>
                   </View>
@@ -275,7 +284,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
                   hitSlop={10}
                   style={styles.editPriceBtn}
                 >
-                  <Ionicons name="create-outline" size={16} color={colors.text} />
+                  <Ionicons name="create-outline" size={16} color={colors.iconAccent} />
                 </TouchableOpacity>
               )}
             </View>
@@ -360,7 +369,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
           <View style={styles.modalShadow}>
             
             <LinearGradient
-              colors={['#2B3F6E', '#1B2B52']}
+              colors={gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.modal}
@@ -382,7 +391,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
                         style={styles.agentRow}
                       >
                         <View style={styles.iconBubble}>
-                          <Ionicons name="bicycle" size={16} color={colors.text} />
+                          <Ionicons name="bicycle" size={16} color={colors.iconAccent} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.pillValue}>{a.name}</Text>
@@ -391,7 +400,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
                           )}
                         </View>
                         {current ? (
-                          <Ionicons name="checkmark-circle" size={18} color="#34D399" />
+                          <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
                         ) : assigning ? null : (
                           <Ionicons name="chevron-forward" size={18} color={colors.muted} />
                         )}
@@ -431,7 +440,7 @@ export default function AdminRequestViewScreen({ route, navigation }) {
           />
           <View style={styles.modalShadow}>
             <LinearGradient
-              colors={['#2B3F6E', '#1B2B52']}
+              colors={gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.modal}
@@ -474,27 +483,27 @@ export default function AdminRequestViewScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
-  back: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255, 255, 255, 0.06)', alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, textAlign: 'center', color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1 },
+  header: { backgroundColor: colors.headerBackground,  flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
+  back: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.headerButton, alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, textAlign: 'center', color: colors.headerText, fontSize: 18, fontWeight: '300', letterSpacing: 1 },
   statusPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill },
   statusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
   scroll: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   pillShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
-  pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radii.md, gap: spacing.md, overflow: 'hidden' },
-  pillBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  iconBubble: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
+  pill: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radii.md, gap: spacing.md, overflow: 'hidden' },
+  pillBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.panelBorder },
+  iconBubble: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.iconBackground, alignItems: 'center', justifyContent: 'center' },
   pillValue: { color: colors.text, fontSize: 14, fontWeight: '300', letterSpacing: 0.3, lineHeight: 20 },
   pillLabel: { color: colors.muted, fontSize: 11, fontWeight: '400', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 },
   agentCard: { gap: spacing.sm },
   itemsShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
   itemsCard: { padding: spacing.md, borderRadius: radii.md, overflow: 'hidden' },
-  itemsBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  serviceGroup: { paddingBottom: spacing.sm, marginBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.06)' },
+  itemsBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },
+  serviceGroup: { paddingBottom: spacing.sm, marginBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   serviceHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4, marginBottom: 6 },
-  serviceIconBubble: { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
+  serviceIconBubble: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   serviceLabel: { color: colors.text, fontSize: 12, fontWeight: '400', letterSpacing: 1, textTransform: 'uppercase' },
   itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingLeft: spacing.lg },
   itemIdx: { color: colors.muted, fontSize: 12, width: 28, fontWeight: '300' },
@@ -510,35 +519,35 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   mapsBtnText: { color: colors.text, fontSize: 12, fontWeight: '400', letterSpacing: 0.3 },
   itemQty: { color: colors.muted, fontSize: 12, width: 30, textAlign: 'center', fontWeight: '300' },
   itemPrice: { color: colors.text, width: 70, textAlign: 'right', fontSize: 13, fontWeight: '300' },
-  totalRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.10)', gap: spacing.md },
+  totalRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.md },
   totalLabel: { color: colors.muted, fontSize: 12, fontWeight: '300' },
   totalValue: { color: colors.text, fontSize: 14, fontWeight: '400' },
   emptyText: { color: colors.muted, fontStyle: 'italic' },
   actions: { marginTop: spacing.md, gap: spacing.sm + 4 },
   actionShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
-  action: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: spacing.lg, borderRadius: radii.md, gap: spacing.md, backgroundColor: 'rgba(43, 63, 110, 0.45)', overflow: 'hidden' },
+  action: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: spacing.lg, borderRadius: radii.md, gap: spacing.md, backgroundColor: colors.card, overflow: 'hidden' },
   actionBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1.2, borderColor: 'rgba(180, 200, 240, 0.55)' },
   actionText: { color: colors.text, fontSize: 14, fontWeight: '300', letterSpacing: 0.8 },
   modalRoot: { flex: 1, justifyContent: 'center', padding: spacing.lg },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.65)' },
   modalShadow: { borderRadius: radii.lg, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12 },
-  modal: { borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
-  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
+  modal: { borderTopColor: colors.panelAccent, borderTopWidth: 1, borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
+  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.panelBorder },
   modalTitle: { color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1, marginBottom: spacing.sm },
-  agentRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  agentRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   modalBtn: { paddingVertical: 12, borderRadius: radii.md, alignItems: 'center', borderWidth: 1 },
-  cancelBtn: { borderColor: 'rgba(255, 255, 255, 0.20)', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+  cancelBtn: { borderColor: colors.border, backgroundColor: colors.surface },
   cancelText: { color: colors.muted, fontWeight: '400', letterSpacing: 0.5 },
-  editPriceBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)' },
-  priceInputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: spacing.md, marginBottom: spacing.md },
+  editPriceBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
+  priceInputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, marginBottom: spacing.md },
   priceCurrency: { color: colors.muted, fontSize: 15, fontWeight: '600' },
-  priceInput: { flex: 1, color: colors.text, fontSize: 20, fontWeight: '600', paddingVertical: 12 },
-  savePriceBtn: { borderColor: 'rgba(52, 211, 153, 0.45)', backgroundColor: 'rgba(15, 118, 110, 0.35)', marginBottom: spacing.sm },
-  savePriceText: { color: '#34D399', fontWeight: '700', letterSpacing: 0.5 },
+  priceInput: { backgroundColor: colors.card, flex: 1, color: colors.text, fontSize: 20, fontWeight: '600', paddingVertical: 12 },
+  savePriceBtn: { borderColor: colors.activeBackground, backgroundColor: colors.activeBackground, marginBottom: spacing.sm },
+  savePriceText: { color: colors.activeText, fontWeight: '700', letterSpacing: 0.5 },
 });

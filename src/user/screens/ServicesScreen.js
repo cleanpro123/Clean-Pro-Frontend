@@ -101,8 +101,8 @@ export default function ServicesScreen({ navigation }) {
                 <Ionicons name={s.icon} size={26} color="#fff" />
               </LinearGradient>
               <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{td('service', s.key)}</Text>
-                <Text style={styles.desc}>{td('serviceDesc', s.key)}</Text>
+                <Text style={styles.name}>{td('service', s.name)}</Text>
+                <Text style={styles.desc}>{td('serviceDesc', s.description)}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.muted} />
             </TouchableOpacity>

@@ -1,5 +1,6 @@
 import './global.css';
 import React from 'react';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -26,21 +27,23 @@ function App() {
     // fallback (StatusScreen, which calls useTheme/useI18n/SafeAreaView) can
     // render. When it was outside, any caught error made the fallback itself
     // throw "useI18n must be used within a LanguageProvider" → white screen.
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <LanguageProvider>
-          <ErrorBoundary>
-            <AuthProvider>
-              <AppProvider>
-                <ThemedStatusBar />
-                <RootNavigator />
-                <ConfirmHost />
-              </AppProvider>
-            </AuthProvider>
-          </ErrorBoundary>
-        </LanguageProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <View style={{ flex: 1, direction: 'ltr' }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <ErrorBoundary>
+              <AuthProvider>
+                <AppProvider>
+                  <ThemedStatusBar />
+                  <RootNavigator />
+                  <ConfirmHost />
+                </AppProvider>
+              </AuthProvider>
+            </ErrorBoundary>
+          </LanguageProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </View>
   );
 }
 

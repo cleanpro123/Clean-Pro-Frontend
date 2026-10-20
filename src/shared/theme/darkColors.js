@@ -1,6 +1,18 @@
 // Dark theme for the customer app — a blue-tinted "near-black" palette that
 // mirrors the light palette's keys so screens can swap between them at runtime.
 export const colors = {
+  panelAccent: '#243F5C',
+  headerButton: '#0F1E33',
+  headerBackground: '#0A1424',
+  headerText: '#EAF2FB',
+  featuredText: '#EAF2FB',
+  featuredMuted: '#A9C2DE',
+  activeBackground: '#12293F',
+  activeText: '#3B9AED',
+  headingAccent: '#EAF2FB',
+  iconAccent: '#EAF2FB',
+  iconBackground: '#0F1E33',
+  panelBorder: '#243F5C',
   primary: '#3B9AED',
   primaryDark: '#1B6FC4',
   primaryLight: '#7FB8F0',
@@ -11,6 +23,7 @@ export const colors = {
   background: '#0A1424',
   surface: '#0F1E33',
   card: '#152A44',
+  cardElevated: '#1C3553',
 
   text: '#EAF2FB',
   textSecondary: '#A9C2DE',
@@ -24,6 +37,9 @@ export const colors = {
 };
 
 export const gradients = {
+  header: ['#0A1424', '#0A1424', '#0A1424'],
+  featured: ['#152A44', '#0F1E33'],
+  panel: ['#152A44', '#0F1E33'],
   brand: ['#1B6FC4', '#0A3D7A'],
   sky: ['#2D8FE0', '#1B6FC4'],
   ocean: ['#12293F', '#0A1424'],

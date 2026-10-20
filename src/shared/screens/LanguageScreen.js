@@ -1,12 +1,11 @@
-// Language selection — switches app language (and RTL for Arabic).
+// Language selection changes translations while preserving the layout.
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { radii, spacing } from '../theme/colors';
 import { useTheme } from '../theme/ThemeContext';
-import { useI18n, reloadApp } from '../i18n/LanguageContext';
-import { confirmAction } from '../utils/confirm';
+import { useI18n } from '../i18n/LanguageContext';
 
 export default function LanguageScreen({ navigation }) {
   const { colors } = useTheme();
@@ -15,16 +14,7 @@ export default function LanguageScreen({ navigation }) {
 
   const choose = (code) => {
     if (code === language) return;
-    // Confirm BEFORE applying — Cancel must leave the current language untouched.
-    confirmAction({
-      title: t('language.restartTitle'),
-      message: t('language.restartMsg'),
-      confirmLabel: t('language.restartConfirm'),
-      onConfirm: async () => {
-        const needsReload = await setLanguage(code);
-        if (needsReload) reloadApp();
-      },
-    });
+    void setLanguage(code);
   };
 
   return (

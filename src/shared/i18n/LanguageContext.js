@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import { I18nManager, DevSettings } from 'react-native';
+import { I18nManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { translations, LANGUAGES } from './translations';
 import { dataTranslations } from './dataTranslations';
@@ -14,39 +14,24 @@ const STORAGE_KEY = 'cleanpro.language';
 
 const LanguageContext = createContext(null);
 
-const isRtlCode = (code) => !!LANGUAGES.find((l) => l.code === code)?.rtl;
-
-// Best-effort programmatic reload. Works in Expo Go / dev clients via
-// DevSettings; in a production standalone build the new layout direction
-// applies on the next launch (the text switches immediately regardless).
-export function reloadApp() {
-  try {
-    DevSettings.reload();
-  } catch {
-    // no-op — user relaunches to pick up the RTL flip
-  }
-}
+// Language controls translations only. Clear direction preferences persisted
+// by older builds, including when the device itself uses Arabic.
+I18nManager.allowRTL(false);
+I18nManager.forceRTL(false);
+// React Native Web does not expose this native-only preference.
+I18nManager.swapLeftAndRightInRTL?.(false);
 
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState('en');
   const [ready, setReady] = useState(false);
 
-  // Load the saved language on boot and align the native RTL flag with it.
+  // Restore translations without changing the native layout or restarting.
   useEffect(() => {
     (async () => {
       try {
         const saved = await AsyncStorage.getItem(STORAGE_KEY);
         if (saved && translations[saved]) {
           setLanguageState(saved);
-          const rtl = isRtlCode(saved);
-          if (I18nManager.isRTL !== rtl) {
-            I18nManager.allowRTL(rtl);
-            I18nManager.forceRTL(rtl);
-            // Direction was wrong for the saved language — relaunch so the
-            // whole tree mirrors correctly.
-            reloadApp();
-            return;
-          }
         }
       } catch {}
       setReady(true);
@@ -80,21 +65,15 @@ export function LanguageProvider({ children }) {
     [language]
   );
 
-  // Returns true when a reload is needed to apply the layout direction change.
+  // Switching language updates text in place; no direction change or reload.
   const setLanguage = useCallback(
     async (code) => {
       if (!translations[code] || code === language) return false;
       try {
         await AsyncStorage.setItem(STORAGE_KEY, code);
       } catch {}
-      const rtl = isRtlCode(code);
-      const needsReload = I18nManager.isRTL !== rtl;
-      if (needsReload) {
-        I18nManager.allowRTL(rtl);
-        I18nManager.forceRTL(rtl);
-      }
       setLanguageState(code);
-      return needsReload;
+      return false;
     },
     [language]
   );
@@ -104,7 +83,7 @@ export function LanguageProvider({ children }) {
     setLanguage,
     t,
     td,
-    isRTL: isRtlCode(language),
+    isRTL: false,
     ready,
     languages: LANGUAGES,
   };

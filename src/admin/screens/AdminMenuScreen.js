@@ -1,3 +1,4 @@
+import ThemeSwitch from '../../shared/components/ThemeSwitch';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
@@ -11,7 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import RingChart from '../components/RingChart';
 import { api } from '../../shared/api/client';
 import { useAuth } from '../../shared/state/AuthContext';
@@ -19,6 +21,8 @@ import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 function SectionCard({ children, onPress, gradient }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   return (
     <TouchableOpacity
       activeOpacity={0.85}
@@ -26,7 +30,7 @@ function SectionCard({ children, onPress, gradient }) {
       style={[styles.cardShadow, gradient && { shadowColor: gradient[0], shadowOpacity: 0.5 }]}
     >
       <LinearGradient
-        colors={gradient || ['#2B3F6E', '#1B2B52']}
+        colors={gradient || gradients.panel}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.card}
@@ -39,16 +43,18 @@ function SectionCard({ children, onPress, gradient }) {
 }
 
 function ShortcutTile({ icon, label, onPress }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.shortcutShadow}>
       <LinearGradient
-        colors={['#2B3F6E', '#1B2B52']}
+        colors={gradients.featured}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.shortcutTile}
       >
         <View style={styles.cardBorder} pointerEvents="none" />
-        <Ionicons name={icon} size={22} color={colors.text} />
+        <Ionicons name={icon} size={22} color={colors.featuredText} />
         <Text style={styles.shortcutLabel}>{label}</Text>
       </LinearGradient>
     </TouchableOpacity>
@@ -56,6 +62,8 @@ function ShortcutTile({ icon, label, onPress }) {
 }
 
 export default function AdminMenuScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const { logout } = useAuth();
   const [stats, setStats] = useState({ revenueToday: 0, ordersToday: 0, deliveredToday: 0 });
@@ -75,8 +83,9 @@ export default function AdminMenuScreen({ navigation }) {
   const load = useCallback(async () => {
     try {
       const [reqs, usrs] = await Promise.all([
-        api.get('/requests').catch(() => []),
-        api.get('/users').catch(() => []),
+        Promise.all([api.getAll('/requests'), api.getAll('/special-requests')])
+          .then(([normal, direct]) => [...normal, ...direct].sort((a, b) => new Date(b.placedAt || b.createdAt) - new Date(a.placedAt || a.createdAt))),
+        api.getAll('/users'),
       ]);
       setRequests(reqs);
       setUsers(usrs);
@@ -110,16 +119,25 @@ export default function AdminMenuScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View style={styles.header}>
+      <LinearGradient colors={gradients.header} locations={[0, 0.5, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.header}>
         <Text style={styles.title}>{t('adminMenu.title')}</Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t('partnerNotifications.title')}
+          onPress={() => navigation.navigate('Notifications')}
+          activeOpacity={0.8}
+          style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}
+        >
+          <Ionicons name="notifications-outline" size={23} color={colors.headerText} />
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setMenuOpen(true)}
           style={styles.menuBtn}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="ellipsis-vertical" size={20} color={colors.muted} />
+          <Ionicons name="ellipsis-vertical" size={20} color={colors.headerText} />
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       <Modal
         visible={menuOpen}
@@ -141,9 +159,10 @@ export default function AdminMenuScreen({ navigation }) {
                 navigation.navigate('AdminAdmins');
               }}
             >
-              <Ionicons name="shield-checkmark-outline" size={18} color={colors.text} />
+              <Ionicons name="shield-checkmark-outline" size={18} color={colors.iconAccent} />
               <Text style={styles.dropdownText}>{t('adminMenu.admins')}</Text>
             </TouchableOpacity>
+            <ThemeSwitch />
             <View style={styles.dropdownDivider} />
             <TouchableOpacity
               style={styles.dropdownItem}
@@ -153,7 +172,7 @@ export default function AdminMenuScreen({ navigation }) {
                 navigation.navigate('Language');
               }}
             >
-              <Ionicons name="language-outline" size={18} color={colors.text} />
+              <Ionicons name="language-outline" size={18} color={colors.iconAccent} />
               <Text style={styles.dropdownText}>{t('settings.language')}</Text>
             </TouchableOpacity>
             <View style={styles.dropdownDivider} />
@@ -178,7 +197,7 @@ export default function AdminMenuScreen({ navigation }) {
       >
         <SectionCard
           onPress={() => navigation.navigate('AdminDashboard')}
-          gradient={['#0F766E', '#1B2B52']}
+          gradient={gradients.featured}
         >
           <View style={styles.dashRow}>
             <View style={styles.ringWrap}>
@@ -277,15 +296,15 @@ export default function AdminMenuScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  header: {
+  header: { backgroundColor: colors.headerBackground,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  title: { flex: 1, textAlign: 'center', color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1 },
+  title: { flex: 1, textAlign: 'center', color: colors.headerText, fontSize: 18, fontWeight: '300', letterSpacing: 1 },
   logoBtn: { padding: 8 },
   logoutBtn: { padding: 8 },
   menuBtn: { padding: 8 },
@@ -298,7 +317,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: colors.border,
     paddingVertical: 4,
     shadowColor: '#000',
     shadowOpacity: 0.4,
@@ -314,22 +333,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   dropdownText: { color: colors.text, fontSize: 14, fontWeight: '400', letterSpacing: 0.3 },
-  dropdownDivider: { height: 1, backgroundColor: 'rgba(255, 255, 255, 0.08)', marginHorizontal: spacing.sm },
+  dropdownDivider: { height: 1, backgroundColor: colors.surface, marginHorizontal: spacing.sm },
   scroll: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl },
   cardShadow: { borderRadius: radii.lg, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
-  card: { padding: spacing.lg, borderRadius: radii.lg, overflow: 'hidden' },
-  cardBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
+  card: { borderTopColor: colors.panelAccent, borderTopWidth: 1, padding: spacing.lg, borderRadius: radii.lg, overflow: 'hidden' },
+  cardBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.panelBorder },
   dashRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   ringWrap: { width: 130, height: 130 },
   ringCenter: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  dashCenterValue: { color: colors.text, fontSize: 14, fontWeight: '400', letterSpacing: 0.5 },
-  dashCenterLabel: { color: colors.muted, fontSize: 11, fontWeight: '300', marginTop: 2 },
+  dashCenterValue: { color: colors.featuredText, fontSize: 14, fontWeight: '400', letterSpacing: 0.5 },
+  dashCenterLabel: { color: colors.featuredMuted, fontSize: 11, fontWeight: '300', marginTop: 2 },
   dashStats: { flex: 1, gap: spacing.md },
   dashStatRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dashStatLabel: { color: colors.muted, fontSize: 12, fontWeight: '300' },
-  dashStatValue: { color: colors.text, fontSize: 13, fontWeight: '400', letterSpacing: 0.3 },
-  cardTitle: { color: colors.text, fontSize: 16, fontWeight: '300', letterSpacing: 1, marginBottom: spacing.sm },
-  previewRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.06)' },
+  dashStatLabel: { color: colors.featuredMuted, fontSize: 12, fontWeight: '300' },
+  dashStatValue: { color: colors.featuredText, fontSize: 13, fontWeight: '400', letterSpacing: 0.3 },
+  cardTitle: { color: colors.headingAccent, fontSize: 16, fontWeight: '300', letterSpacing: 1, marginBottom: spacing.sm },
+  previewRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   previewName: { color: colors.text, fontSize: 13, fontWeight: '300', letterSpacing: 0.3, flex: 1 },
   previewSub: { color: colors.muted, fontSize: 11, fontWeight: '300', marginTop: 2 },
   previewValue: { color: colors.text, fontSize: 13, fontWeight: '400', letterSpacing: 0.3 },
@@ -339,5 +358,5 @@ const styles = StyleSheet.create({
   shortcutRow: { flexDirection: 'row', gap: spacing.md },
   shortcutShadow: { flex: 1, borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
   shortcutTile: { paddingVertical: spacing.md, borderRadius: radii.md, alignItems: 'center', overflow: 'hidden', gap: 6 },
-  shortcutLabel: { color: colors.text, fontSize: 12, fontWeight: '300', letterSpacing: 0.5 },
+  shortcutLabel: { color: colors.featuredText, fontSize: 12, fontWeight: '300', letterSpacing: 0.5 },
 });

@@ -259,6 +259,12 @@ export default function OrderDetailScreen({ route, navigation }) {
               ))}
             </View>
           ))}
+          {order.deliveryFee > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>{t('confirmOrder.delivery')}</Text>
+              <Text style={styles.totalValue}>QAR {order.deliveryFee}</Text>
+            </View>
+          )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>{t('orderDetail.total')}</Text>
             <Text style={styles.totalValue}>QAR {order.total}</Text>

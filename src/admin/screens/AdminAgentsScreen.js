@@ -16,12 +16,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import StaffOtpStep, { useStaffOtp } from '../components/StaffOtpStep';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function AdminAgentsScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const [agents, setAgents] = useState([]);
   const [maps, setMaps] = useState([]);
@@ -58,6 +62,18 @@ export default function AdminAgentsScreen({ navigation }) {
     return unsub;
   }, [navigation, load]);
 
+  const otp = useStaffOtp({
+    endpoint: '/agents',
+    visible: adding,
+    onCreated: () => {
+      setForm({ name: '', phone: '', place: '', vehicle: '', email: '', password: '', mapId: '' });
+      setShowPw(false);
+      setMapMenuOpen(false);
+      setAdding(false);
+      load();
+    },
+  });
+
   const save = async () => {
     setError('');
     const digits = (s) => (s || '').replace(/\D/g, '');
@@ -90,12 +106,8 @@ export default function AdminAgentsScreen({ navigation }) {
     setBusy(true);
     try {
       const { name, phone, place, vehicle, email, password, mapId } = form;  
-      await api.post('/agents', { name, phone, place, vehicle, email, password, mapId });
-      setForm({ name: '', phone: '', place: '', vehicle: '', email: '', password: '', mapId: '' });
-      setShowPw(false);
-      setMapMenuOpen(false);
-      setAdding(false);
-      load();
+      await otp.begin({ name, phone, place, vehicle, email, password, mapId });
+
     } catch (e) {
       setError(e.message);
     } finally {
@@ -136,14 +148,14 @@ export default function AdminAgentsScreen({ navigation }) {
               style={styles.rowShadow}
             >
               <LinearGradient
-                colors={['#2B3F6E', '#1B2B52']}
+                colors={gradients.panel}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.row}
               >
                 <View style={styles.rowBorder} pointerEvents="none" />
                 <View style={styles.avatar}>
-                  <Ionicons name="bicycle" size={20} color={colors.text} />
+                  <Ionicons name="bicycle" size={20} color={colors.iconAccent} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{a.name}</Text>
@@ -161,7 +173,7 @@ export default function AdminAgentsScreen({ navigation }) {
                           a.status === 'blocked'
                             ? 'rgba(248, 113, 113, 0.20)'
                             : a.status === 'active'
-                            ? 'rgba(52, 211, 153, 0.18)'
+                            ? colors.primarySoft
                             : 'rgba(148, 163, 184, 0.20)',
                       },
                     ]}
@@ -174,7 +186,7 @@ export default function AdminAgentsScreen({ navigation }) {
                             a.status === 'blocked'
                               ? colors.danger
                               : a.status === 'active'
-                              ? '#34D399'
+                              ? colors.primary
                               : colors.muted,
                         },
                       ]}
@@ -207,13 +219,15 @@ export default function AdminAgentsScreen({ navigation }) {
           <View style={styles.modalBackdrop} />
           <View style={styles.modalShadow}>
             <LinearGradient
-              colors={['#2B3F6E', '#1B2B52']}
+              colors={gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.modal}
             >
               <View style={styles.modalBorder} pointerEvents="none" />
               <Text style={styles.modalTitle}>{t('adminAgents.newAgent')}</Text>
+              {otp.pending ? <StaffOtpStep flow={otp} /> : (
+                <>
 
               {[
                 { k: 'name', label: t('adminAgents.fieldName') },
@@ -291,7 +305,7 @@ export default function AdminAgentsScreen({ navigation }) {
                         <Ionicons
                           name={m.id === form.mapId ? 'radio-button-on' : 'radio-button-off'}
                           size={16}
-                          color={m.id === form.mapId ? '#34D399' : colors.muted}
+                          color={m.id === form.mapId ? colors.primary : colors.muted}
                         />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.mapMenuName}>{m.name}</Text>
@@ -321,9 +335,11 @@ export default function AdminAgentsScreen({ navigation }) {
                   disabled={busy}
                   activeOpacity={0.85}
                 >
-                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>{t('adminAgents.addAgent')}</Text>}
+                  {busy ? <ActivityIndicator color={colors.activeText} /> : <Text style={styles.saveText}>{t('staffOtp.sendCode')}</Text>}
                 </TouchableOpacity>
               </View>
+                </>
+              )}
             </LinearGradient>
           </View>
         </KeyboardAvoidingView>
@@ -332,13 +348,13 @@ export default function AdminAgentsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   list: { padding: spacing.lg, gap: spacing.sm + 4, paddingBottom: spacing.xl },
   rowShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
-  row: { flexDirection: 'row', padding: spacing.md, borderRadius: radii.md, gap: spacing.md, alignItems: 'center', overflow: 'hidden' },
-  rowBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
+  row: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flexDirection: 'row', padding: spacing.md, borderRadius: radii.md, gap: spacing.md, alignItems: 'center', overflow: 'hidden' },
+  rowBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.panelBorder },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.iconBackground, alignItems: 'center', justifyContent: 'center' },
   name: { color: colors.text, fontWeight: '400', letterSpacing: 0.3 },
   meta: { color: colors.textSecondary, fontSize: 12, fontWeight: '300', marginTop: 2 },
   metaSm: { color: colors.muted, fontSize: 11, fontWeight: '300', marginTop: 2 },
@@ -350,18 +366,18 @@ const styles = StyleSheet.create({
   modalRoot: { flex: 1, justifyContent: 'center', padding: spacing.lg },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.65)' },
   modalShadow: { borderRadius: radii.lg, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12 },
-  modal: { borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
-  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
+  modal: { borderTopColor: colors.panelAccent, borderTopWidth: 1, borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
+  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.panelBorder },
   modalTitle: { color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1, marginBottom: spacing.sm },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(43, 63, 110, 0.55)', borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  input: { flex: 1, paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300' },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border },
+  input: { backgroundColor: colors.card, flex: 1, paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300' },
   eyeBtn: { paddingLeft: 8, paddingVertical: 8 },
   mapPicker: { paddingVertical: 4 },
   mapMenu: {
     borderRadius: radii.md,
-    backgroundColor: 'rgba(43, 63, 110, 0.65)',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   mapMenuEmpty: {
@@ -378,16 +394,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: colors.border,
   },
-  mapMenuRowActive: { backgroundColor: 'rgba(15, 118, 110, 0.20)' },
+  mapMenuRowActive: { backgroundColor: colors.primarySoft },
   mapMenuName: { color: colors.text, fontSize: 13, fontWeight: '400' },
   mapMenuPlace: { color: colors.muted, fontSize: 11, fontWeight: '300', marginTop: 2 },
-  error: { color: '#F87171', fontSize: 12, textAlign: 'center' },
+  error: { color: colors.danger, fontSize: 12, textAlign: 'center' },
   modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   modalBtn: { flex: 1, paddingVertical: 12, borderRadius: radii.md, alignItems: 'center', borderWidth: 1 },
-  cancelBtn: { borderColor: 'rgba(255, 255, 255, 0.20)', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+  cancelBtn: { borderColor: colors.border, backgroundColor: colors.surface },
   cancelText: { color: colors.muted, fontWeight: '400', letterSpacing: 0.5 },
-  saveBtn: { borderColor: 'rgba(52, 211, 153, 0.45)', backgroundColor: 'rgba(15, 118, 110, 0.35)' },
-  saveText: { color: '#34D399', fontWeight: '400', letterSpacing: 0.5 },
+  saveBtn: { borderColor: colors.activeBackground, backgroundColor: colors.activeBackground },
+  saveText: { color: colors.activeText, fontWeight: '400', letterSpacing: 0.5 },
 });

@@ -1,3 +1,4 @@
+import PartnerNotificationsScreen from '../../shared/screens/PartnerNotificationsScreen';
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -40,6 +41,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminOffers" component={AdminOffersScreen} />
       <Stack.Screen name="AdminReviews" component={AdminReviewsScreen} />
       <Stack.Screen name="AdminAdmins" component={AdminAdminsScreen} />
+      <Stack.Screen name="Notifications" component={PartnerNotificationsScreen} />
     </Stack.Navigator>
   );
 }

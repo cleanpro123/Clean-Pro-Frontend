@@ -159,6 +159,7 @@ export default function ConfirmOrderScreen({ navigation }) {
         addressId: selectedAddress.id,
         note: notes.trim(),
         paymentMethod: payment,
+        delivery,
         items,
       });
       clearCart(); // order placed, empty the cart
@@ -181,6 +182,7 @@ export default function ConfirmOrderScreen({ navigation }) {
     selectedAddress,
     delivery,
     payment,
+    notes,
     clearCart,
     navigation,
     t,

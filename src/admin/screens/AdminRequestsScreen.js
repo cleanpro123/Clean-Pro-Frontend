@@ -13,7 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
@@ -25,17 +26,21 @@ const filters = [
   { id: 'delivered', labelKey: 'adminRequests.filterDelivered' },
 ];
 
-const statusMeta = {
-  pending: { labelKey: 'adminRequests.statusPending', color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.15)' },
-  accepted: { labelKey: 'adminRequests.statusAccepted', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.18)' },
-  assigned: { labelKey: 'adminRequests.statusAssigned', color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.18)' },
-  in_progress: { labelKey: 'adminRequests.statusInProgress', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.18)' },
-  out_for_delivery: { labelKey: 'adminRequests.statusOut', color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.18)' },
-  delivered: { labelKey: 'adminRequests.statusDelivered', color: '#34D399', bg: 'rgba(52, 211, 153, 0.18)' },
-  cancelled: { labelKey: 'adminRequests.statusCancelled', color: '#F87171', bg: 'rgba(248, 113, 113, 0.18)' },
-};
+const makeStatusMeta = (isDark) => ({
+  pending: { labelKey: 'adminRequests.statusPending', color: (isDark ? '#FBBF24' : '#92400E'), bg: 'rgba(251, 191, 36, 0.15)' },
+  accepted: { labelKey: 'adminRequests.statusAccepted', color: (isDark ? '#22D3EE' : '#0E7490'), bg: 'rgba(34, 211, 238, 0.18)' },
+  assigned: { labelKey: 'adminRequests.statusAssigned', color: (isDark ? '#60A5FA' : '#1D4ED8'), bg: 'rgba(96, 165, 250, 0.18)' },
+  in_progress: { labelKey: 'adminRequests.statusInProgress', color: (isDark ? '#22D3EE' : '#0E7490'), bg: 'rgba(34, 211, 238, 0.18)' },
+  out_for_delivery: { labelKey: 'adminRequests.statusOut', color: (isDark ? '#A78BFA' : '#6D28D9'), bg: 'rgba(167, 139, 250, 0.18)' },
+  delivered: { labelKey: 'adminRequests.statusDelivered', color: (isDark ? '#34D399' : '#047857'), bg: 'rgba(52, 211, 153, 0.18)' },
+  cancelled: { labelKey: 'adminRequests.statusCancelled', color: (isDark ? '#F87171' : '#B91C1C'), bg: 'rgba(248, 113, 113, 0.18)' },
+});
 
 export default function AdminRequestsScreen({ navigation }) {
+  const { isDark } = useTheme();
+  const statusMeta = React.useMemo(() => makeStatusMeta(isDark), [isDark]);
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +150,7 @@ export default function AdminRequestsScreen({ navigation }) {
                 style={styles.cardShadow}
               >
                 <LinearGradient
-                  colors={['#2B3F6E', '#1B2B52']}
+                  colors={gradients.panel}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.row}
@@ -189,21 +194,21 @@ export default function AdminRequestsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: 'rgba(43, 63, 110, 0.55)', marginHorizontal: spacing.lg, paddingHorizontal: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  search: { flex: 1, paddingVertical: 12, color: colors.text, fontWeight: '300' },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, marginHorizontal: spacing.lg, paddingHorizontal: spacing.md, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },
+  search: { backgroundColor: colors.card, flex: 1, paddingVertical: 12, color: colors.text, fontWeight: '300' },
   tabsWrap: { paddingTop: spacing.sm, paddingBottom: spacing.md },
   filterRow: { paddingHorizontal: spacing.lg, gap: spacing.sm },
-  chip: { minWidth: 96, paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radii.pill, backgroundColor: 'rgba(43, 63, 110, 0.45)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', alignItems: 'center' },
-  chipActive: { backgroundColor: 'rgba(15, 118, 110, 0.45)', borderColor: 'rgba(52, 211, 153, 0.50)' },
+  chip: { minWidth: 96, paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radii.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  chipActive: { backgroundColor: colors.activeBackground, borderColor: colors.activeBackground },
   chipText: { color: colors.muted, fontWeight: '300', fontSize: 13, letterSpacing: 0.5 },
-  chipTextActive: { color: '#34D399', fontWeight: '500' },
+  chipTextActive: { color: colors.activeText, fontWeight: '500' },
   list: { padding: spacing.lg, paddingTop: 0, gap: spacing.md, paddingBottom: spacing.xl },
   cardShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.30, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
-  row: { flexDirection: 'row', borderRadius: radii.md, padding: spacing.md, alignItems: 'center', gap: spacing.md, overflow: 'hidden' },
-  cardBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  avatarBubble: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
+  row: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flexDirection: 'row', borderRadius: radii.md, padding: spacing.md, alignItems: 'center', gap: spacing.md, overflow: 'hidden' },
+  cardBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.panelBorder },
+  avatarBubble: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontWeight: '500', color: colors.text, fontSize: 13, letterSpacing: 0.5 },
   idRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   id: { fontSize: 13, fontWeight: '500', color: colors.text, letterSpacing: 0.3 },
@@ -223,7 +228,7 @@ const styles = StyleSheet.create({
   meta: { fontSize: 11, color: colors.muted, marginTop: 2, fontWeight: '300' },
   rightCol: { alignItems: 'flex-end', gap: 6 },
   total: { fontWeight: '500', color: colors.text, fontSize: 14, letterSpacing: 0.3 },
-  pill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: radii.pill },
+  pill: { borderTopColor: colors.panelAccent, borderTopWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radii.pill },
   pillText: { fontSize: 10, fontWeight: '700' },
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
   emptyText: { color: colors.muted, fontWeight: '300' },

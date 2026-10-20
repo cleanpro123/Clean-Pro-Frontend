@@ -10,7 +10,6 @@
 // Icons are imported one by one (not `import *`) so Metro only bundles the
 // ones we use.
 import React from 'react';
-import { I18nManager, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   ArrowLeft,
@@ -152,10 +151,6 @@ const MAP = {
   'badge-percent': BadgePercent,
 };
 
-// Direction-bearing glyphs, mirrored in right-to-left layouts (Arabic) so
-// "forward" still points the way the UI flows.
-const DIRECTIONAL = new Set(['arrow-back', 'arrow-forward', 'chevron-back', 'chevron-forward']);
-
 // Solid Ionicons names that should keep a filled look under Lucide.
 const FILLED_BY_DEFAULT = new Set(['star', 'heart']);
 
@@ -164,14 +159,13 @@ export default function Icon({ name = '', size = 20, color = '#000', strokeWidth
   const Glyph = MAP[base];
   if (!Glyph) return <Ionicons name={name} size={size} color={color} style={style} />;
   const solid = filled ?? (FILLED_BY_DEFAULT.has(name) || false);
-  const mirror = I18nManager.isRTL && DIRECTIONAL.has(base);
   return (
     <Glyph
       size={size}
       color={color}
       strokeWidth={strokeWidth}
       fill={solid ? color : 'none'}
-      style={mirror ? StyleSheet.flatten([{ transform: [{ scaleX: -1 }] }, style]) : style}
+      style={style}
     />
   );
 }

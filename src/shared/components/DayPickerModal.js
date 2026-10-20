@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing } from '../theme/dark';
+import { radii, spacing } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { startOfDay, sameDay } from '../utils/period';
 import { useI18n } from '../i18n/LanguageContext';
 
@@ -14,6 +15,8 @@ const weekHeads = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 // Lightweight, dependency-free month calendar. Defaults its view to the given
 // value (or today). Future days are disabled.
 export default function DayPickerModal({ visible, value, onSelect, onClose }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const today = startOfDay(new Date());
   const [view, setView] = useState(startOfDay(value || today));
@@ -105,7 +108,7 @@ export default function DayPickerModal({ visible, value, onSelect, onClose }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -120,7 +123,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: colors.border,
   },
   calHeader: {
     flexDirection: 'row',
@@ -143,7 +146,7 @@ const styles = StyleSheet.create({
   daySelected: { backgroundColor: colors.primaryLight },
   dayToday: { borderWidth: 1, borderColor: colors.primaryLight },
   dayText: { color: colors.text, fontSize: 13, fontWeight: '600' },
-  daySelectedText: { color: '#052e2b', fontWeight: '800' },
+  daySelectedText: { color: colors.text, fontWeight: '800' },
   dayDisabled: { color: 'rgba(148, 163, 184, 0.35)' },
   todayBtn: { marginTop: spacing.md, alignItems: 'center', paddingVertical: 10 },
   todayBtnText: { color: colors.primaryLight, fontSize: 13, fontWeight: '700' },

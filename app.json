@@ -38,9 +38,11 @@
       "favicon": "./assets/app-favicon.png",
       "bundler": "metro"
     },
-    "extra": {},
+    "extra": { "supportsRTL": false, "forcesRTL": false },
     "plugins": [
       "expo-font",
+      ["expo-localization", { "supportsRTL": false, "forcesRTL": false }],
+      "./plugins/withFixedLayout",
       "@sentry/react-native/expo",
       [
         "expo-location",

@@ -17,7 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
@@ -32,10 +33,13 @@ const iconChoices = [
 ];
 
 export default function AdminServicesScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
@@ -79,6 +83,13 @@ export default function AdminServicesScreen({ navigation }) {
     });
   };
 
+  const openEditor = (service = null) => {
+    setEditingId(service?.id || null);
+    setForm(service ? { key: service.key, name: service.name, description: service.description || '', icon: service.icon || 'water-outline' } : { key: '', name: '', description: '', icon: 'water-outline' });
+    setError('');
+    setAdding(true);
+  };
+
   const save = async () => {
     setError('');
     if (form.key.trim().length < 2) {
@@ -95,12 +106,9 @@ export default function AdminServicesScreen({ navigation }) {
     }
     setBusy(true);
     try {
-      await api.post('/services', {
-        key: form.key.trim().toLowerCase(),
-        name: form.name,
-        description: form.description || '',
-        icon: form.icon,
-      });
+      const payload = { name: form.name.trim(), description: form.description || '', icon: form.icon };
+      if (editingId) await api.patch(`/services/${editingId}`, payload);
+      else await api.post('/services', { ...payload, key: form.key.trim().toLowerCase() });
       setForm({ key: '', name: '', description: '', icon: 'water-outline' });
       setAdding(false);
       load();
@@ -116,7 +124,7 @@ export default function AdminServicesScreen({ navigation }) {
       <AdminHeader
         title={t('adminServices.title')}
         onBack={() => navigation.goBack()}
-        rightAction={{ icon: 'add-circle-outline', onPress: () => setAdding(true) }}
+        rightAction={{ icon: 'add-circle-outline', onPress: () => openEditor() }}
       />
 
       <ScrollView
@@ -137,14 +145,14 @@ export default function AdminServicesScreen({ navigation }) {
           services.map((s) => (
             <View key={s.id} style={styles.rowShadow}>
               <LinearGradient
-                colors={['#2B3F6E', '#1B2B52']}
+                colors={gradients.panel}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.row}
               >
                 <View style={styles.rowBorder} pointerEvents="none" />
                 <View style={styles.iconBubble}>
-                  <Ionicons name={s.icon} size={20} color={colors.text} />
+                  <Ionicons name={s.icon} size={20} color={colors.iconAccent} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{s.name}</Text>
@@ -158,28 +166,31 @@ export default function AdminServicesScreen({ navigation }) {
                         backgroundColor:
                           s.active === false
                             ? 'rgba(148, 163, 184, 0.18)'
-                            : 'rgba(52, 211, 153, 0.18)',
+                            : colors.primarySoft,
                       },
                     ]}
                   >
                     <Text
                       style={[
                         styles.statusText,
-                        { color: s.active === false ? colors.muted : '#34D399' },
+                        { color: s.active === false ? colors.muted : colors.primary },
                       ]}
                     >
                       {s.active === false ? t('adminServices.inactive') : t('adminServices.active')}
                     </Text>
                   </View>
                 </View>
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel={`${t('common.edit')} ${s.name}`} onPress={() => openEditor(s)} style={{ padding: 6 }}>
+                  <Ionicons name="create-outline" size={20} color={colors.iconAccent} />
+                </TouchableOpacity>
                 <Switch
                   value={s.active !== false}
                   onValueChange={() => toggleActive(s)}
                   trackColor={{
-                    true: 'rgba(52, 211, 153, 0.5)',
-                    false: 'rgba(255, 255, 255, 0.15)',
+                    true: colors.primarySoft,
+                    false: colors.surface,
                   }}
-                  thumbColor={s.active !== false ? '#34D399' : '#fff'}
+                  thumbColor={s.active !== false ? colors.primary : '#fff'}
                 />
               </LinearGradient>
             </View>
@@ -195,13 +206,13 @@ export default function AdminServicesScreen({ navigation }) {
           <View style={styles.modalBackdrop} />
           <View style={styles.modalShadow}>
             <LinearGradient
-              colors={['#2B3F6E', '#1B2B52']}
+              colors={gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.modal}
             >
               <View style={styles.modalBorder} pointerEvents="none" />
-              <Text style={styles.modalTitle}>{t('adminServices.newService')}</Text>
+              <Text style={styles.modalTitle}>{t(editingId ? 'adminServices.editService' : 'adminServices.newService')}</Text>
 
               <View style={styles.inputWrap}>
                 <TextInput
@@ -209,6 +220,7 @@ export default function AdminServicesScreen({ navigation }) {
                   placeholder={t('adminServices.keyPlaceholder')}
                   placeholderTextColor={colors.muted}
                   autoCapitalize="none"
+                  editable={!editingId}
                   value={form.key}
                   onChangeText={(v) => setForm((p) => ({ ...p, key: v }))}
                 />
@@ -244,7 +256,7 @@ export default function AdminServicesScreen({ navigation }) {
                       onPress={() => setForm((p) => ({ ...p, icon: ic }))}
                       style={[styles.iconChoice, active && styles.iconChoiceActive]}
                     >
-                      <Ionicons name={ic} size={20} color={colors.text} />
+                      <Ionicons name={ic} size={20} color={colors.iconAccent} />
                     </TouchableOpacity>
                   );
                 })}
@@ -266,7 +278,7 @@ export default function AdminServicesScreen({ navigation }) {
                   disabled={busy}
                   activeOpacity={0.85}
                 >
-                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>{t('adminServices.addService')}</Text>}
+                  {busy ? <ActivityIndicator color={colors.activeText} /> : <Text style={styles.saveText}>{t(editingId ? 'common.save' : 'adminServices.addService')}</Text>}
                 </TouchableOpacity>
               </View>
             </LinearGradient>
@@ -277,13 +289,13 @@ export default function AdminServicesScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   list: { padding: spacing.lg, gap: spacing.sm + 4, paddingBottom: spacing.xl },
   rowShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
-  row: { flexDirection: 'row', padding: spacing.md, borderRadius: radii.md, gap: spacing.md, alignItems: 'center', overflow: 'hidden' },
-  rowBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  iconBubble: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
+  row: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flexDirection: 'row', padding: spacing.md, borderRadius: radii.md, gap: spacing.md, alignItems: 'center', overflow: 'hidden' },
+  rowBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.panelBorder },
+  iconBubble: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.iconBackground, alignItems: 'center', justifyContent: 'center' },
   name: { color: colors.text, fontWeight: '400', letterSpacing: 0.3 },
   desc: { color: colors.textSecondary, fontSize: 12, fontWeight: '300', marginTop: 2 },
   statusPill: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: radii.pill, marginTop: 6 },
@@ -293,20 +305,20 @@ const styles = StyleSheet.create({
   modalRoot: { flex: 1, justifyContent: 'center', padding: spacing.lg },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.65)' },
   modalShadow: { borderRadius: radii.lg, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12 },
-  modal: { borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
-  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
+  modal: { borderTopColor: colors.panelAccent, borderTopWidth: 1, borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
+  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.panelBorder },
   modalTitle: { color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1, marginBottom: spacing.sm },
-  inputWrap: { backgroundColor: 'rgba(43, 63, 110, 0.55)', borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  input: { paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300' },
+  inputWrap: { backgroundColor: colors.card, borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border },
+  input: { backgroundColor: colors.card, paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300' },
   iconLabel: { color: colors.muted, fontSize: 11, fontWeight: '400', textTransform: 'uppercase', letterSpacing: 1, marginTop: 4 },
   iconGrid: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  iconChoice: { width: 42, height: 42, borderRadius: radii.md, backgroundColor: 'rgba(255, 255, 255, 0.06)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  iconChoiceActive: { borderColor: '#34D399', backgroundColor: 'rgba(15, 118, 110, 0.35)' },
-  error: { color: '#F87171', fontSize: 12, textAlign: 'center' },
+  iconChoice: { width: 42, height: 42, borderRadius: radii.md, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+  iconChoiceActive: { borderColor: colors.activeBackground, backgroundColor: colors.activeBackground },
+  error: { color: colors.danger, fontSize: 12, textAlign: 'center' },
   modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   modalBtn: { flex: 1, paddingVertical: 12, borderRadius: radii.md, alignItems: 'center', borderWidth: 1 },
-  cancelBtn: { borderColor: 'rgba(255, 255, 255, 0.20)', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+  cancelBtn: { borderColor: colors.border, backgroundColor: colors.surface },
   cancelText: { color: colors.muted, fontWeight: '400', letterSpacing: 0.5 },
-  saveBtn: { borderColor: 'rgba(52, 211, 153, 0.45)', backgroundColor: 'rgba(15, 118, 110, 0.35)' },
-  saveText: { color: '#34D399', fontWeight: '400', letterSpacing: 0.5 },
+  saveBtn: { borderColor: colors.activeBackground, backgroundColor: colors.activeBackground },
+  saveText: { color: colors.activeText, fontWeight: '400', letterSpacing: 0.5 },
 });

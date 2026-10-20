@@ -215,7 +215,7 @@ function ActiveOrderCard({ order, onPress }) {
         <View style={{ flex: 1 }}>
           <Text style={styles.orderId}>{order.code}</Text>
           <Text style={styles.orderService}>
-            {t('orders.itemsCount', { count: order.items?.length || 0 })} · QAR {order.total}
+            {t('orders.itemsCount', { count: (order.items || []).reduce((count, item) => count + (item.qty || 0), 0) })} · QAR {order.total}
           </Text>
         </View>
         <View style={styles.etaPill}>
@@ -292,7 +292,7 @@ function PastOrderCard({ order, onPress, onRate }) {
             </Text>
           </View>
         </View>
-        <Text style={styles.pastService}>{t('orders.itemsCount', { count: order.items?.length || 0 })}</Text>
+        <Text style={styles.pastService}>{t('orders.itemsCount', { count: (order.items || []).reduce((count, item) => count + (item.qty || 0), 0) })}</Text>
         {!!orderAddress(order) && (
           <View style={styles.addrRow}>
             <Ionicons name="location-outline" size={12} color={colors.muted} />

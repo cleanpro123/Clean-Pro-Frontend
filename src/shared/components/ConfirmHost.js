@@ -11,12 +11,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { _registerConfirmHost } from '../utils/confirm';
 import { spacing, radii } from '../theme/dark';
-import { isUser } from '../../config/appVariant';
 import { useTheme } from '../theme/ThemeContext';
 
-// The confirm modal is shared across all roles. The customer app (Clean Pro)
-// follows its runtime theme — LIGHT or a blue-dark palette; Clean Pro Partner
-// (admin/agent) keeps the fixed green-dark theme.
+// Confirmation dialogs follow the selected theme for every role.
 const LIGHT = {
   cardGradient: ['#FFFFFF', '#F5FAFF'],
   cardBorder: 'rgba(15, 42, 79, 0.08)',
@@ -38,29 +35,6 @@ const LIGHT = {
   confirmText: '#FFFFFF',
   confirmDangerBtn: { backgroundColor: '#EF4444', borderColor: '#EF4444' },
   confirmDangerText: '#FFFFFF',
-};
-
-const DARK = {
-  cardGradient: ['#2B3F6E', '#1B2B52'],
-  cardBorder: 'rgba(255, 255, 255, 0.10)',
-  backdrop: 'rgba(0, 0, 0, 0.65)',
-  title: '#F1F5F9',
-  titleWeight: '400',
-  message: '#94A3B8',
-  shadowColor: '#000',
-  shadowOpacity: 0.55,
-  bubble: {
-    ok: { backgroundColor: 'rgba(52, 211, 153, 0.18)', borderColor: 'rgba(52, 211, 153, 0.40)' },
-    danger: { backgroundColor: 'rgba(248, 113, 113, 0.18)', borderColor: 'rgba(248, 113, 113, 0.40)' },
-    info: { backgroundColor: 'rgba(251, 191, 36, 0.18)', borderColor: 'rgba(251, 191, 36, 0.40)' },
-  },
-  icon: { ok: '#34D399', danger: '#F87171', info: '#FBBF24' },
-  cancelBtn: { backgroundColor: 'rgba(255, 255, 255, 0.04)', borderColor: 'rgba(255, 255, 255, 0.20)' },
-  cancelText: '#94A3B8',
-  confirmBtn: { backgroundColor: 'rgba(15, 118, 110, 0.35)', borderColor: 'rgba(52, 211, 153, 0.45)' },
-  confirmText: '#34D399',
-  confirmDangerBtn: { backgroundColor: 'rgba(92, 31, 31, 0.55)', borderColor: 'rgba(248, 113, 113, 0.45)' },
-  confirmDangerText: '#F87171',
 };
 
 // Blue-and-black dark palette for the customer app's dark mode.
@@ -89,9 +63,7 @@ const BLUE_DARK = {
 
 export default function ConfirmHost() {
   const { isDark } = useTheme();
-  // Partner app is always the green-dark theme; the customer app follows its
-  // light/dark toggle.
-  const T = isUser ? (isDark ? BLUE_DARK : LIGHT) : DARK;
+  const T = isDark ? BLUE_DARK : LIGHT;
   const styles = useMemo(() => makeStyles(T), [T]);
   const [state, setState] = useState(null);
   const [remaining, setRemaining] = useState(0);

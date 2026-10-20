@@ -84,7 +84,7 @@ export default function RootNavigator() {
   };
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} direction="ltr">
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAdmin
           ? adminScreens(role)

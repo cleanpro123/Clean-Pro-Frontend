@@ -17,12 +17,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import { colors, gradients, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function AdminOffersScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -152,8 +155,8 @@ export default function AdminOffersScreen({ navigation }) {
               key={o.id}
               colors={
                 o.active
-                  ? gradients.aqua
-                  : ['rgba(255, 255, 255, 0.10)', 'rgba(255, 255, 255, 0.04)']
+                  ? gradients.panel
+                  : [colors.surface, colors.surface]
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -169,17 +172,17 @@ export default function AdminOffersScreen({ navigation }) {
 
               <View style={styles.metaRow}>
                 <View style={styles.metaItem}>
-                  <Ionicons name="cash-outline" size={14} color="#fff" />
+                  <Ionicons name="cash-outline" size={14} color={colors.iconAccent} />
                   <Text style={styles.metaText}>{t('adminOffers.minOrder', { amount: o.minOrder })}</Text>
                 </View>
                 <View style={styles.metaItem}>
-                  <Ionicons name="calendar-outline" size={14} color="#fff" />
+                  <Ionicons name="calendar-outline" size={14} color={colors.iconAccent} />
                   <Text style={styles.metaText}>
                     {t('adminOffers.until', { date: o.validTill ? new Date(o.validTill).toLocaleDateString() : '—' })}
                   </Text>
                 </View>
                 <View style={styles.metaItem}>
-                  <Ionicons name="people-outline" size={14} color="#fff" />
+                  <Ionicons name="people-outline" size={14} color={colors.iconAccent} />
                   <Text style={styles.metaText}>{t('adminOffers.usedCount', { count: o.usage || 0 })}</Text>
                 </View>
               </View>
@@ -191,14 +194,14 @@ export default function AdminOffersScreen({ navigation }) {
                     value={o.active}
                     onValueChange={() => toggle(o)}
                     trackColor={{
-                      true: 'rgba(255,255,255,0.6)',
-                      false: 'rgba(255, 255, 255, 0.25)',
+                      true: colors.surface,
+                      false: colors.surface,
                     }}
                     thumbColor="#fff"
                   />
                 </View>
                 <TouchableOpacity onPress={() => remove(o)} style={styles.trashBtn}>
-                  <Ionicons name="trash-outline" size={18} color="#fff" />
+                  <Ionicons name="trash-outline" size={18} color={colors.iconAccent} />
                 </TouchableOpacity>
               </View>
             </LinearGradient>
@@ -214,7 +217,7 @@ export default function AdminOffersScreen({ navigation }) {
           <View style={styles.modalBackdrop} />
           <View style={styles.modalShadow}>
             <LinearGradient
-              colors={['#2B3F6E', '#1B2B52']}
+              colors={gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.modal}
@@ -288,7 +291,7 @@ export default function AdminOffersScreen({ navigation }) {
                   disabled={busy}
                   activeOpacity={0.85}
                 >
-                  {busy ? <ActivityIndicator color="#34D399" /> : <Text style={styles.saveText}>{t('adminOffers.addOffer')}</Text>}
+                  {busy ? <ActivityIndicator color={colors.activeText} /> : <Text style={styles.saveText}>{t('adminOffers.addOffer')}</Text>}
                 </TouchableOpacity>
               </View>
             </LinearGradient>
@@ -299,37 +302,37 @@ export default function AdminOffersScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  card: { borderRadius: radii.lg, padding: spacing.lg },
+  card: { borderTopColor: colors.panelAccent, borderTopWidth: 1, borderRadius: radii.lg, padding: spacing.lg },
   topRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  code: { color: '#fff', fontSize: 18, fontWeight: '800', letterSpacing: 1 },
-  label: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 13, marginTop: 4 },
-  discount: { color: '#fff', fontSize: 28, fontWeight: '800' },
+  code: { color: colors.text, fontSize: 18, fontWeight: '800', letterSpacing: 1 },
+  label: { color: colors.textSecondary, fontSize: 13, marginTop: 4 },
+  discount: { color: colors.text, fontSize: 28, fontWeight: '800' },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.md },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.25)' },
+  metaText: { color: colors.text, fontSize: 12, fontWeight: '600' },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  toggleLabel: { color: '#fff', fontWeight: '700' },
+  toggleLabel: { color: colors.text, fontWeight: '700' },
   trashBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.15)', alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
   emptyText: { color: colors.muted },
   modalRoot: { flex: 1, justifyContent: 'center', padding: spacing.lg },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.65)' },
   modalShadow: { borderRadius: radii.lg, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12 },
-  modal: { borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
-  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
+  modal: { borderTopColor: colors.panelAccent, borderTopWidth: 1, borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
+  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.panelBorder },
   modalTitle: { color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1, marginBottom: spacing.sm },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(43, 63, 110, 0.55)', borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  input: { flex: 1, paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300' },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border },
+  input: { backgroundColor: colors.card, flex: 1, paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300' },
   priceRow: { flexDirection: 'row', gap: spacing.sm },
-  error: { color: '#F87171', fontSize: 12, textAlign: 'center' },
+  error: { color: colors.danger, fontSize: 12, textAlign: 'center' },
   modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   modalBtn: { flex: 1, paddingVertical: 12, borderRadius: radii.md, alignItems: 'center', borderWidth: 1 },
-  cancelBtn: { borderColor: 'rgba(255, 255, 255, 0.20)', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+  cancelBtn: { borderColor: colors.border, backgroundColor: colors.surface },
   cancelText: { color: colors.muted, fontWeight: '400', letterSpacing: 0.5 },
-  saveBtn: { borderColor: 'rgba(52, 211, 153, 0.45)', backgroundColor: 'rgba(15, 118, 110, 0.35)' },
-  saveText: { color: '#34D399', fontWeight: '400', letterSpacing: 0.5 },
+  saveBtn: { borderColor: colors.activeBackground, backgroundColor: colors.activeBackground },
+  saveText: { color: colors.activeText, fontWeight: '400', letterSpacing: 0.5 },
 });

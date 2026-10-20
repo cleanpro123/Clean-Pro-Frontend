@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api, setAuthState, onAuthChange } from '../api/client';
 import { loadAuth, saveAuth, clearAuth } from '../api/tokenStore';
 
@@ -86,6 +86,20 @@ export function AuthProvider({ children }) {
     return next;
   };
 
+  const refreshProfile = useCallback(async () => {
+    const me = await api.get('/auth/me');
+    setAuth((s) => {
+      const next = { ...s, profile: me.profile };
+      saveAuth({
+        accessToken: next.accessToken,
+        refreshToken: next.refreshToken,
+        role: next.role,
+        profile: next.profile,
+      });
+      return next;
+    });
+  }, []);
+
   const value = {
     ...auth,
     loginUser: async (email, password) =>
@@ -131,19 +145,7 @@ export function AuthProvider({ children }) {
         loading: false,
       });
     },
-    refreshProfile: async () => {
-      const me = await api.get('/auth/me');
-      setAuth((s) => {
-        const next = { ...s, profile: me.profile };
-        saveAuth({
-          accessToken: next.accessToken,
-          refreshToken: next.refreshToken,
-          role: next.role,
-          profile: next.profile,
-        });
-        return next;
-      });
-    },
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

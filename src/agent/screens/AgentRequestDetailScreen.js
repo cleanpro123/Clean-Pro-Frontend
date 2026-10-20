@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,24 +15,27 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import MapPreview from '../../shared/components/MapPreview';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 function PillRow({ icon, children }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   return (
     <View style={styles.pillShadow}>
       <LinearGradient
-        colors={['#2B3F6E', '#1B2B52']}
+        colors={gradients.panel}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.pill}
       >
         <View style={styles.pillBorder} pointerEvents="none" />
         <View style={styles.iconBubble}>
-          <Ionicons name={icon} size={16} color={colors.text} />
+          <Ionicons name={icon} size={16} color={colors.iconAccent} />
         </View>
         <View style={{ flex: 1 }}>{children}</View>
       </LinearGradient>
@@ -40,24 +43,28 @@ function PillRow({ icon, children }) {
   );
 }
 
-function ActionBtn({ label, icon, onPress, primary }) {
+function ActionBtn({ label, icon, onPress, primary, disabled }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.actionShadow}>
+    <TouchableOpacity accessibilityRole="button" disabled={disabled} activeOpacity={0.85} onPress={onPress} style={styles.actionShadow}>
       <LinearGradient
-        colors={primary ? ['#4866B8', '#1B2B52'] : ['#2B3F6E', '#1B2B52']}
+        colors={primary ? [colors.primarySoft, colors.surface] : gradients.panel}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.action}
       >
         <View style={styles.actionBorder} pointerEvents="none" />
         <Text style={styles.actionText}>{label}</Text>
-        {icon ? <Ionicons name={icon} size={16} color={colors.text} /> : null}
+        {icon ? <Ionicons name={icon} size={16} color={colors.iconAccent} /> : null}
       </LinearGradient>
     </TouchableOpacity>
   );
 }
 
 export default function AgentRequestDetailScreen({ route, navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const id = route.params?.id;
   // Direct (special) orders live in a separate collection/endpoint.
@@ -65,17 +72,26 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
     route.params?.kind === 'special' ? '/special-requests' : '/requests';
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [priceModalVisible, setPriceModalVisible] = useState(false);
   const [priceInput, setPriceInput] = useState('');
   const [savingPrice, setSavingPrice] = useState(false);
+  const updating = useRef(false);
+  const [savingStatus, setSavingStatus] = useState(false);
 
   const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
     try {
+      if (!id) throw new Error(t('status.notFoundMessage'));
       setReq(await api.get(`${basePath}/${id}`));
+    } catch (e) {
+      setReq(null);
+      setLoadError(e.message || t('agentRequestDetail.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [basePath, id, t]);
 
   useEffect(() => {
     load();
@@ -88,7 +104,25 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
       </SafeAreaView>
     );
   }
-  if (!req) return null;
+  if (!req) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <LinearGradient colors={gradients.header} locations={[0, 0.5, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
+            <Ionicons name="arrow-back" size={22} color={colors.headerText} />
+          </TouchableOpacity>
+          <Text style={styles.title}>{t('agentRequestDetail.title')}</Text>
+          <View style={{ width: 40 }} />
+        </LinearGradient>
+        <View style={styles.loadError}>
+          <Text style={styles.loadErrorText} accessibilityRole="alert">
+            {loadError || t('status.notFoundMessage')}
+          </Text>
+          <ActionBtn label={t('status.retry')} onPress={load} primary />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // Price is editable until the order is delivered or cancelled.
   const canEditPrice = req.status !== 'delivered' && req.status !== 'cancelled';
@@ -99,8 +133,10 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
   };
 
   const savePrice = async () => {
+    if (updating.current) return;
     const value = Number(priceInput);
     if (!Number.isFinite(value) || value < 0) return;
+    updating.current = true;
     setSavingPrice(true);
     try {
       const updated = await api.patch(`${basePath}/${req.id}/total`, { total: value });
@@ -114,15 +150,20 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
         onConfirm: () => {},
       });
     } finally {
+      updating.current = false;
       setSavingPrice(false);
     }
   };
 
   const setStatus = async (status, label) => {
+    if (updating.current) return;
     confirmAction({
       title: `${label}?`,
       confirmLabel: label,
       onConfirm: async () => {
+        if (updating.current) return;
+        updating.current = true;
+        setSavingStatus(true);
         try {
           const updated = await api.patch(`${basePath}/${req.id}/status`, { status });
           setReq(updated);
@@ -133,6 +174,9 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
             confirmLabel: t('agentRequestDetail.ok'),
             onConfirm: () => {},
           });
+        } finally {
+          updating.current = false;
+          setSavingStatus(false);
         }
       },
     });
@@ -149,20 +193,20 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
   // label + full details. If the address was since deleted it comes back null.
   const addr = req.addressId && typeof req.addressId === 'object' ? req.addressId : null;
   const addressDetail = addr
-    ? [addr.line1, addr.line2, addr.area, addr.pincode].filter(Boolean).join(', ')
+    ? [addr.line1, addr.line2, addr.area, addr.city, addr.pincode].filter(Boolean).join(', ')
     : '';
   const addressTitle = addr?.label || t('agentRequestDetail.addressUnavailable');
   const mapsQuery = [addressTitle, addressDetail].filter(Boolean).join(', ');
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View style={styles.header}>
+      <LinearGradient colors={gradients.header} locations={[0, 0.5, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
+          <Ionicons name="arrow-back" size={22} color={colors.headerText} />
         </TouchableOpacity>
         <Text style={styles.title}>{t('agentRequestDetail.title')}</Text>
         <View style={{ width: 40 }} />
-      </View>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <PillRow icon="person">
@@ -179,7 +223,14 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
         </TouchableOpacity>
 
         {addr ? (
-          <MapPreview place={mapsQuery} lat={addr?.lat} lng={addr?.lng} />
+          <View style={{ gap: spacing.sm }}>
+            <Text style={styles.pillValue}>{mapsQuery}</Text>
+            <MapPreview place={mapsQuery} lat={addr?.lat} lng={addr?.lng} />
+            <ActionBtn label={t('agentRequestDetail.openMaps')} icon="navigate-outline" onPress={() => {
+              const destination = Number.isFinite(addr.lat) && Number.isFinite(addr.lng) ? `${addr.lat},${addr.lng}` : mapsQuery;
+              Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`);
+            }} />
+          </View>
         ) : (
           <PillRow icon="location-sharp">
             <Text style={styles.pillValue}>{addressTitle}</Text>
@@ -195,7 +246,7 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
 
         <View style={styles.itemsShadow}>
           <LinearGradient
-            colors={['#2B3F6E', '#1B2B52']}
+            colors={gradients.panel}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.itemsCard}
@@ -223,15 +274,16 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
               <Text style={styles.totalLabel}>{t('agentRequestDetail.total')}</Text>
               <Text style={styles.totalValue}>QAR {req.total}</Text>
               {canEditPrice && (
-                <TouchableOpacity onPress={openPriceModal} hitSlop={10} style={styles.editPriceBtn}>
-                  <Ionicons name="create-outline" size={16} color={colors.text} />
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('agentRequestDetail.editTotal')} disabled={savingStatus} onPress={openPriceModal} hitSlop={10} style={styles.editPriceBtn}>
+                  <Ionicons name="create-outline" size={16} color={colors.iconAccent} />
                 </TouchableOpacity>
               )}
             </View>
           </LinearGradient>
         </View>
 
-        <View style={styles.actions}>
+        <View style={styles.actions} pointerEvents={savingStatus || savingPrice ? 'none' : 'auto'}>
+          {savingStatus ? <ActivityIndicator color={colors.primary} /> : null}
           {req.status === 'pending' && (
             <>
               <ActionBtn label={t('agentRequestDetail.rejectRequest')} onPress={() => setStatus('cancelled', t('agentRequestDetail.reject'))} />
@@ -270,7 +322,7 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
           />
           <View style={styles.modalShadow}>
             <LinearGradient
-              colors={['#2B3F6E', '#1B2B52']}
+              colors={gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.modal}
@@ -313,16 +365,18 @@ export default function AgentRequestDetailScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  back: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255, 255, 255, 0.06)', alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, textAlign: 'center', color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1 },
+  loadError: { padding: spacing.lg, gap: spacing.md },
+  loadErrorText: { color: colors.text, textAlign: 'center' },
+  header: { backgroundColor: colors.headerBackground,  flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  back: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.headerButton, alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, textAlign: 'center', color: colors.headerText, fontSize: 18, fontWeight: '300', letterSpacing: 1 },
   scroll: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   pillShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
-  pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radii.md, gap: spacing.md, overflow: 'hidden' },
-  pillBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  iconBubble: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
+  pill: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radii.md, gap: spacing.md, overflow: 'hidden' },
+  pillBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.panelBorder },
+  iconBubble: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.iconBackground, alignItems: 'center', justifyContent: 'center' },
   pillValue: { color: colors.text, fontSize: 14, fontWeight: '300', letterSpacing: 0.3, lineHeight: 20 },
   pillSub: { color: colors.muted, fontSize: 12, fontWeight: '300', marginTop: 2, lineHeight: 17 },
   mapsBtn: {
@@ -335,14 +389,14 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   mapsBtnText: { color: colors.text, fontSize: 12, fontWeight: '400', letterSpacing: 0.3 },
   itemsShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
   itemsCard: { padding: spacing.md, borderRadius: radii.md, overflow: 'hidden' },
-  itemsBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  serviceGroup: { paddingBottom: spacing.sm, marginBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.06)' },
+  itemsBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },
+  serviceGroup: { paddingBottom: spacing.sm, marginBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   serviceHeader: { marginTop: 4, marginBottom: 6 },
   serviceLabel: { color: colors.text, fontSize: 12, fontWeight: '400', letterSpacing: 1, textTransform: 'uppercase' },
   itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingLeft: spacing.lg },
@@ -350,28 +404,28 @@ const styles = StyleSheet.create({
   itemName: { color: colors.text, flex: 1, fontSize: 13, fontWeight: '300' },
   itemQty: { color: colors.muted, fontSize: 12, width: 30, textAlign: 'center', fontWeight: '300' },
   itemPrice: { color: colors.text, width: 70, textAlign: 'right', fontSize: 13, fontWeight: '300' },
-  totalRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.10)', gap: spacing.md },
+  totalRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.md },
   totalLabel: { color: colors.muted, fontSize: 12, fontWeight: '300' },
   totalValue: { color: colors.text, fontSize: 14, fontWeight: '400' },
   actions: { marginTop: spacing.md, gap: spacing.sm + 4 },
   actionShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
   action: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: radii.md, gap: 8, overflow: 'hidden' },
-  actionBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.12)' },
+  actionBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },
   actionText: { color: colors.text, fontSize: 14, fontWeight: '300', letterSpacing: 0.5 },
   completed: { color: colors.muted, textAlign: 'center', fontWeight: '300', paddingVertical: spacing.md },
-  editPriceBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.06)' },
+  editPriceBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   modalRoot: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.lg },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
   modalShadow: { borderRadius: radii.lg, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 14 },
-  modal: { padding: spacing.lg, borderRadius: radii.lg, overflow: 'hidden' },
-  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
+  modal: { borderTopColor: colors.panelAccent, borderTopWidth: 1, padding: spacing.lg, borderRadius: radii.lg, overflow: 'hidden' },
+  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.panelBorder },
   modalTitle: { color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1, marginBottom: spacing.md },
-  priceInputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', paddingHorizontal: spacing.md, marginBottom: spacing.md },
+  priceInputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, marginBottom: spacing.md },
   priceCurrency: { color: colors.muted, fontSize: 15, fontWeight: '600' },
-  priceInput: { flex: 1, color: colors.text, fontSize: 20, fontWeight: '600', paddingVertical: 12 },
+  priceInput: { backgroundColor: colors.card, flex: 1, color: colors.text, fontSize: 20, fontWeight: '600', paddingVertical: 12 },
   modalBtn: { paddingVertical: 12, borderRadius: radii.md, alignItems: 'center', borderWidth: 1 },
-  savePriceBtn: { borderColor: 'rgba(52, 211, 153, 0.45)', backgroundColor: 'rgba(15, 118, 110, 0.35)', marginBottom: spacing.sm },
-  savePriceText: { color: '#34D399', fontWeight: '700', letterSpacing: 0.5 },
-  cancelBtn: { borderColor: 'rgba(255, 255, 255, 0.20)', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+  savePriceBtn: { borderColor: colors.activeBackground, backgroundColor: colors.activeBackground, marginBottom: spacing.sm },
+  savePriceText: { color: colors.activeText, fontWeight: '700', letterSpacing: 0.5 },
+  cancelBtn: { borderColor: colors.border, backgroundColor: colors.surface },
   cancelText: { color: colors.muted, fontWeight: '400', letterSpacing: 0.5 },
 });

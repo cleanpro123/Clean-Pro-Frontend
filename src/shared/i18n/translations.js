@@ -4,10 +4,36 @@
 
 export const LANGUAGES = [
   { code: 'en', label: 'English (US)', native: 'English (US)', rtl: false },
-  { code: 'ar', label: 'Arabic', native: 'العربية', rtl: true },
+  // Arabic text keeps its natural reading order; the app layout stays LTR.
+  { code: 'ar', label: 'Arabic', native: 'العربية', rtl: false },
 ];
 
 const en = {
+  'common.edit': 'Edit',
+  'adminServices.editService': 'Edit service',
+  'adminItems.editItem': 'Edit item',
+  'staffOtp.sent': 'Enter the code sent to {email} to create this account.',
+  'staffOtp.code': 'Verification code',
+  'staffOtp.sendCode': 'Send verification code',
+  'staffOtp.verifyCreate': 'Verify and create account',
+  'staffOtp.resend': 'Resend code',
+  'staffOtp.resendIn': 'Resend in {seconds}s',
+  'staffOtp.editDetails': 'Edit details',
+  'agentRequestDetail.openMaps': 'Directions to pickup',
+  'partnerNotifications.title': 'Notifications',
+  'partnerNotifications.subtitle': 'Recent order updates',
+  'partnerNotifications.back': 'Go back',
+  'partnerNotifications.error': 'Could not load notifications. Pull down to retry.',
+  'partnerNotifications.empty': 'No order updates yet.',
+  'partnerNotifications.order': 'Order',
+  'partnerNotifications.status.pending': 'New order',
+  'partnerNotifications.status.accepted': 'Order accepted',
+  'partnerNotifications.status.assigned': 'Agent assigned',
+  'partnerNotifications.status.in_progress': 'Cleaning in progress',
+  'partnerNotifications.status.out_for_delivery': 'Out for delivery',
+  'partnerNotifications.status.delivered': 'Delivered',
+  'partnerNotifications.status.cancelled': 'Cancelled',
+  'agentRequestDetail.loadFailed': 'Could not load request details. Please try again.',
   'signup.avatarOptional': 'Profile photo',
   'orderDetail.deliveryAgent': 'Delivery agent',
   'orderDetail.agent': 'Agent',
@@ -125,10 +151,6 @@ const en = {
   // Language screen
   'language.title': 'Language',
   'language.subtitle': 'Choose your preferred language',
-  'language.restartTitle': 'Restart required',
-  'language.restartMsg':
-    'The app will restart to apply the new language and layout direction.',
-  'language.restartConfirm': 'Restart now',
 
   // Security screen
   'security.title': 'Security',
@@ -150,6 +172,31 @@ const en = {
 };
 
 const ar = {
+  'common.edit': 'تعديل',
+  'adminServices.editService': 'تعديل الخدمة',
+  'adminItems.editItem': 'تعديل الصنف',
+  'staffOtp.sent': 'أدخل الرمز المرسل إلى {email} لإنشاء هذا الحساب.',
+  'staffOtp.code': 'رمز التحقق',
+  'staffOtp.sendCode': 'إرسال رمز التحقق',
+  'staffOtp.verifyCreate': 'التحقق وإنشاء الحساب',
+  'staffOtp.resend': 'إعادة إرسال الرمز',
+  'staffOtp.resendIn': 'إعادة الإرسال خلال {seconds} ثانية',
+  'staffOtp.editDetails': 'تعديل التفاصيل',
+  'agentRequestDetail.openMaps': 'الاتجاهات إلى موقع الاستلام',
+  'partnerNotifications.title': 'الإشعارات',
+  'partnerNotifications.subtitle': 'آخر تحديثات الطلبات',
+  'partnerNotifications.back': 'رجوع',
+  'partnerNotifications.error': 'تعذر تحميل الإشعارات. اسحب للأسفل لإعادة المحاولة.',
+  'partnerNotifications.empty': 'لا توجد تحديثات للطلبات بعد.',
+  'partnerNotifications.order': 'طلب',
+  'partnerNotifications.status.pending': 'طلب جديد',
+  'partnerNotifications.status.accepted': 'تم قبول الطلب',
+  'partnerNotifications.status.assigned': 'تم تعيين المندوب',
+  'partnerNotifications.status.in_progress': 'التنظيف قيد التنفيذ',
+  'partnerNotifications.status.out_for_delivery': 'خرج للتوصيل',
+  'partnerNotifications.status.delivered': 'تم التسليم',
+  'partnerNotifications.status.cancelled': 'ملغي',
+  'agentRequestDetail.loadFailed': 'تعذّر تحميل تفاصيل الطلب. يرجى المحاولة مرة أخرى.',
   'signup.avatarOptional': 'صورة الملف الشخصي',
   'orderDetail.deliveryAgent': 'مندوب التوصيل',
   'orderDetail.agent': 'المندوب',
@@ -257,9 +304,6 @@ const ar = {
   // Language screen
   'language.title': 'اللغة',
   'language.subtitle': 'اختر لغتك المفضلة',
-  'language.restartTitle': 'يلزم إعادة التشغيل',
-  'language.restartMsg': 'سيُعاد تشغيل التطبيق لتطبيق اللغة الجديدة واتجاه العرض.',
-  'language.restartConfirm': 'أعد التشغيل الآن',
 
   // Security screen
   'security.title': 'الأمان',

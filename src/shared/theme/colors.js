@@ -1,4 +1,16 @@
 export const colors = {
+  panelAccent: '#CEE2F6',
+  headerButton: '#E4F0FC',
+  headerBackground: '#EDF6FF',
+  headerText: '#1B6FC4',
+  featuredText: '#185B98',
+  featuredMuted: '#4E769A',
+  activeBackground: '#D9EBFC',
+  activeText: '#185B98',
+  headingAccent: '#1B6FC4',
+  iconAccent: '#1B6FC4',
+  iconBackground: '#DBEDFF',
+  panelBorder: '#B5D6F5',
   primary: '#2D8FE0',
   primaryDark: '#1B6FC4',
   primaryLight: '#7FB8F0',
@@ -9,6 +21,7 @@ export const colors = {
   background: '#F3F8FF',
   surface: '#E8F1FB',
   card: '#FFFFFF',
+  cardElevated: '#E8F1FB',
 
   text: '#0F2A4F',
   textSecondary: '#3A5B85',
@@ -22,6 +35,9 @@ export const colors = {
 };
 
 export const gradients = {
+  header: ['#D2E7FC', '#F2F8FF', '#FFFFFF'],
+  featured: ['#FFFFFF', '#F2F8FF', '#CBE2FA'],
+  panel: ['#FFFFFF', '#FAFCFF', '#E2EFFC'],
   brand: ['#2D8FE0', '#1B6FC4'],
   sky: ['#67C7EB', '#2D8FE0'],
   ocean: ['#1B6FC4', '#0A3D7A'],

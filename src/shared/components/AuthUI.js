@@ -398,7 +398,7 @@ const makeStyles = (colors, isDark) => StyleSheet.create({
     borderColor: colors.primary,
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, paddingVertical: 14, color: colors.text, fontSize: 15 },
+  input: { backgroundColor: colors.card, flex: 1, paddingVertical: 14, color: colors.text, fontSize: 15 },
 
   banner: {
     flexDirection: 'row',

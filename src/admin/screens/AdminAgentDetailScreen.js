@@ -18,7 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
 import MapPreview from '../../shared/components/MapPreview';
 import DayPickerModal from '../../shared/components/DayPickerModal';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
@@ -31,18 +32,20 @@ import {
 } from '../../shared/utils/period';
 
 function PillRow({ icon, label, value, right, onPress, mono }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const Wrap = onPress ? TouchableOpacity : View;
   return (
     <Wrap activeOpacity={0.85} onPress={onPress} style={styles.pillShadow}>
       <LinearGradient
-        colors={['#2B3F6E', '#1B2B52']}
+        colors={gradients.panel}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.pill}
       >
         <View style={styles.pillBorder} pointerEvents="none" />
         <View style={styles.iconBubble}>
-          <Ionicons name={icon} size={16} color={colors.text} />
+          <Ionicons name={icon} size={16} color={colors.iconAccent} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.pillLabel}>{label}</Text>
@@ -55,6 +58,8 @@ function PillRow({ icon, label, value, right, onPress, mono }) {
 }
 
 export default function AdminAgentDetailScreen({ route, navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const id = route.params?.id;
   const [agent, setAgent] = useState(null);
@@ -192,14 +197,14 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.heroShadow}>
           <LinearGradient
-            colors={['#33497F', '#1B2B52']}
+            colors={gradients.panel}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.hero}
           >
             <View style={styles.heroBorder} pointerEvents="none" />
             <View style={styles.avatar}>
-              <Ionicons name="bicycle" size={32} color={colors.text} />
+              <Ionicons name="bicycle" size={32} color={colors.iconAccent} />
             </View>
             <Text style={styles.name}>{agent.name}</Text>
             <View
@@ -209,7 +214,7 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
                   backgroundColor: isBlocked
                     ? 'rgba(248, 113, 113, 0.20)'
                     : isActive
-                    ? 'rgba(52, 211, 153, 0.18)'
+                    ? colors.primarySoft
                     : 'rgba(148, 163, 184, 0.20)',
                 },
               ]}
@@ -217,13 +222,13 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
               <Ionicons
                 name={isBlocked ? 'ban' : isActive ? 'radio' : 'moon'}
                 size={12}
-                color={isBlocked ? colors.danger : isActive ? '#34D399' : colors.muted}
+                color={isBlocked ? colors.danger : isActive ? colors.primary : colors.muted}
               />
               <Text
                 style={[
                   styles.statusText,
                   {
-                    color: isBlocked ? colors.danger : isActive ? '#34D399' : colors.muted,
+                    color: isBlocked ? colors.danger : isActive ? colors.primary : colors.muted,
                   },
                 ]}
               >
@@ -241,7 +246,7 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
         <View style={styles.sectionRow}>
           <Text style={styles.section}>{t('adminAgentDetail.location')}</Text>
           <TouchableOpacity onPress={openEdit} style={styles.editBtn} activeOpacity={0.85}>
-            <Ionicons name="create-outline" size={14} color="#34D399" />
+            <Ionicons name="create-outline" size={14} color={colors.activeText} />
             <Text style={styles.editBtnText}>{t('adminAgentDetail.update')}</Text>
           </TouchableOpacity>
         </View>
@@ -288,7 +293,7 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
                   <Ionicons
                     name="calendar-outline"
                     size={13}
-                    color={active ? '#052e2b' : colors.muted}
+                    color={active ? colors.text : colors.muted}
                     style={{ marginRight: 4 }}
                   />
                 )}
@@ -323,7 +328,7 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
                   style={[
                     styles.barFill,
                     { height: `${(b.value / maxOrders) * 100}%` },
-                    i === orderBuckets.length - 1 && { backgroundColor: '#34D399', opacity: 1 },
+                    i === orderBuckets.length - 1 && { backgroundColor: colors.primary, opacity: 1 },
                   ]}
                 />
                 <Text style={styles.barLabel}>{dayLabels[b.dow]}</Text>
@@ -335,7 +340,7 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
         <View style={styles.bottomActions}>
           <TouchableOpacity activeOpacity={0.85} onPress={toggleBlock} style={styles.actionShadow}>
             <LinearGradient
-              colors={isBlocked ? ['#0F766E', '#1B2B52'] : ['#5C3F1F', '#2D1F0F']}
+              colors={isBlocked ? gradients.panel : gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.actionBtn}
@@ -344,12 +349,12 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
               <Ionicons
                 name={isBlocked ? 'lock-open' : 'ban'}
                 size={18}
-                color={isBlocked ? '#34D399' : '#FBBF24'}
+                color={isBlocked ? colors.primary : colors.warning}
               />
               <Text
                 style={[
                   styles.actionText,
-                  { color: isBlocked ? '#34D399' : '#FBBF24' },
+                  { color: isBlocked ? colors.primary : colors.warning },
                 ]}
               >
                 {isBlocked
@@ -361,14 +366,14 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
 
           <TouchableOpacity activeOpacity={0.85} onPress={remove} style={styles.actionShadow}>
             <LinearGradient
-              colors={['#5C1F1F', '#2D0F0F']}
+              colors={gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.actionBtn}
             >
               <View style={styles.pillBorder} pointerEvents="none" />
-              <Ionicons name="trash-outline" size={18} color="#F87171" />
-              <Text style={[styles.actionText, { color: '#F87171' }]}>{t('adminAgentDetail.deleteAgent')}</Text>
+              <Ionicons name="trash-outline" size={18} color={colors.danger} />
+              <Text style={[styles.actionText, { color: colors.danger }]}>{t('adminAgentDetail.deleteAgent')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -382,7 +387,7 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
           <View style={styles.modalBackdrop} />
           <View style={styles.modalShadow}>
             <LinearGradient
-              colors={['#2B3F6E', '#1B2B52']}
+              colors={gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.modal}
@@ -410,7 +415,7 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
                         <Ionicons
                           name={sel ? 'radio-button-on' : 'radio-button-off'}
                           size={16}
-                          color={sel ? '#34D399' : colors.muted}
+                          color={sel ? colors.primary : colors.muted}
                         />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.mapMenuName}>{m.name}</Text>
@@ -458,25 +463,25 @@ export default function AdminAgentDetailScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   heroShadow: { borderRadius: radii.lg, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 },
   hero: { padding: spacing.lg, borderRadius: radii.lg, alignItems: 'center', overflow: 'hidden' },
-  heroBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: 'rgba(255, 255, 255, 0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  heroBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border },
+  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.iconBackground, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   name: { color: colors.text, fontSize: 20, fontWeight: '300', letterSpacing: 0.5 },
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, marginTop: 6 },
   statusText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   subId: { color: colors.muted, fontSize: 11, fontWeight: '300', letterSpacing: 0.5, marginTop: 6 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md, paddingHorizontal: 4 },
-  section: { color: colors.muted, fontSize: 11, fontWeight: '400', textTransform: 'uppercase', letterSpacing: 1.5 },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: 'rgba(15, 118, 110, 0.30)', borderWidth: 1, borderColor: 'rgba(52, 211, 153, 0.45)' },
-  editBtnText: { color: '#34D399', fontSize: 11, fontWeight: '500', letterSpacing: 0.5 },
+  section: { paddingLeft: 10, borderLeftColor: colors.panelAccent, borderLeftWidth: 3, color: colors.headingAccent, fontSize: 11, fontWeight: '400', textTransform: 'uppercase', letterSpacing: 1.5 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: colors.activeBackground, borderWidth: 1, borderColor: colors.activeBackground },
+  editBtnText: { color: colors.activeText, fontSize: 11, fontWeight: '500', letterSpacing: 0.5 },
   pillShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
-  pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radii.md, gap: spacing.md, overflow: 'hidden' },
-  pillBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  iconBubble: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
+  pill: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radii.md, gap: spacing.md, overflow: 'hidden' },
+  pillBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.panelBorder },
+  iconBubble: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.iconBackground, alignItems: 'center', justifyContent: 'center' },
   pillLabel: { color: colors.muted, fontSize: 11, fontWeight: '300', letterSpacing: 0.5, textTransform: 'uppercase' },
   pillValue: { color: colors.text, fontSize: 14, fontWeight: '300', letterSpacing: 0.3, marginTop: 2 },
   mono: { fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }) },
@@ -487,37 +492,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 8,
     borderRadius: radii.pill,
-    backgroundColor: 'rgba(43, 63, 110, 0.55)',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: colors.border,
   },
-  chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primaryLight },
+  chipActive: { backgroundColor: colors.activeBackground, borderColor: colors.activeBackground },
   chipText: { color: colors.muted, fontSize: 13, fontWeight: '600' },
-  chipTextActive: { color: '#052e2b', fontWeight: '800' },
+  chipTextActive: { color: colors.activeText, fontWeight: '800' },
   metricRow: { flexDirection: 'row', gap: spacing.sm },
   metricCard: {
     flex: 1,
-    backgroundColor: 'rgba(43, 63, 110, 0.55)',
+    backgroundColor: colors.card,
     borderRadius: radii.md,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
     alignItems: 'center',
   },
   metricValue: { color: colors.text, fontSize: 20, fontWeight: '700' },
   metricLabel: { color: colors.muted, fontSize: 10, fontWeight: '400', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
   chartCard: {
-    backgroundColor: 'rgba(43, 63, 110, 0.55)',
+    backgroundColor: colors.card,
     borderRadius: radii.md,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   chartTitle: { color: colors.text, fontSize: 13, fontWeight: '500', letterSpacing: 0.5, marginBottom: spacing.md },
   chart: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 130, gap: 8 },
   bar: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'flex-end' },
   barValue: { color: colors.muted, fontSize: 10, fontWeight: '600', marginBottom: 2 },
-  barFill: { width: '65%', backgroundColor: '#22D3EE', borderRadius: 6, minHeight: 4, opacity: 0.75 },
+  barFill: { width: '65%', backgroundColor: colors.accent, borderRadius: 6, minHeight: 4, opacity: 0.75 },
   barLabel: { marginTop: 6, fontSize: 11, color: colors.muted, fontWeight: '600' },
   bottomActions: { marginTop: spacing.lg, gap: spacing.sm + 4 },
   actionShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
@@ -526,27 +531,27 @@ const styles = StyleSheet.create({
   modalRoot: { flex: 1, justifyContent: 'center', padding: spacing.lg },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.65)' },
   modalShadow: { borderRadius: radii.lg, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12 },
-  modal: { borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
-  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
+  modal: { borderTopColor: colors.panelAccent, borderTopWidth: 1, borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
+  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.panelBorder },
   modalTitle: { color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1 },
-  inputWrap: { backgroundColor: 'rgba(43, 63, 110, 0.55)', borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  input: { paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300', minHeight: 70, paddingTop: 12 },
+  inputWrap: { backgroundColor: colors.card, borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border },
+  input: { backgroundColor: colors.card, paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300', minHeight: 70, paddingTop: 12 },
   modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   modalBtn: { flex: 1, paddingVertical: 12, borderRadius: radii.md, alignItems: 'center', borderWidth: 1 },
   mapMenu: {
     maxHeight: 220,
     borderRadius: radii.md,
-    backgroundColor: 'rgba(43, 63, 110, 0.65)',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   mapMenuEmpty: { color: colors.muted, fontSize: 12, fontWeight: '300', padding: spacing.md, textAlign: 'center' },
-  mapMenuRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' },
-  mapMenuRowActive: { backgroundColor: 'rgba(15, 118, 110, 0.20)' },
+  mapMenuRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  mapMenuRowActive: { backgroundColor: colors.primarySoft },
   mapMenuName: { color: colors.text, fontSize: 13, fontWeight: '400' },
   mapMenuPlace: { color: colors.muted, fontSize: 11, fontWeight: '300', marginTop: 2 },
-  cancelBtn: { borderColor: 'rgba(255, 255, 255, 0.20)', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+  cancelBtn: { borderColor: colors.border, backgroundColor: colors.surface },
   cancelText: { color: colors.muted, fontWeight: '400', letterSpacing: 0.5 },
-  saveBtn: { borderColor: 'rgba(52, 211, 153, 0.45)', backgroundColor: 'rgba(15, 118, 110, 0.35)' },
-  saveText: { color: '#34D399', fontWeight: '400', letterSpacing: 0.5 },
+  saveBtn: { borderColor: colors.activeBackground, backgroundColor: colors.activeBackground },
+  saveText: { color: colors.activeText, fontWeight: '400', letterSpacing: 0.5 },
 });

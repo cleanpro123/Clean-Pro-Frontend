@@ -13,7 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
@@ -24,6 +25,8 @@ const filters = [
 ];
 
 export default function AdminUsersScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const [users, setUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
@@ -100,7 +103,7 @@ export default function AdminUsersScreen({ navigation }) {
               style={styles.statShadow}
             >
               <LinearGradient
-                colors={active ? ['#0F766E', '#1B2B52'] : ['#2B3F6E', '#1B2B52']}
+                colors={active ? gradients.panel : gradients.panel}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.statCard}
@@ -139,7 +142,7 @@ export default function AdminUsersScreen({ navigation }) {
               style={styles.rowShadow}
             >
               <LinearGradient
-                colors={['#2B3F6E', '#1B2B52']}
+                colors={gradients.panel}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.row}
@@ -166,7 +169,7 @@ export default function AdminUsersScreen({ navigation }) {
                     {
                       backgroundColor:
                         u.status === 'active'
-                          ? 'rgba(52, 211, 153, 0.18)'
+                          ? colors.primarySoft
                           : 'rgba(248, 113, 113, 0.20)',
                     },
                   ]}
@@ -174,7 +177,7 @@ export default function AdminUsersScreen({ navigation }) {
                   <Text
                     style={[
                       styles.pillText,
-                      { color: u.status === 'active' ? '#34D399' : colors.danger },
+                      { color: u.status === 'active' ? colors.primary : colors.danger },
                     ]}
                   >
                     {u.status === 'active' ? t('adminUsers.statusActive') : t('adminUsers.statusBlocked')}
@@ -189,20 +192,20 @@ export default function AdminUsersScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(43, 63, 110, 0.55)',
+    backgroundColor: colors.card,
     marginHorizontal: spacing.lg,
     paddingHorizontal: spacing.md,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
-  search: { flex: 1, paddingVertical: 12, color: colors.text, fontWeight: '300' },
+  search: { backgroundColor: colors.card, flex: 1, paddingVertical: 12, color: colors.text, fontWeight: '300' },
   statBar: {
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
@@ -223,7 +226,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: colors.border,
   },
   statValue: { fontSize: 20, fontWeight: '400', color: colors.text, letterSpacing: 0.5 },
   statLabel: { fontSize: 11, color: colors.muted, marginTop: 2, fontWeight: '300' },
@@ -236,7 +239,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  row: {
+  row: { borderTopColor: colors.panelAccent, borderTopWidth: 1,
     flexDirection: 'row',
     padding: spacing.md,
     borderRadius: radii.md,
@@ -248,13 +251,13 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: colors.panelBorder,
   },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+    backgroundColor: colors.iconBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -262,9 +265,9 @@ const styles = StyleSheet.create({
   name: { fontWeight: '400', color: colors.text, letterSpacing: 0.3 },
   email: { fontSize: 12, color: colors.textSecondary, marginTop: 2, fontWeight: '300' },
   meta: { fontSize: 11, color: colors.muted, marginTop: 2, fontWeight: '300' },
-  pill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: radii.pill },
+  pill: { borderTopColor: colors.panelAccent, borderTopWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radii.pill },
   pillText: { fontSize: 10, fontWeight: '700' },
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
   emptyText: { color: colors.muted, fontWeight: '300' },
-  errorText: { color: '#F87171', textAlign: 'center', marginTop: 24 },
+  errorText: { color: colors.danger, textAlign: 'center', marginTop: 24 },
 });

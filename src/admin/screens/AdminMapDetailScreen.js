@@ -13,24 +13,27 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
 import MapPreview from '../../shared/components/MapPreview';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 function PillRow({ icon, label, value, onPress }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const Wrap = onPress ? TouchableOpacity : View;
   return (
     <Wrap activeOpacity={0.85} onPress={onPress} style={styles.pillShadow}>
       <LinearGradient
-        colors={['#2B3F6E', '#1B2B52']}
+        colors={gradients.panel}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.pill}
       >
         <View style={styles.pillBorder} pointerEvents="none" />
         <View style={styles.iconBubble}>
-          <Ionicons name={icon} size={16} color={colors.text} />
+          <Ionicons name={icon} size={16} color={colors.iconAccent} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.pillLabel}>{label}</Text>
@@ -43,6 +46,8 @@ function PillRow({ icon, label, value, onPress }) {
 }
 
 export default function AdminMapDetailScreen({ route, navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const id = route.params?.id;
   const [m, setM] = useState(null);
@@ -79,7 +84,7 @@ export default function AdminMapDetailScreen({ route, navigation }) {
 
         <View style={styles.titleRow}>
           <View style={styles.titleIcon}>
-            <Ionicons name="location-sharp" size={20} color={colors.text} />
+            <Ionicons name="location-sharp" size={20} color={colors.iconAccent} />
           </View>
           <Text style={styles.title}>{m.name}</Text>
         </View>
@@ -99,7 +104,7 @@ export default function AdminMapDetailScreen({ route, navigation }) {
             <Text style={styles.section}>{t('adminMapDetail.about')}</Text>
             <View style={styles.descShadow}>
               <LinearGradient
-                colors={['#2B3F6E', '#1B2B52']}
+                colors={gradients.panel}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.descCard}
@@ -131,13 +136,13 @@ export default function AdminMapDetailScreen({ route, navigation }) {
           style={styles.deleteShadow}
         >
           <LinearGradient
-            colors={['#5C1F1F', '#2D0F0F']}
+            colors={gradients.panel}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.deleteBtn}
           >
             <View style={styles.deleteBorder} pointerEvents="none" />
-            <Ionicons name="trash-outline" size={18} color="#F87171" />
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
             <Text style={styles.deleteText}>{t('adminMapDetail.deleteLocation')}</Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -146,25 +151,25 @@ export default function AdminMapDetailScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 4 },
-  titleIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
-  title: { color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 0.5 },
-  section: { color: colors.muted, fontSize: 11, fontWeight: '400', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: spacing.md, paddingHorizontal: 4 },
+  titleIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.iconBackground, alignItems: 'center', justifyContent: 'center' },
+  title: { color: colors.headingAccent, fontSize: 18, fontWeight: '300', letterSpacing: 0.5 },
+  section: { paddingLeft: 10, borderLeftColor: colors.panelAccent, borderLeftWidth: 3, color: colors.headingAccent, fontSize: 11, fontWeight: '400', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: spacing.md, paddingHorizontal: 4 },
   pillShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
-  pill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radii.md, gap: spacing.md, overflow: 'hidden' },
-  pillBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  iconBubble: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
+  pill: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radii.md, gap: spacing.md, overflow: 'hidden' },
+  pillBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.panelBorder },
+  iconBubble: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.iconBackground, alignItems: 'center', justifyContent: 'center' },
   pillLabel: { color: colors.muted, fontSize: 11, fontWeight: '300', letterSpacing: 0.5, textTransform: 'uppercase' },
   pillValue: { color: colors.text, fontSize: 14, fontWeight: '300', letterSpacing: 0.3, marginTop: 2 },
   descShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
   descCard: { padding: spacing.lg, borderRadius: radii.md, overflow: 'hidden' },
-  descBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
+  descBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border },
   descText: { color: colors.text, fontSize: 14, fontWeight: '300', lineHeight: 22, letterSpacing: 0.3 },
   deleteShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 4, marginTop: spacing.lg },
   deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: radii.md, gap: spacing.sm, overflow: 'hidden' },
   deleteBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(248, 113, 113, 0.30)' },
-  deleteText: { color: '#F87171', fontSize: 14, fontWeight: '400', letterSpacing: 0.5 },
+  deleteText: { color: colors.danger, fontSize: 14, fontWeight: '400', letterSpacing: 0.5 },
 });

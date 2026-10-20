@@ -42,3 +42,6 @@ yarn-error.*
 
 # Local Claude Code files
 .claude/
+
+# Generated browser test evidence
+/test-results/

@@ -16,12 +16,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import StaffOtpStep, { useStaffOtp } from '../components/StaffOtpStep';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 export default function AdminAdminsScreen({ navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const [admins, setAdmins] = useState([]);
   const [meId, setMeId] = useState(null);
@@ -55,6 +59,17 @@ export default function AdminAdminsScreen({ navigation }) {
     return unsub;
   }, [navigation, load]);
 
+  const otp = useStaffOtp({
+    endpoint: '/admins',
+    visible: adding,
+    onCreated: () => {
+      setForm({ name: '', email: '', password: '' });
+      setShowPw(false);
+      setAdding(false);
+      load();
+    },
+  });
+
   const save = async () => {
     setError('');
     if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
@@ -87,11 +102,8 @@ export default function AdminAdminsScreen({ navigation }) {
     setBusy(true);
     try {
       const { name, email, password } = form;
-      await api.post('/admins', { name: name.trim(), email: email.trim(), password });
-      setForm({ name: '', email: '', password: '' });
-      setShowPw(false);
-      setAdding(false);
-      load();
+      await otp.begin({ name: name.trim(), email: email.trim(), password });
+
     } catch (e) {
       setError(e.message);
     } finally {
@@ -150,14 +162,14 @@ export default function AdminAdminsScreen({ navigation }) {
             return (
               <View key={a.id} style={styles.rowShadow}>
                 <LinearGradient
-                  colors={['#2B3F6E', '#1B2B52']}
+                  colors={gradients.panel}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.row}
                 >
                   <View style={styles.rowBorder} pointerEvents="none" />
                   <View style={styles.avatar}>
-                    <Ionicons name="shield-checkmark" size={20} color={colors.text} />
+                    <Ionicons name="shield-checkmark" size={20} color={colors.iconAccent} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={styles.nameRow}>
@@ -178,7 +190,7 @@ export default function AdminAdminsScreen({ navigation }) {
                       style={styles.deleteBtn}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <Ionicons name="trash-outline" size={18} color="#F87171" />
+                      <Ionicons name="trash-outline" size={18} color={colors.danger} />
                     </TouchableOpacity>
                   )}
                 </LinearGradient>
@@ -196,13 +208,15 @@ export default function AdminAdminsScreen({ navigation }) {
           <View style={styles.modalBackdrop} />
           <View style={styles.modalShadow}>
             <LinearGradient
-              colors={['#2B3F6E', '#1B2B52']}
+              colors={gradients.panel}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.modal}
             >
               <View style={styles.modalBorder} pointerEvents="none" />
               <Text style={styles.modalTitle}>{t('adminAdmins.newAdmin')}</Text>
+              {otp.pending ? <StaffOtpStep flow={otp} /> : (
+                <>
 
               <View style={styles.inputWrap}>
                 <TextInput
@@ -255,12 +269,14 @@ export default function AdminAdminsScreen({ navigation }) {
                   activeOpacity={0.85}
                 >
                   {busy ? (
-                    <ActivityIndicator color="#34D399" />
+                    <ActivityIndicator color={colors.activeText} />
                   ) : (
-                    <Text style={styles.saveText}>{t('adminAdmins.addAdmin')}</Text>
+                    <Text style={styles.saveText}>{t('staffOtp.sendCode')}</Text>
                   )}
                 </TouchableOpacity>
               </View>
+                </>
+              )}
             </LinearGradient>
           </View>
         </KeyboardAvoidingView>
@@ -269,17 +285,17 @@ export default function AdminAdminsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   list: { padding: spacing.lg, gap: spacing.sm + 4, paddingBottom: spacing.xl },
   rowShadow: { borderRadius: radii.md, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
-  row: { flexDirection: 'row', padding: spacing.md, borderRadius: radii.md, gap: spacing.md, alignItems: 'center', overflow: 'hidden' },
-  rowBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.10)', alignItems: 'center', justifyContent: 'center' },
+  row: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flexDirection: 'row', padding: spacing.md, borderRadius: radii.md, gap: spacing.md, alignItems: 'center', overflow: 'hidden' },
+  rowBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.md, borderWidth: 1, borderColor: colors.panelBorder },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.iconBackground, alignItems: 'center', justifyContent: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { color: colors.text, fontWeight: '400', letterSpacing: 0.3 },
-  youPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.pill, backgroundColor: 'rgba(52, 211, 153, 0.18)' },
-  youText: { color: '#34D399', fontSize: 10, fontWeight: '700' },
+  youPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.pill, backgroundColor: colors.primarySoft },
+  youText: { color: colors.primary, fontSize: 10, fontWeight: '700' },
   meta: { color: colors.textSecondary, fontSize: 12, fontWeight: '300', marginTop: 2 },
   deleteBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(248, 113, 113, 0.12)' },
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
@@ -287,17 +303,17 @@ const styles = StyleSheet.create({
   modalRoot: { flex: 1, justifyContent: 'center', padding: spacing.lg },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.65)' },
   modalShadow: { borderRadius: radii.lg, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12 },
-  modal: { borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
-  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.10)' },
+  modal: { borderTopColor: colors.panelAccent, borderTopWidth: 1, borderRadius: radii.lg, padding: spacing.lg, gap: spacing.sm + 4, overflow: 'hidden' },
+  modalBorder: { ...StyleSheet.absoluteFillObject, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.panelBorder },
   modalTitle: { color: colors.text, fontSize: 18, fontWeight: '300', letterSpacing: 1, marginBottom: spacing.sm },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(43, 63, 110, 0.55)', borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' },
-  input: { flex: 1, paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300' },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: radii.md, paddingHorizontal: spacing.md, borderWidth: 1, borderColor: colors.border },
+  input: { backgroundColor: colors.card, flex: 1, paddingVertical: 12, color: colors.text, fontSize: 14, fontWeight: '300' },
   eyeBtn: { paddingLeft: 8, paddingVertical: 8 },
-  error: { color: '#F87171', fontSize: 12, textAlign: 'center' },
+  error: { color: colors.danger, fontSize: 12, textAlign: 'center' },
   modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   modalBtn: { flex: 1, paddingVertical: 12, borderRadius: radii.md, alignItems: 'center', borderWidth: 1 },
-  cancelBtn: { borderColor: 'rgba(255, 255, 255, 0.20)', backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+  cancelBtn: { borderColor: colors.border, backgroundColor: colors.surface },
   cancelText: { color: colors.muted, fontWeight: '400', letterSpacing: 0.5 },
-  saveBtn: { borderColor: 'rgba(52, 211, 153, 0.45)', backgroundColor: 'rgba(15, 118, 110, 0.35)' },
-  saveText: { color: '#34D399', fontWeight: '400', letterSpacing: 0.5 },
+  saveBtn: { borderColor: colors.activeBackground, backgroundColor: colors.activeBackground },
+  saveText: { color: colors.activeText, fontWeight: '400', letterSpacing: 0.5 },
 });

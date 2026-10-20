@@ -268,7 +268,7 @@ export default function HomeScreen({ navigation }) {
                   <Text style={styles.activeTitle}>
                     {t('home.orderCodeItems', {
                       code: activeOrder.code,
-                      count: activeOrder.items?.length || 0,
+                      count: (activeOrder.items || []).reduce((count, item) => count + (item.qty || 0), 0),
                     })}
                   </Text>
                 </View>
@@ -335,10 +335,10 @@ export default function HomeScreen({ navigation }) {
                 <Icon name={s.icon} size={26} color={colors.primary} strokeWidth={1.9} />
               </View>
               <Text style={styles.serviceName} numberOfLines={1}>
-                {td('service', s.key)}
+                {td('service', s.name)}
               </Text>
               <Text style={styles.serviceDesc} numberOfLines={2}>
-                {td('serviceDesc', s.key)}
+                {td('serviceDesc', s.description)}
               </Text>
               <View style={styles.serviceGo}>
                 <Icon name="arrow-forward" size={14} color={colors.primary} strokeWidth={2.4} />
@@ -430,7 +430,7 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.flex}>
                 <Text style={styles.reorderHead}>{lastOrder.code}</Text>
                 <Text style={styles.reorderBody}>
-                  {t('home.itemsCount', { count: lastOrder.items?.length || 0 })}
+                  {t('home.itemsCount', { count: (lastOrder.items || []).reduce((count, item) => count + (item.qty || 0), 0) })}
                   {'  ·  '}
                   {new Date(lastOrder.updatedAt || lastOrder.createdAt).toLocaleDateString()}
                 </Text>

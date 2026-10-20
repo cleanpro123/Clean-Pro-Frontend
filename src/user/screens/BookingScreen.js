@@ -58,7 +58,7 @@ export default function BookingScreen({ route, navigation }) {
     return items.filter((it) => {
       if (cat !== 'All' && it.category !== cat) return false;
       const p = it.prices?.[activeKey];
-      return p != null && p > 0;
+      return p != null && p >= 0;
     });
   }, [items, cat, activeKey]);
 
@@ -95,9 +95,9 @@ export default function BookingScreen({ route, navigation }) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroLabel}>{t('booking.heroLabel')}</Text>
-            <Text style={styles.heroTitle}>{td('service', service.key)}</Text>
+            <Text style={styles.heroTitle}>{td('service', service.name)}</Text>
             <Text style={styles.heroDesc} numberOfLines={2}>
-              {td('serviceDesc', service.key)}
+              {td('serviceDesc', service.description)}
             </Text>
             <View style={styles.heroPills}>
               <View style={styles.heroPill}>
@@ -132,7 +132,7 @@ export default function BookingScreen({ route, navigation }) {
               >
                 <Ionicons name={s.icon} size={16} color={active ? colors.card : colors.primary} />
                 <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                  {td('service', s.key)}
+                  {td('service', s.name)}
                 </Text>
                 {qtyHere > 0 && (
                   <View style={styles.tabBadge}>

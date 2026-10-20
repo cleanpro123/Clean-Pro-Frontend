@@ -1,3 +1,4 @@
+import PartnerNotificationsScreen from '../../shared/screens/PartnerNotificationsScreen';
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -16,6 +17,7 @@ export default function AgentNavigator() {
       <Stack.Screen name="AgentTabs" component={AgentRequestsScreen} />
       <Stack.Screen name="AgentRequestDetail" component={AgentRequestDetailScreen} />
       <Stack.Screen name="AgentProfile" component={AgentProfileScreen} />
+      <Stack.Screen name="Notifications" component={PartnerNotificationsScreen} />
     </Stack.Navigator>
   );
 }

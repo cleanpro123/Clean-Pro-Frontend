@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Image } from 'react-native';
 import Svg, { Defs, LinearGradient as SvgGradient, Stop, Rect, Path, Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii } from '../theme/dark';
+import { radii } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 
 // Static Maps key is inlined at build time (same EXPO_PUBLIC_* convention used
 // for Sentry / app variant). When it's set AND the address carries real
@@ -28,6 +29,8 @@ function staticMapUrl(lat, lng) {
 }
 
 export default function MapPreview({ place, lat, lng, height = 160 }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const hasCoords = isNum(lat) && isNum(lng);
 
   // Prefer exact coordinates for the deep link so the pin lands precisely;
@@ -61,17 +64,17 @@ export default function MapPreview({ place, lat, lng, height = 160 }) {
             <Svg width="100%" height="100%" viewBox="0 0 320 160" preserveAspectRatio="none">
               <Defs>
                 <SvgGradient id="mapBg" x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0" stopColor="#1B3565" />
-                  <Stop offset="1" stopColor="#0E1F3F" />
+                  <Stop offset="0" stopColor={colors.surface} />
+                  <Stop offset="1" stopColor={colors.background} />
                 </SvgGradient>
                 <SvgGradient id="route" x1="0" y1="0" x2="1" y2="0">
-                  <Stop offset="0" stopColor="#10B981" />
+                  <Stop offset="0" stopColor={colors.primary} />
                   <Stop offset="1" stopColor="#22D3EE" />
                 </SvgGradient>
               </Defs>
               <Rect x="0" y="0" width="320" height="160" fill="url(#mapBg)" />
 
-              <G stroke="rgba(255,255,255,0.06)" strokeWidth="1">
+              <G stroke={colors.surface} strokeWidth="1">
                 <Path d="M0,40 L320,55" />
                 <Path d="M0,90 L320,80" />
                 <Path d="M0,130 L320,120" />
@@ -124,13 +127,13 @@ export default function MapPreview({ place, lat, lng, height = 160 }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   wrap: {
     borderRadius: radii.md,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-    backgroundColor: '#0E1F3F',
+    borderColor: colors.border,
+    backgroundColor: colors.background,
   },
   mapImage: {
     ...StyleSheet.absoluteFillObject,
@@ -146,10 +149,10 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#10B981',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#10B981',
+    shadowColor: colors.primary,
     shadowOpacity: 0.6,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -163,13 +166,13 @@ const styles = StyleSheet.create({
     bottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(11, 26, 54, 0.85)',
+    backgroundColor: colors.card,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: radii.md,
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: colors.border,
   },
   placeText: { color: colors.text, fontSize: 12, fontWeight: '300', flex: 1 },
 });

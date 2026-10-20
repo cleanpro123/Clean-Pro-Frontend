@@ -1,14 +1,16 @@
 import React from 'react';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 
 export default function RingChart({
   size = 140,
   stroke = 12,
   progress = 0.72,
-  trackColor = 'rgba(255, 255, 255, 0.10)',
-  gradientStart = '#10B981',
-  gradientEnd = '#22D3EE',
+  trackColor,
+  gradientStart,
+  gradientEnd,
 }) {
+  const { colors } = useTheme();
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - progress);
@@ -17,15 +19,15 @@ export default function RingChart({
     <Svg width={size} height={size}>
       <Defs>
         <SvgGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor={gradientStart} />
-          <Stop offset="1" stopColor={gradientEnd} />
+          <Stop offset="0" stopColor={gradientStart ?? colors.primary} />
+          <Stop offset="1" stopColor={gradientEnd ?? colors.accent} />
         </SvgGradient>
       </Defs>
       <Circle
         cx={size / 2}
         cy={size / 2}
         r={radius}
-        stroke={trackColor}
+        stroke={trackColor ?? colors.border}
         strokeWidth={stroke}
         fill="none"
       />

@@ -70,7 +70,8 @@ export async function apiRequest(path, options = {}, { auth = true, retry = true
       _onAuthChange?.({ accessToken: null, refreshToken: null, role: null });
     }
   }
-  if (!body?.ok) {
+  if (status === 204) return undefined;
+  if (status < 200 || status >= 300 || !body?.ok) {
     const err = new Error(body?.error?.message || `HTTP ${status}`);
     err.status = status;
     err.code = body?.error?.code;

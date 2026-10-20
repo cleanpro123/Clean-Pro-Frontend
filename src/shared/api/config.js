@@ -7,6 +7,11 @@ const PROD_BASE_URL = 'https://clean-pro-backend.onrender.com';
 // port 4000). We derive the host from the Metro bundler URL so this works on
 // an emulator AND a physical device (Expo Go) without hardcoding a LAN IP.
 function devBaseUrl() {
+  // Allow isolated QA servers; web clients use the machine serving the app.
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL.replace(/\/$/, '');
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return `http://${window.location.hostname}:4000`;
+  }
   const scriptUrl = NativeModules?.SourceCode?.scriptURL || '';
   const match = scriptUrl.match(/^https?:\/\/([^/:]+)/);
   const host =

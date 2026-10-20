@@ -14,7 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 import DayPickerModal from '../../shared/components/DayPickerModal';
-import { colors, gradients, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import {
   PERIODS,
@@ -26,15 +27,15 @@ import {
   buildLast7Days,
 } from '../../shared/utils/period';
 
-const statusMeta = {
-  pending: { label: 'Pending', color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.15)' },
-  accepted: { label: 'Accepted', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.18)' },
-  assigned: { label: 'Assigned', color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.18)' },
-  in_progress: { label: 'In progress', color: '#22D3EE', bg: 'rgba(34, 211, 238, 0.18)' },
-  out_for_delivery: { label: 'Out', color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.18)' },
-  delivered: { label: 'Delivered', color: '#34D399', bg: 'rgba(52, 211, 153, 0.18)' },
-  cancelled: { label: 'Cancelled', color: '#F87171', bg: 'rgba(248, 113, 113, 0.18)' },
-};
+const makeStatusMeta = (isDark) => ({
+  pending: { label: 'Pending', color: (isDark ? '#FBBF24' : '#92400E'), bg: 'rgba(251, 191, 36, 0.15)' },
+  accepted: { label: 'Accepted', color: (isDark ? '#22D3EE' : '#0E7490'), bg: 'rgba(34, 211, 238, 0.18)' },
+  assigned: { label: 'Assigned', color: (isDark ? '#60A5FA' : '#1D4ED8'), bg: 'rgba(96, 165, 250, 0.18)' },
+  in_progress: { label: 'In progress', color: (isDark ? '#22D3EE' : '#0E7490'), bg: 'rgba(34, 211, 238, 0.18)' },
+  out_for_delivery: { label: 'Out', color: (isDark ? '#A78BFA' : '#6D28D9'), bg: 'rgba(167, 139, 250, 0.18)' },
+  delivered: { label: 'Delivered', color: (isDark ? '#34D399' : '#047857'), bg: 'rgba(52, 211, 153, 0.18)' },
+  cancelled: { label: 'Cancelled', color: (isDark ? '#F87171' : '#B91C1C'), bg: 'rgba(248, 113, 113, 0.18)' },
+});
 
 // Y-axis in fixed steps of 40 (0, 40, 80, 120, …). axisMax rounds the data up
 // to the next multiple of 40 so the bars still scale to whatever's there.
@@ -47,9 +48,11 @@ function niceAxis(max) {
 }
 
 function StatCard({ label, value, icon, tint }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   return (
     <View style={[styles.stat, { backgroundColor: tint }]}>
-      <Ionicons name={icon} size={22} color="#22D3EE" />
+      <Ionicons name={icon} size={22} color={colors.accent} />
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
@@ -57,6 +60,10 @@ function StatCard({ label, value, icon, tint }) {
 }
 
 export default function AdminDashboardScreen({ navigation }) {
+  const { isDark } = useTheme();
+  const statusMeta = React.useMemo(() => makeStatusMeta(isDark), [isDark]);
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const [orders, setOrders] = useState([]);
   const [agentsCount, setAgentsCount] = useState({ total: 0, active: 0 });
@@ -75,7 +82,8 @@ export default function AdminDashboardScreen({ navigation }) {
     setLoading(true);
     try {
       const [o, a, u] = await Promise.all([
-        api.getAll('/requests').catch(() => []),
+        Promise.all([api.getAll('/requests'), api.getAll('/special-requests')])
+          .then(([normal, direct]) => [...normal, ...direct].sort((a, b) => new Date(b.placedAt || b.createdAt) - new Date(a.placedAt || a.createdAt))),
         api.getAll('/agents').catch(() => []),
         api.getAll('/users').catch(() => []),
       ]);
@@ -118,7 +126,7 @@ export default function AdminDashboardScreen({ navigation }) {
     return () => {
       cancelled = true;
     };
-  }, [range]);
+  }, [range, statsTick]);
 
   const revenue = stats.revenue;
   const revenuePrev = stats.prevRevenue;
@@ -183,7 +191,7 @@ export default function AdminDashboardScreen({ navigation }) {
                   <Ionicons
                     name="calendar-outline"
                     size={13}
-                    color={active ? '#052e2b' : colors.muted}
+                    color={active ? colors.text : colors.muted}
                     style={{ marginRight: 4 }}
                   />
                 )}
@@ -222,7 +230,7 @@ export default function AdminDashboardScreen({ navigation }) {
             label={t('adminDashboard.activeAgents')}
             value={agentsCount.active}
             icon="bicycle-outline"
-            tint="rgba(52, 211, 153, 0.10)"
+            tint={colors.primarySoft}
           />
           <StatCard
             label={t('adminDashboard.pendingPickups')}
@@ -256,7 +264,7 @@ export default function AdminDashboardScreen({ navigation }) {
                           styles.barFill,
                           { height: `${(b.value / axisMax) * 100}%` },
                           i === buckets.length - 1 &&
-                            b.value > 0 && { backgroundColor: '#34D399', opacity: 1 },
+                            b.value > 0 && { backgroundColor: colors.primary, opacity: 1 },
                         ]}
                       />
                     </View>
@@ -311,7 +319,7 @@ export default function AdminDashboardScreen({ navigation }) {
               <TouchableOpacity
                 key={r.id}
                 activeOpacity={0.85}
-                onPress={() => navigation.navigate('AdminRequestView', { id: r.id })}
+                onPress={() => navigation.navigate('AdminRequestView', { id: r.id, kind: r.kind })}
                 style={styles.requestRow}
               >
                 <View style={{ flex: 1 }}>
@@ -349,7 +357,7 @@ export default function AdminDashboardScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.lg },
   periodRow: { gap: spacing.sm, paddingRight: spacing.lg },
@@ -359,32 +367,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 8,
     borderRadius: radii.pill,
-    backgroundColor: 'rgba(43, 63, 110, 0.45)',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: colors.border,
   },
-  chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primaryLight },
+  chipActive: { backgroundColor: colors.activeBackground, borderColor: colors.activeBackground },
   chipText: { color: colors.muted, fontSize: 13, fontWeight: '600' },
-  chipTextActive: { color: '#052e2b', fontWeight: '800' },
+  chipTextActive: { color: colors.activeText, fontWeight: '800' },
   hero: { borderRadius: radii.lg, padding: spacing.lg },
-  heroLabel: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 13 },
+  heroLabel: { color: colors.surface, fontSize: 13 },
   heroValue: { color: '#fff', fontSize: 30, fontWeight: '800', marginTop: 4 },
-  heroSub: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 12, marginTop: 6 },
+  heroSub: { color: colors.surface, fontSize: 12, marginTop: 6 },
   statRow: { flexDirection: 'row', gap: spacing.sm },
-  stat: { flex: 1, borderRadius: radii.md, padding: spacing.md, gap: 6 },
+  stat: { borderTopColor: colors.panelAccent, borderTopWidth: 1, flex: 1, borderRadius: radii.md, padding: spacing.md, gap: 6 },
   statValue: { fontSize: 20, fontWeight: '800', color: colors.text },
   statLabel: { fontSize: 11, color: colors.muted },
-  card: {
-    backgroundColor: 'rgba(43, 63, 110, 0.45)',
+  card: { borderTopColor: colors.panelAccent, borderTopWidth: 1,
+    backgroundColor: colors.card,
     borderRadius: radii.lg,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: colors.border,
   },
   cardTitle: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.text,
+    color: colors.headingAccent,
     marginBottom: spacing.md,
     letterSpacing: 0.5,
   },
@@ -406,7 +414,7 @@ const styles = StyleSheet.create({
   bar: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'flex-end' },
   barFill: {
     width: '70%',
-    backgroundColor: '#22D3EE',
+    backgroundColor: colors.accent,
     borderRadius: 6,
     minHeight: 6,
     opacity: 0.7,
@@ -416,30 +424,30 @@ const styles = StyleSheet.create({
   metricsRow: { flexDirection: 'row', gap: spacing.sm },
   metricCard: {
     flex: 1,
-    backgroundColor: 'rgba(43, 63, 110, 0.45)',
+    backgroundColor: colors.card,
     borderRadius: radii.md,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   metricLabel: { color: colors.muted, fontSize: 11, fontWeight: '300', textTransform: 'uppercase', letterSpacing: 0.5 },
   metricValue: { color: colors.text, fontSize: 22, fontWeight: '500', marginTop: 4 },
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionTitle: { fontSize: 16, fontWeight: '500', color: colors.text, letterSpacing: 0.3 },
-  link: { color: '#34D399', fontSize: 13, fontWeight: '500' },
+  link: { color: colors.primary, fontSize: 13, fontWeight: '500' },
   requestRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(43, 63, 110, 0.45)',
+    backgroundColor: colors.card,
     borderRadius: radii.md,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   reqId: { fontSize: 14, fontWeight: '500', color: colors.text },
   reqCustomer: { fontSize: 12, color: colors.textSecondary, marginTop: 2, fontWeight: '300' },
   reqMeta: { fontSize: 11, color: colors.muted, marginTop: 2, fontWeight: '300' },
-  pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill },
+  pill: { borderTopColor: colors.panelAccent, borderTopWidth: 1, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill },
   pillText: { fontSize: 11, fontWeight: '700' },
   empty: { alignItems: 'center', paddingVertical: spacing.md },
   emptyText: { color: colors.muted, fontWeight: '300' },

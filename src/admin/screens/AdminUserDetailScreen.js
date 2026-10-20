@@ -12,24 +12,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AdminHeader from '../components/AdminHeader';
-import { colors, radii, spacing } from '../../shared/theme/dark';
+import { radii, spacing } from '../../shared/theme/colors';
+import { useTheme } from '../../shared/theme/ThemeContext';
 import { api } from '../../shared/api/client';
 import { confirmAction } from '../../shared/utils/confirm';
 import { useI18n } from '../../shared/i18n/LanguageContext';
 
 function PillRow({ icon, label, value, onPress }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const Wrap = onPress ? TouchableOpacity : View;
   return (
     <Wrap activeOpacity={0.85} onPress={onPress} style={styles.pillShadow}>
       <LinearGradient
-        colors={['#2B3F6E', '#1B2B52']}
+        colors={gradients.panel}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.pill}
       >
         <View style={styles.pillBorder} pointerEvents="none" />
         <View style={styles.iconBubble}>
-          <Ionicons name={icon} size={16} color={colors.text} />
+          <Ionicons name={icon} size={16} color={colors.iconAccent} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.pillLabel}>{label}</Text>
@@ -42,6 +45,8 @@ function PillRow({ icon, label, value, onPress }) {
 }
 
 export default function AdminUserDetailScreen({ route, navigation }) {
+  const { colors, gradients } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { t } = useI18n();
   const id = route.params?.id;
   const [user, setUser] = useState(null);
@@ -139,7 +144,7 @@ export default function AdminUserDetailScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.heroShadow}>
           <LinearGradient
-            colors={['#33497F', '#1B2B52']}
+            colors={gradients.panel}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.hero}
@@ -156,7 +161,7 @@ export default function AdminUserDetailScreen({ route, navigation }) {
                 styles.statusPill,
                 {
                   backgroundColor: isActive
-                    ? 'rgba(52, 211, 153, 0.18)'
+                    ? colors.primarySoft
                     : 'rgba(248, 113, 113, 0.20)',
                 },
               ]}
@@ -164,12 +169,12 @@ export default function AdminUserDetailScreen({ route, navigation }) {
               <Ionicons
                 name={isActive ? 'checkmark-circle' : 'ban'}
                 size={12}
-                color={isActive ? '#34D399' : colors.danger}
+                color={isActive ? colors.primary : colors.danger}
               />
               <Text
                 style={[
                   styles.statusText,
-                  { color: isActive ? '#34D399' : colors.danger },
+                  { color: isActive ? colors.primary : colors.danger },
                 ]}
               >
                 {isActive ? t('adminUserDetail.active') : t('adminUserDetail.blocked')}
@@ -232,7 +237,7 @@ export default function AdminUserDetailScreen({ route, navigation }) {
           style={styles.pillShadow}
         >
           <LinearGradient
-            colors={isSpecial ? ['#3A3320', '#241F12'] : ['#8A6D1F', '#4A3A12']}
+            colors={isSpecial ? gradients.panel : gradients.panel}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.actionBtn}
@@ -257,7 +262,7 @@ export default function AdminUserDetailScreen({ route, navigation }) {
           style={styles.pillShadow}
         >
           <LinearGradient
-            colors={isActive ? ['#5C1F1F', '#2D0F0F'] : ['#0F766E', '#1B2B52']}
+            colors={isActive ? gradients.panel : gradients.panel}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.actionBtn}
@@ -266,10 +271,10 @@ export default function AdminUserDetailScreen({ route, navigation }) {
             <Ionicons
               name={isActive ? 'ban' : 'checkmark-circle-outline'}
               size={18}
-              color={isActive ? '#F87171' : '#34D399'}
+              color={isActive ? colors.danger : colors.primary}
             />
             <Text
-              style={[styles.actionText, { color: isActive ? '#F87171' : '#34D399' }]}
+              style={[styles.actionText, { color: isActive ? colors.danger : colors.primary }]}
             >
               {isActive
                 ? t('adminUserDetail.blockThisUser')
@@ -284,14 +289,14 @@ export default function AdminUserDetailScreen({ route, navigation }) {
           style={styles.pillShadow}
         >
           <LinearGradient
-            colors={['#5C1F1F', '#2D0F0F']}
+            colors={gradients.panel}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.actionBtn}
           >
             <View style={styles.pillBorder} pointerEvents="none" />
-            <Ionicons name="trash-outline" size={18} color="#F87171" />
-            <Text style={[styles.actionText, { color: '#F87171' }]}>
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
+            <Text style={[styles.actionText, { color: colors.danger }]}>
               {t('adminUserDetail.deleteThisUser')}
             </Text>
           </LinearGradient>
@@ -301,7 +306,7 @@ export default function AdminUserDetailScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors, gradients) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   heroShadow: {
@@ -317,13 +322,13 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: colors.border,
   },
   avatar: {
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: colors.iconBackground,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
@@ -360,16 +365,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: spacing.lg,
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: colors.surface,
     borderRadius: radii.md,
     paddingVertical: spacing.sm + 4,
   },
   stat: { flex: 1, alignItems: 'center' },
   statValue: { color: colors.text, fontSize: 14, fontWeight: '400' },
   statLabel: { color: colors.muted, fontSize: 10, fontWeight: '300', marginTop: 2 },
-  statDivider: { width: 1, backgroundColor: 'rgba(255, 255, 255, 0.10)' },
-  section: {
-    color: colors.muted,
+  statDivider: { width: 1, backgroundColor: colors.surface },
+  section: { paddingLeft: 10, borderLeftColor: colors.panelAccent, borderLeftWidth: 3,
+    color: colors.headingAccent,
     fontSize: 11,
     fontWeight: '400',
     textTransform: 'uppercase',
@@ -385,7 +390,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  pill: {
+  pill: { borderTopColor: colors.panelAccent, borderTopWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -398,13 +403,13 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderColor: colors.panelBorder,
   },
   iconBubble: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+    backgroundColor: colors.iconBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },

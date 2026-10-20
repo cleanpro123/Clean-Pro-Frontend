@@ -5,6 +5,10 @@
 export const dataTranslations = {
   ar: {
     service: {
+      'Wash & Fold': 'غسيل وطي',
+      'Dry Cleaning': 'تنظيف جاف',
+      'Ironing': 'كي فقط',
+      'Premium Care': 'عناية فائقة',
       wash: 'غسيل وطي',
       dry: 'تنظيف جاف',
       iron: 'كي فقط',
